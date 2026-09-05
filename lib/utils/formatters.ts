@@ -51,7 +51,11 @@ const FALLBACK_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1509722747041-
 
 export function getProductImageUrl(product?: { images?: Array<{ src: string }>; slug?: string; name?: string }): string {
   if (product?.images && product.images.length > 0 && product.images[0]?.src) {
-    return product.images[0].src;
+    let src = product.images[0].src;
+    if (src.includes('/wp-content/uploads/')) {
+      return `/api/media/${src.split('/wp-content/uploads/')[1]}`;
+    }
+    return src;
   }
   return FALLBACK_PRODUCT_IMAGE;
 }

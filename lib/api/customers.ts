@@ -118,15 +118,28 @@ export async function getOrCreateCustomer(data: CreateCustomerData): Promise<Woo
   return createWooCustomer(data);
 }
 
+function normalizeOrder(order: WooOrder): WooOrder {
+  if (!order || !order.line_items) return order;
+  order.line_items = order.line_items.map((item) => {
+    if (item.image?.src && item.image.src.includes('/wp-content/uploads/')) {
+      const parts = item.image.src.split('/wp-content/uploads/');
+      item.image.src = `/api/media/${parts[1]}`;
+    }
+    return item;
+  });
+  return order;
+}
+
 /**
  * Fetches all past orders for a specific customer from WooCommerce
  */
 export async function getCustomerOrders(customerId: number): Promise<WooOrder[]> {
   try {
-    return await wcFetch<WooOrder[]>('orders', {
+    const orders = await wcFetch<WooOrder[]>('orders', {
       params: { customer: customerId, per_page: 20, orderby: 'date', order: 'desc' },
       cache: 'no-store',
     });
+    return (orders || []).map(normalizeOrder);
   } catch (error) {
     console.error(`Error fetching orders for customer ${customerId}:`, error);
     return [];

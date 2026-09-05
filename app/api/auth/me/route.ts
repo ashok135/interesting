@@ -43,6 +43,20 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Ensure all line item image URLs use the authenticated local proxy
+    orders = orders.map((order) => {
+      if (order.line_items) {
+        order.line_items = order.line_items.map((item) => {
+          if (item.image?.src && item.image.src.includes('/wp-content/uploads/')) {
+            const parts = item.image.src.split('/wp-content/uploads/');
+            item.image.src = `/api/media/${parts[1]}`;
+          }
+          return item;
+        });
+      }
+      return order;
+    });
+
     // If customer object wasn't found in WooCommerce (e.g. admin or WP user role),
     // build a fallback customer record from user & their most recent order addresses
     if (!customer) {

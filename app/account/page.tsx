@@ -52,6 +52,36 @@ interface SavedAddress {
   isDefault?: boolean;
 }
 
+const ITEM_FALLBACK_IMAGES: Record<string, string> = {
+  almond: '/images/categories/nuts.jpg',
+  cashew: '/images/categories/nuts.jpg',
+  kaju: '/images/categories/nuts.jpg',
+  walnut: '/images/categories/dryfruits.jpg',
+  seed: '/images/categories/seeds.jpg',
+  millet: '/images/categories/millets.jpg',
+  snack: '/images/categories/roasted.jpg',
+  crisp: '/images/categories/roasted.jpg',
+  trail: '/images/categories/trailmix.jpg',
+  gift: '/images/categories/gifts.jpg',
+};
+
+function getItemImageUrl(item?: { name?: string; image?: { src?: string } } | null): string {
+  if (!item) return '/images/categories/nuts.jpg';
+  const src = item.image?.src;
+  if (src) {
+    if (src.includes('/wp-content/uploads/')) {
+      const parts = src.split('/wp-content/uploads/');
+      return `/api/media/${parts[1]}`;
+    }
+    return src;
+  }
+  const lower = (item.name || '').toLowerCase();
+  for (const [kw, url] of Object.entries(ITEM_FALLBACK_IMAGES)) {
+    if (lower.includes(kw)) return url;
+  }
+  return '/images/categories/nuts.jpg';
+}
+
 export default function AccountPage() {
   const router = useRouter();
   const { user, customer, orders, loading, logout, refresh } = useAuth();
@@ -694,19 +724,14 @@ export default function AccountPage() {
                           {order.line_items.map((item) => (
                             <div key={item.id} className={styles.amazonItemRow}>
                               <div className={styles.itemThumbWrap}>
-                                {item.image?.src ? (
-                                  <Image
-                                    src={item.image.src}
-                                    alt={item.name}
-                                    fill
-                                    sizes="68px"
-                                    className={styles.itemThumbImg}
-                                  />
-                                ) : (
-                                  <div className={styles.itemImageFallback}>
-                                    <Package size={24} />
-                                  </div>
-                                )}
+                                <Image
+                                  src={getItemImageUrl(item)}
+                                  alt={item.name}
+                                  fill
+                                  sizes="68px"
+                                  className={styles.itemThumbImg}
+                                  unoptimized
+                                />
                               </div>
                               <div className={styles.itemInfoCol}>
                                 <h4 className={styles.itemTitle}>{item.name}</h4>
@@ -1296,11 +1321,23 @@ export default function AccountPage() {
                   Items in this Order
                 </h4>
                 {selectedOrder.line_items.map((item) => (
-                  <div key={item.id} className={styles.itemRow}>
-                    <span>
-                      {item.quantity}× {item.name}
-                    </span>
-                    <span style={{ fontWeight: 600 }}>{formatPrice(item.total)}</span>
+                  <div key={item.id} className={styles.itemRow} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <div style={{ position: 'relative', width: '38px', height: '38px', borderRadius: '8px', overflow: 'hidden', background: '#f4f4f5', flexShrink: 0, border: '1px solid #e4e4e7' }}>
+                        <Image
+                          src={getItemImageUrl(item)}
+                          alt={item.name}
+                          fill
+                          sizes="38px"
+                          style={{ objectFit: 'cover' }}
+                          unoptimized
+                        />
+                      </div>
+                      <span style={{ fontSize: '0.85rem' }}>
+                        {item.quantity}× {item.name}
+                      </span>
+                    </div>
+                    <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{formatPrice(item.total)}</span>
                   </div>
                 ))}
               </div>
