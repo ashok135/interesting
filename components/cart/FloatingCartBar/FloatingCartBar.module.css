@@ -1,0 +1,133 @@
+.container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 99;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.capsule {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: #082c18;
+  color: #ffffff;
+  border: 1px solid rgba(110, 231, 183, 0.3);
+  border-radius: var(--radius-full);
+  padding: 0.45rem 0.55rem 0.45rem 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(8, 44, 24, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.capsule:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.bagIconWrap {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bagIcon {
+  font-size: 1rem;
+}
+
+.textCol {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.countText {
+  font-size: 0.68rem;
+  color: #a7f3d0;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-top: 0.1rem;
+}
+
+.priceText {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.originalPriceText {
+  font-size: 0.72rem;
+  color: #6ee7b7;
+  text-decoration: line-through;
+  opacity: 0.85;
+  line-height: 1.1;
+}
+
+.viewCartBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f59e0b;
+  color: #082c18;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.5rem 0.95rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.04em;
+  transition: background 0.15s ease, transform 0.15s ease;
+  white-space: nowrap;
+}
+
+.capsule:hover .viewCartBtn {
+  background: #fbbf24;
+}
+
+.arrow {
+  font-size: 0.85rem;
+  transition: transform 0.15s ease;
+}
+
+.capsule:hover .arrow {
+  transform: translateX(2px);
+}
+
+@media (max-width: 640px) {
+  .container {
+    bottom: 4.5rem;
+    right: 0.75rem;
+    left: 0.75rem;
+  }
+  .capsule {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

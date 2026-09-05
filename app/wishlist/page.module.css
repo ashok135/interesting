@@ -1,0 +1,144 @@
+.page {
+  padding: 3rem 0 5rem;
+  min-height: 80vh;
+}
+
+.inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #111;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.badge {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.clearBtn {
+  background: none;
+  border: 1px solid #e4e4e7;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #71717a;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: fit-content;
+}
+
+.clearBtn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.emptyState {
+  background: #fafafa;
+  border: 1px dashed #d1d5db;
+  border-radius: 20px;
+  padding: 5rem 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.emptyIcon {
+  font-size: 3.5rem;
+  opacity: 0.5;
+}
+
+.emptyTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+}
+
+.emptySub {
+  font-size: 0.92rem;
+  color: #666;
+  max-width: 420px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.shopBtn {
+  display: inline-flex;
+  padding: 0.75rem 1.75rem;
+  background: #111;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+  margin-top: 0.5rem;
+}
+
+.shopBtn:hover {
+  background: #27272a;
+}
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6rem 0;
+  gap: 1rem;
+  color: #666;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #111;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

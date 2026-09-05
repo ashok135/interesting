@@ -1,0 +1,109 @@
+.capsuleNav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .capsuleNav {
+    display: block;
+    position: fixed;
+    bottom: 0.65rem;
+    left: 1rem;
+    right: 1rem;
+    z-index: 999;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .capsuleHidden {
+    transform: translateY(140%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .dock {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: rgba(20, 83, 45, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-full);
+    padding: 0.4rem 0.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(20, 83, 45, 0.2);
+  }
+
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    font-family: var(--font-sans);
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .tab:hover,
+  .tab.active {
+    color: #f59e0b;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .tabIconWrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .tabIcon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .tabLabel {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+
+  .badge {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.45rem;
+    background: #f59e0b;
+    color: #ffffff;
+    font-size: 0.55rem;
+    font-weight: 800;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cartBadge {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.45rem;
+    background: #ea580c;
+    color: #ffffff;
+    font-size: 0.55rem;
+    font-weight: 800;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

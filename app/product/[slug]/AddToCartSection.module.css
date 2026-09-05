@@ -1,0 +1,148 @@
+/* =========================================================
+   Flipkart-Style Clean Add to Cart & Buy Now Section
+   ========================================================= */
+
+.section {
+  padding: 1.25rem 0;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+/* 1. Dedicated Quantity & Wishlist Row */
+.quantityRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.qtyControl {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qtyLabel {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.wishlistBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.wishlistBtn:hover {
+  border-color: #fca5a5;
+  color: #e11d48;
+  background: #fff1f2;
+  transform: translateY(-1px);
+}
+
+.wishlistActive {
+  color: #e11d48 !important;
+  background: #ffe4e6 !important;
+  border-color: #f43f5e !important;
+}
+
+.wishlistText {
+  display: inline-block;
+}
+
+/* 2. Flipkart Style Action Buttons: Stacked Cleanly One by One */
+.actionsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .actionsStack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Base button styling */
+.addToCartBtn,
+.buyNowBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 50px;
+  padding: 0 1.5rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+}
+
+.btnIcon {
+  flex-shrink: 0;
+}
+
+/* Primary Brand Green (#14532D) - Add to Cart */
+.addToCartBtn {
+  background: #14532d;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(20, 83, 45, 0.28);
+}
+
+.addToCartBtn:hover:not(:disabled) {
+  background: #166534;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(20, 83, 45, 0.38);
+}
+
+.addToCartBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.addToCartBtn:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Tertiary Warm Terracotta/Orange (#EA580C) - Buy Now */
+.buyNowBtn {
+  background: #ea580c;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.28);
+}
+
+.buyNowBtn:hover {
+  background: #c2410c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(234, 88, 12, 0.4);
+}
+
+.buyNowBtn:active {
+  transform: translateY(0);
+}

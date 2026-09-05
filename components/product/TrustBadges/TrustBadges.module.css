@@ -1,0 +1,173 @@
+.container {
+  width: 100%;
+}
+
+/* 1. Desktop Layout (Static 4-Column Card) */
+.desktopGrid {
+  background: var(--color-surface-1, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-lg, 14px);
+  padding: 0.85rem 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.desktopBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+/* 2. Mobile Layout (Horizontal Looping Marquee) */
+.mobileLoopWrapper {
+  display: none;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+  position: relative;
+  padding: 0.25rem 0;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
+}
+
+.mobileMarqueeTrack {
+  display: inline-flex;
+  width: max-content;
+  animation: badgesLoop 24s linear infinite;
+  will-change: transform;
+}
+
+.mobileMarqueeTrack:hover {
+  animation-play-state: paused;
+}
+
+.badgesTrackGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Shared badge pill styling for mobile loop */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 0.45rem 0.95rem 0.45rem 0.55rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Icon Wrap Styles with Brand Design Colors */
+.iconWrap {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.greenIcon {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.goldIcon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.mintIcon {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.orangeIcon {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: 0.65rem;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+@keyframes badgesLoop {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Responsive breakpoint */
+@media (max-width: 768px) {
+  .desktopGrid {
+    display: none;
+  }
+
+  .mobileLoopWrapper {
+    display: flex;
+  }
+}
+
+/* ─── Dark Theme Support ─────────────────────────── */
+[data-theme="dark"] .desktopGrid {
+  background: var(--color-surface-1, #111827);
+  border-color: var(--color-border, #243048);
+}
+
+[data-theme="dark"] .badge {
+  background: #1a2438;
+  border-color: #243048;
+}
+
+[data-theme="dark"] .greenIcon {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+[data-theme="dark"] .goldIcon {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}

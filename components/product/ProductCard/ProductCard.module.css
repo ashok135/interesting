@@ -1,0 +1,322 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  position: relative;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Image Container */
+.imageWrapper {
+  position: relative;
+  aspect-ratio: 1.05 / 1;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.imageSkeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  z-index: 1;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.image {
+  object-fit: cover;
+  transition: transform var(--transition-slow), opacity 0.25s ease-in-out;
+}
+
+.imageLoading {
+  opacity: 0;
+}
+
+.imageLoaded {
+  opacity: 1;
+}
+
+.card:hover .image {
+  transform: scale(1.04);
+}
+
+/* Delivery badge (top left) */
+.deliveryBadge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: rgba(17, 24, 39, 0.88);
+  color: #ffffff;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  z-index: 2;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(4px);
+}
+
+.bolt {
+  color: #f59e0b;
+}
+
+/* Offer percentage badge (top left photo corner) */
+.discountBadge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: linear-gradient(135deg, #14532d 0%, #0d3821 100%);
+  color: #fef08a;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(254, 240, 138, 0.25);
+  pointer-events: none;
+  line-height: 1.2;
+}
+
+/* Wishlist button (top right photo corner) */
+.wishlistBtn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: all var(--transition-fast);
+}
+
+.wishlistBtn:hover {
+  color: #dc2626;
+  background: #ffffff;
+  transform: scale(1.1);
+}
+
+.wishlistBtn.wishlistActive {
+  color: #ef4444;
+  background: #ffffff;
+  border-color: #fca5a5;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+/* Rating badge (positioned above price) */
+.ratingRow {
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+  margin-bottom: 0.1rem;
+}
+
+.ratingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  padding: 0.18rem 0.45rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  line-height: 1;
+}
+
+.ratingScore {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.ratingCount {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 0.68rem;
+}
+
+/* Info */
+.info {
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  flex: 1;
+}
+
+.originTag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #b45309;
+  letter-spacing: 0.05em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.name {
+  font-family: var(--font-sans, 'Plus Jakarta Sans', system-ui, sans-serif);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  letter-spacing: -0.01em;
+}
+
+.packSize {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.bottomRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.price {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.regularPrice {
+  font-size: 0.78rem;
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+}
+
+.addBtn {
+  padding: 0.35rem 0.9rem;
+  background: #14532d;
+  border: none;
+  border-radius: var(--radius-full);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all var(--transition-fast);
+}
+
+.addBtn:hover:not(.disabled) {
+  background: #166534;
+  transform: translateY(-1px);
+}
+
+.disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .info {
+    padding: 0.6rem 0.65rem;
+  }
+  .name {
+    font-size: 0.85rem;
+  }
+  .price {
+    font-size: 0.95rem;
+  }
+  .addBtn {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.72rem;
+  }
+}
+
+/* ─── Dark Theme Support ─────────────────────────── */
+[data-theme="dark"] .card {
+  background: var(--color-surface-1, #111827);
+  border-color: var(--color-border, #243048);
+}
+
+[data-theme="dark"] .card:hover {
+  border-color: #334155;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .imageWrapper {
+  background: #1a2438;
+}
+
+[data-theme="dark"] .imageSkeleton {
+  background: linear-gradient(90deg, #1a2438 25%, #243048 50%, #1a2438 75%);
+}
+
+[data-theme="dark"] .ratingBadge {
+  background: #1a2438;
+  border-color: #243048;
+}
+
+[data-theme="dark"] .ratingScore {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .wishlistBtn {
+  background: rgba(17, 24, 39, 0.88);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .wishlistBtn:hover {
+  background: #1a2438;
+  color: #f87171;
+}
+
+[data-theme="dark"] .packSize {
+  color: #64748b;
+}
+
+[data-theme="dark"] .disabled {
+  background: #1a2438;
+  color: #64748b;
+}

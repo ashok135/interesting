@@ -1,0 +1,137 @@
+.bar {
+  background: #082414;
+  color: #f3f4f6;
+  padding: 0.35rem 0;
+  font-size: 0.72rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+  z-index: 101;
+}
+
+/* 1. Desktop Layout (Static 2-column) */
+.desktopInner {
+  max-width: var(--max-width, 1240px);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.leftGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.fastBadge {
+  background: #ea580c;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm, 6px);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.message {
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+
+.message strong {
+  color: #ffffff;
+}
+
+.rightGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.codeBadge {
+  background: #fef08a;
+  color: #082414;
+  font-weight: 800;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm, 6px);
+  flex-shrink: 0;
+}
+
+.promoText {
+  color: #fef9c3;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+/* 2. Mobile Infinite Horizontal Loop Marquee */
+.mobileMarqueeWrapper {
+  display: none;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.marqueeTrack {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  animation: marqueeLoop 24s linear infinite;
+  will-change: transform;
+}
+
+.marqueeTrack:hover {
+  animation-play-state: paused;
+}
+
+.marqueeContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.divider {
+  color: #f59e0b;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+@keyframes marqueeLoop {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Responsive toggle: Desktop row vs Mobile marquee */
+@media (max-width: 900px) {
+  .desktopInner {
+    display: none;
+  }
+
+  .mobileMarqueeWrapper {
+    display: block;
+  }
+
+  .bar {
+    padding: 0.32rem 0;
+  }
+}

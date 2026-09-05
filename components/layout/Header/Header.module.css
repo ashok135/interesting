@@ -1,0 +1,775 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-surface-1, #ffffff);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.inner {
+  max-width: var(--max-width, 1280px);
+  margin: 0 auto;
+  padding: 0.65rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+/* Brand Group */
+.brandGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.userMenuBtn {
+  display: none;
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.monogram {
+  width: 2.3rem;
+  height: 2.3rem;
+  border: 1.5px solid var(--color-brand-green, #0d3821);
+  border-radius: var(--radius-sm, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f8f5;
+}
+
+.monoText {
+  font-family: var(--font-royal, serif);
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: var(--color-brand-green, #0d3821);
+  letter-spacing: 0.05em;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandName {
+  font-family: var(--font-royal, serif);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #0f2d1d;
+  letter-spacing: 0.07em;
+  line-height: 1.1;
+}
+
+.brandTagline {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #b45309;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  margin-top: 0.15rem;
+}
+
+/* Search bar (Desktop: Center) */
+.searchWrapper {
+  max-width: 480px;
+  width: 100%;
+  flex: 1;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.desktopThemeToggle {
+  display: flex;
+  align-items: center;
+}
+
+.navAction {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.65rem;
+  text-decoration: none;
+  color: var(--color-text, #111827);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: var(--radius-md, 8px);
+  transition: all 0.2s ease;
+}
+
+.navAction:hover {
+  background: var(--color-surface-2, #f3f4f6);
+}
+
+.desktopThemeToggle {
+  display: flex;
+  align-items: center;
+}
+
+.desktopNavAction {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.65rem;
+  text-decoration: none;
+  color: var(--color-text, #111827);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: var(--radius-md, 8px);
+  transition: all 0.2s ease;
+}
+
+.desktopNavAction:hover {
+  background: var(--color-surface-2, #f3f4f6);
+}
+
+.navActionLabel {
+  font-size: 0.78rem;
+}
+
+/* Wishlist */
+.desktopWishlistAction {
+  position: relative;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--color-text, #111827);
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.desktopWishlistAction:hover {
+  background: var(--color-surface-2, #f3f4f6);
+}
+
+.wishlistBadge {
+  position: absolute;
+  top: 0.05rem;
+  right: 0.05rem;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Cart Button (NO price, only bag + count) */
+.desktopCartCapsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #0d3821;
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.48rem 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-sans, sans-serif);
+}
+
+.desktopCartCapsule:hover {
+  background: #134e2e;
+  transform: translateY(-1px);
+}
+
+.cartCountText {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+
+.mobileUserBtn {
+  display: none;
+}
+
+/* =========================================================
+   Mobile Quick-Commerce Layout (Clean Single Top Row)
+   ========================================================= */
+@media (max-width: 768px) {
+  .inner {
+    padding: 0.6rem 0.85rem;
+    gap: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    flex-shrink: 0;
+    gap: 0.45rem;
+  }
+
+  .monogram {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .monoText {
+    font-size: 0.75rem;
+  }
+
+  .brandName {
+    font-size: 0.92rem;
+    letter-spacing: 0.04em;
+  }
+
+  .brandTagline {
+    display: none;
+  }
+
+  /* Small and neat search bar on mobile, beside user icon */
+  .searchWrapper {
+    display: flex;
+    flex: 1;
+    min-width: 110px;
+    max-width: 185px;
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-shrink: 0;
+  }
+
+  /* Hide desktop theme, account, fav, and cart on mobile */
+  .desktopThemeToggle,
+  .desktopNavAction,
+  .desktopWishlistAction,
+  .desktopCartCapsule {
+    display: none !important;
+  }
+
+  /* Mobile User/Human icon on right side */
+  .mobileUserBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--color-surface-2, #f4f4f5);
+    border: 1.5px solid var(--color-border, #e4e4e7);
+    color: var(--color-text, #111827);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .mobileUserBtn:active {
+    background: #e4e4e7;
+    transform: scale(0.95);
+  }
+
+  .userAvatarInitial {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #0d3821;
+  }
+}
+
+/* =========================================================
+   Slide-in Navigation & Profile Drawer
+   ========================================================= */
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 320px;
+  max-width: 85vw;
+  background: var(--color-surface-1, #ffffff);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 30px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.drawerHeader {
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #082414;
+  color: #ffffff;
+}
+
+.drawerUserInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.drawerAvatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #134e2e;
+  color: #fde047;
+  font-weight: 800;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+}
+
+.drawerUserMeta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.drawerUserName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawerUserSub {
+  font-size: 0.72rem;
+  color: #a7f3d0;
+  margin: 0.15rem 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawerCloseBtn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #ffffff;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.drawerCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Theme Toggle Inside Drawer */
+.drawerThemeBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.9rem;
+  background: var(--color-surface-2, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 12px;
+}
+
+.drawerThemeText {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawerThemeTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+}
+
+.drawerThemeSub {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.drawerHighlightLink {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  text-decoration: none;
+  color: #111827;
+  transition: all 0.15s;
+}
+
+.drawerHighlightLink:hover {
+  background: #dcfce7;
+}
+
+.drawerIconBox {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #16a34a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.drawerLinkContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawerLinkTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #065f46;
+}
+
+.drawerLinkSubtitle {
+  font-size: 0.72rem;
+  color: #047857;
+}
+
+.drawerChevron {
+  color: #94a3b8;
+}
+
+.drawerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.drawerSectionLabel {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin: 0 0 0.25rem 0.25rem;
+}
+
+.drawerCategoryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.drawerCategoryPill {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--color-surface-2, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--color-text, #1e293b);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+}
+
+.drawerCategoryPill:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+}
+
+.categoryIconWrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.categoryPillName {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawerList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.drawerListItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--color-text, #1e293b);
+  transition: background 0.15s;
+}
+
+.drawerListItem:hover {
+  background: var(--color-surface-2, #f1f5f9);
+}
+
+.drawerItemIcon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.drawerItemText {
+  flex: 1;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.drawerBadge {
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  flex: 0 0 auto;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
+}
+
+.drawerPromoBox {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  background: #fefce8;
+  border: 1px dashed #facc15;
+  border-radius: 12px;
+}
+
+.sparkleIcon {
+  color: #ca8a04;
+  flex-shrink: 0;
+}
+
+.promoCodeText {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #713f12;
+  margin: 0;
+}
+
+.promoSubText {
+  font-size: 0.7rem;
+  color: #854d0e;
+  margin: 0.15rem 0 0;
+}
+
+.drawerFooter {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface-1, #ffffff);
+}
+
+.drawerLogoutBtn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #dc2626;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.drawerLogoutBtn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.drawerLoginBtn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #0d3821;
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.drawerLoginBtn:hover {
+  background: #134e2e;
+}
+
+/* ─── Dark Theme Support ─────────────────────────── */
+[data-theme="dark"] .brandName {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .monogram {
+  background: #131b2a;
+  border-color: #22c55e;
+}
+
+[data-theme="dark"] .monoText {
+  color: #22c55e;
+}
+
+[data-theme="dark"] .drawer {
+  background: #090d16;
+  border-left-color: #243048;
+}
+
+[data-theme="dark"] .drawerHeader {
+  background: #111827;
+  border-bottom-color: #243048;
+}
+
+[data-theme="dark"] .drawerContent {
+  background: #090d16;
+}
+
+[data-theme="dark"] .drawerFooter {
+  background: #111827;
+  border-top-color: #243048;
+}
+
+[data-theme="dark"] .drawerLinkItem {
+  background: #111827;
+  border-color: #243048;
+}
+
+[data-theme="dark"] .drawerLinkTitle {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .drawerLinkSubtitle {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .drawerIconBox {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+[data-theme="dark"] .drawerSectionLabel {
+  color: #64748b;
+}
+
+[data-theme="dark"] .drawerListItem {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .drawerListItem:hover {
+  background: #1a2438;
+}
+
+[data-theme="dark"] .drawerPromoBox {
+  background: #171b26;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+[data-theme="dark"] .promoCodeText {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .promoSubText {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .drawerLogoutBtn {
+  background: #201318;
+  border-color: #471922;
+  color: #f87171;
+}
+
+[data-theme="dark"] .drawerLogoutBtn:hover {
+  background: #311820;
+}
+
+[data-theme="dark"] .drawerLoginBtn {
+  background: #22c55e;
+  color: #052e16;
+}
+
+[data-theme="dark"] .drawerLoginBtn:hover {
+  background: #16a34a;
+}
