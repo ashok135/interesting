@@ -14,9 +14,12 @@ const CONSUMER_KEY = process.env.WC_CONSUMER_KEY ?? '';
 const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET ?? '';
 const APP_USER = process.env.WC_APP_USER ?? '';
 const APP_PASSWORD = process.env.WC_APP_PASSWORD ?? '';
+const TUNNEL_USER = process.env.WC_TUNNEL_USER ?? 'pizzas';
+const TUNNEL_PASSWORD = process.env.WC_TUNNEL_PASSWORD ?? 'tender';
 
 // Determine auth mode
-const USE_APP_PASSWORD = APP_USER.length > 0 && APP_PASSWORD.length > 0;
+const IS_TUNNEL = WC_URL.includes('localsite.io') || (TUNNEL_USER.length > 0 && TUNNEL_PASSWORD.length > 0);
+const USE_APP_PASSWORD = !IS_TUNNEL && APP_USER.length > 0 && APP_PASSWORD.length > 0;
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -29,6 +32,11 @@ interface RequestOptions {
 }
 
 function buildAuthHeaders(): Record<string, string> {
+  if (IS_TUNNEL) {
+    // When using LocalWP Live Link tunnel, send tunnel credentials to pass the proxy
+    const tunnelCreds = Buffer.from(`${TUNNEL_USER}:${TUNNEL_PASSWORD}`).toString('base64');
+    return { Authorization: `Basic ${tunnelCreds}` };
+  }
   if (USE_APP_PASSWORD) {
     // Application Password: Basic auth with WP username + app password
     const credentials = Buffer.from(`${APP_USER}:${APP_PASSWORD}`).toString('base64');
@@ -41,8 +49,8 @@ function buildAuthHeaders(): Record<string, string> {
 function buildUrl(endpoint: string, params?: Record<string, string | number | boolean>): string {
   const url = new URL(`${WC_URL}/wp-json/wc/v3/${endpoint}`);
 
-  // Only add consumer key/secret if NOT using app password
-  if (!USE_APP_PASSWORD) {
+  // When using Tunnel or when NOT using app password, send consumer key/secret in query
+  if (IS_TUNNEL || !USE_APP_PASSWORD) {
     url.searchParams.set('consumer_key', CONSUMER_KEY);
     url.searchParams.set('consumer_secret', CONSUMER_SECRET);
   }

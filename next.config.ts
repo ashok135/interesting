@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
         pathname: '/wp-content/uploads/**',
       },
       {
+        // Allow images from LocalWP Live Link
+        protocol: 'https',
+        hostname: '**.localsite.io',
+        pathname: '/**',
+      },
+      {
         // Allow WooCommerce placeholder images
         protocol: 'https',
         hostname: '**.woocommerce.com',
