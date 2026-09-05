@@ -3,10 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  Sparkles,
-  ShieldCheck,
-  Flame,
-  PackageCheck,
   Star,
   ChevronDown,
   ArrowRight,
@@ -79,66 +75,6 @@ export function HomeStoryAndFeatures() {
 
   return (
     <section className={styles.container} aria-label="Why Choose Interesting">
-      {/* 1. Feature Cards: The Gourmet Difference */}
-      <div className={styles.sectionHeader}>
-        <span className={styles.eyebrow}>
-          <Sparkles size={14} /> THE INTERESTING DIFFERENCE
-        </span>
-        <h2 className={styles.sectionTitle}>Crafted For True Connoisseurs</h2>
-        <p className={styles.sectionSubtitle}>
-          We skip the middlemen and commodity auctions. Every batch is direct-harvested, hand-sorted, and slow-roasted for uncompromising purity.
-        </p>
-      </div>
-
-      <div className={styles.featureGrid}>
-        {/* Card 1 */}
-        <div className={styles.featureCard}>
-          <div className={styles.iconCircle}>
-            <Sparkles size={24} strokeWidth={1.75} />
-          </div>
-          <h3 className={styles.cardTitle}>Mammoth Whole Kernels</h3>
-          <p className={styles.cardDesc}>
-            Only prime-harvest Jumbo W180 grade kernels. Every piece is hand-selected to ensure giant size, zero shrivels, and an indulgent, creamy bite.
-          </p>
-          <div className={styles.cardHighlight}>100% Whole Grade • Zero Splits</div>
-        </div>
-
-        {/* Card 2 */}
-        <div className={styles.featureCard}>
-          <div className={styles.iconCircle}>
-            <Flame size={24} strokeWidth={1.75} />
-          </div>
-          <h3 className={styles.cardTitle}>Wood-Fired Slow Roast</h3>
-          <p className={styles.cardDesc}>
-            Roasted in artisanal small batches over controlled heat. Preserves healthy monounsaturated oils while enhancing natural nut aromatics.
-          </p>
-          <div className={styles.cardHighlight}>Pink Himalayan Rock Salt</div>
-        </div>
-
-        {/* Card 3 */}
-        <div className={styles.featureCard}>
-          <div className={styles.iconCircle}>
-            <PackageCheck size={24} strokeWidth={1.75} />
-          </div>
-          <h3 className={styles.cardTitle}>Aroma-Lock Sealing</h3>
-          <p className={styles.cardDesc}>
-            Nitrogen-flushed inside food-grade vacuum cans and multi-ply zip pouches. Blocks light, humidity, and oxygen for 9+ months of peak freshness.
-          </p>
-          <div className={styles.cardHighlight}>Zero Added Preservatives</div>
-        </div>
-
-        {/* Card 4 */}
-        <div className={styles.featureCard}>
-          <div className={styles.iconCircle}>
-            <ShieldCheck size={24} strokeWidth={1.75} />
-          </div>
-          <h3 className={styles.cardTitle}>Certified Farm Purity</h3>
-          <p className={styles.cardDesc}>
-            Origin certified from Konkan, Kashmir, and California. 100% vegetarian, laboratory tested, and verified for zero chemical residues.
-          </p>
-          <div className={styles.cardHighlight}>GI-Tagged Origin Quality</div>
-        </div>
-      </div>
 
       {/* 2. Customer Reviews & Verified Testimonials */}
       <div className={styles.reviewsSection}>
