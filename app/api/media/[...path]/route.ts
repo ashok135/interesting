@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const WC_URL = process.env.NEXT_PUBLIC_WC_URL || 'https://gusty-gravity.localsite.io';
+let WC_URL = process.env.NEXT_PUBLIC_WC_URL || 'https://gusty-gravity.localsite.io';
+if (WC_URL.includes('interesting.local') && (process.env.VERCEL || process.env.NODE_ENV === 'production')) {
+  WC_URL = 'https://gusty-gravity.localsite.io';
+}
 const TUNNEL_USER = process.env.WC_TUNNEL_USER || 'pizzas';
 const TUNNEL_PASSWORD = process.env.WC_TUNNEL_PASSWORD || 'tender';
 

@@ -9,7 +9,10 @@
  * query-string auth. Application Passwords bypass this issue.
  */
 
-const WC_URL = process.env.NEXT_PUBLIC_WC_URL || 'https://gusty-gravity.localsite.io';
+let WC_URL = process.env.NEXT_PUBLIC_WC_URL || 'https://gusty-gravity.localsite.io';
+if (WC_URL.includes('interesting.local') && (process.env.VERCEL || process.env.NODE_ENV === 'production')) {
+  WC_URL = 'https://gusty-gravity.localsite.io';
+}
 const CONSUMER_KEY = process.env.WC_CONSUMER_KEY || 'ck_41bc01e3bd8cbef7ab775b9fed136778b1efd727';
 const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET || 'cs_3b1595d0742b1850ed73df5cd4f8e3405e1212ad';
 const APP_USER = process.env.WC_APP_USER || '';
