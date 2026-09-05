@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, Star, Plus } from 'lucide-react';
@@ -22,6 +23,7 @@ const FALLBACK_SPECS = [
 ];
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
   const { addItem, openDrawer } = useCartContext();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
@@ -78,15 +80,17 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   return (
     <Link href={`/product/${product.slug}`} className={styles.card} tabIndex={0}>
-      {/* Image Container */}
+      {/* Image Container with Shimmer Skeleton */}
       <div className={styles.imageWrapper}>
+        {!isLoaded && <div className={styles.imageSkeleton} />}
         <Image
           src={imageUrl}
           alt={product.images?.[0]?.alt || cleanedName}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
-          className={styles.image}
+          className={`${styles.image} ${isLoaded ? styles.imageLoaded : styles.imageLoading}`}
           loading={index < 4 ? 'eager' : 'lazy'}
+          onLoad={() => setIsLoaded(true)}
         />
 
         {/* Offer Percentage Badge (Top Right Corner) */}

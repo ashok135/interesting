@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui';
 import type { WooImage } from '@/types';
@@ -20,7 +20,13 @@ export function ProductGallery({
   featured,
 }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isMainLoaded, setIsMainLoaded] = useState(false);
   const touchStartX = useRef<number | null>(null);
+
+  // Reset loading shimmer when user selects a different thumbnail
+  useEffect(() => {
+    setIsMainLoaded(false);
+  }, [selectedIndex]);
 
   // Guarantee at least 3 high quality images like Amazon & Flipkart
   const safeImages = useMemo(() => {
@@ -91,6 +97,7 @@ export function ProductGallery({
                 onMouseEnter={() => setSelectedIndex(idx)}
                 aria-label={`View photo ${idx + 1} of ${safeImages.length}`}
               >
+                <div className={styles.thumbSkeleton} />
                 <Image
                   src={img.src}
                   alt={img.alt || `${productName} thumbnail ${idx + 1}`}
@@ -105,12 +112,13 @@ export function ProductGallery({
         </div>
       )}
 
-      {/* 2. Main Large Showcase Image Frame */}
+      {/* 2. Main Large Showcase Image Frame with Shimmer Skeleton */}
       <div
         className={styles.mainFrame}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        {!isMainLoaded && <div className={styles.mainSkeleton} />}
         {activeImage ? (
           <Image
             src={activeImage.src}
@@ -118,7 +126,8 @@ export function ProductGallery({
             fill
             priority
             sizes="(max-width: 768px) 100vw, 50vw"
-            className={styles.mainImg}
+            className={`${styles.mainImg} ${isMainLoaded ? styles.mainImgLoaded : styles.mainImgLoading}`}
+            onLoad={() => setIsMainLoaded(true)}
             unoptimized
           />
         ) : (
