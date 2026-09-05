@@ -493,12 +493,6 @@ export default function AccountPage() {
               </div>
             </div>
           </div>
-
-          <div className={styles.headerActions}>
-            <button onClick={handleLogout} className={styles.logoutNavItem} style={{ width: 'auto' }}>
-              <LogOut size={16} /> Sign Out
-            </button>
-          </div>
         </div>
 
         {/* Side Tabs & Main Panel Layout */}
