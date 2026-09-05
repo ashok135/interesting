@@ -9,13 +9,13 @@
  * query-string auth. Application Passwords bypass this issue.
  */
 
-const WC_URL = process.env.NEXT_PUBLIC_WC_URL ?? 'http://interesting.local';
-const CONSUMER_KEY = process.env.WC_CONSUMER_KEY ?? '';
-const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET ?? '';
-const APP_USER = process.env.WC_APP_USER ?? '';
-const APP_PASSWORD = process.env.WC_APP_PASSWORD ?? '';
-const TUNNEL_USER = process.env.WC_TUNNEL_USER ?? 'pizzas';
-const TUNNEL_PASSWORD = process.env.WC_TUNNEL_PASSWORD ?? 'tender';
+const WC_URL = process.env.NEXT_PUBLIC_WC_URL || 'https://gusty-gravity.localsite.io';
+const CONSUMER_KEY = process.env.WC_CONSUMER_KEY || 'ck_41bc01e3bd8cbef7ab775b9fed136778b1efd727';
+const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET || 'cs_3b1595d0742b1850ed73df5cd4f8e3405e1212ad';
+const APP_USER = process.env.WC_APP_USER || '';
+const APP_PASSWORD = process.env.WC_APP_PASSWORD || '';
+const TUNNEL_USER = process.env.WC_TUNNEL_USER || 'pizzas';
+const TUNNEL_PASSWORD = process.env.WC_TUNNEL_PASSWORD || 'tender';
 
 // Determine auth mode
 const IS_TUNNEL = WC_URL.includes('localsite.io') || (TUNNEL_USER.length > 0 && TUNNEL_PASSWORD.length > 0);

@@ -24,18 +24,30 @@ export function ProductGallery({
 
   // Guarantee at least 3 high quality images like Amazon & Flipkart
   const safeImages = useMemo(() => {
-    if (images && images.length >= 3) return images;
-    if (images && images.length > 0) {
+    const normalize = (src: string) => {
+      if (src && src.includes('/wp-content/uploads/')) {
+        return `/api/media/${src.split('/wp-content/uploads/')[1]}`;
+      }
+      return src;
+    };
+
+    const cleanImages = (images || []).map((img) => ({
+      ...img,
+      src: normalize(img.src),
+    }));
+
+    if (cleanImages.length >= 3) return cleanImages;
+    if (cleanImages.length > 0) {
       const fallbackAngles = [
-        { id: 1001, src: 'http://interesting.local/wp-content/uploads/2026/09/gourmet-tin-4.jpg', alt: `${productName} Tin View` },
-        { id: 1002, src: 'http://interesting.local/wp-content/uploads/2026/09/gourmet-spice-6.jpg', alt: `${productName} Serving Bowl` },
+        { id: 1001, src: '/api/media/2026/09/gourmet-tin-4.jpg', alt: `${productName} Tin View` },
+        { id: 1002, src: '/api/media/2026/09/gourmet-spice-6.jpg', alt: `${productName} Serving Bowl` },
       ];
-      return [...images, ...fallbackAngles].slice(0, 3);
+      return [...cleanImages, ...fallbackAngles].slice(0, 3);
     }
     return [
-      { id: 1000, src: 'http://interesting.local/wp-content/uploads/2026/09/nuts-cashews.jpg', alt: productName },
-      { id: 1001, src: 'http://interesting.local/wp-content/uploads/2026/09/gourmet-tin-4.jpg', alt: `${productName} Tin View` },
-      { id: 1002, src: 'http://interesting.local/wp-content/uploads/2026/09/gourmet-spice-6.jpg', alt: `${productName} Serving Bowl` },
+      { id: 1000, src: '/api/media/2026/09/nuts-cashews.jpg', alt: productName },
+      { id: 1001, src: '/api/media/2026/09/gourmet-tin-4.jpg', alt: `${productName} Tin View` },
+      { id: 1002, src: '/api/media/2026/09/gourmet-spice-6.jpg', alt: `${productName} Serving Bowl` },
     ];
   }, [images, productName]);
 

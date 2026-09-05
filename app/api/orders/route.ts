@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       first_name: body.billing.first_name || sessionUser?.name?.split(' ')[0] || 'Guest',
       last_name: body.billing.last_name || sessionUser?.name?.split(' ').slice(1).join(' ') || '',
       company: '',
-      email: body.billing.email || sessionUser?.email || 'guest@interesting.local',
+      email: body.billing.email || sessionUser?.email || 'guest@interestingstore.com',
       phone: body.billing.phone || '',
       address_1: body.billing.address_1.trim(),
       address_2: (body.billing.address_2 || '').trim(),

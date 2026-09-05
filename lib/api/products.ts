@@ -67,10 +67,42 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Woo
   if (search) params.search = search;
   if (include && include.length > 0) params.include = include.join(',');
 
-  return wcFetch<WooProduct[]>('products', {
+  const products = await wcFetch<WooProduct[]>('products', {
     params,
     revalidate: 60, // ISR: revalidate every 60 seconds
   });
+  return (products || []).map(normalizeProduct);
+}
+
+function normalizeImageUrl(url: string): string {
+  if (!url) return url;
+  if (url.includes('/wp-content/uploads/')) {
+    const parts = url.split('/wp-content/uploads/');
+    return `/api/media/${parts[1]}`;
+  }
+  return url;
+}
+
+function normalizeProduct(p: WooProduct): WooProduct {
+  if (!p) return p;
+  if (p.images && Array.isArray(p.images)) {
+    p.images = p.images.map((img) => ({
+      ...img,
+      src: normalizeImageUrl(img.src),
+    }));
+  }
+  return p;
+}
+
+function normalizeCategory(c: WooProductCategory): WooProductCategory {
+  if (!c) return c;
+  if (c.image && c.image.src) {
+    c.image = {
+      ...c.image,
+      src: normalizeImageUrl(c.image.src),
+    };
+  }
+  return c;
 }
 
 export async function getProductBySlug(slug: string): Promise<WooProduct | null> {
@@ -78,11 +110,13 @@ export async function getProductBySlug(slug: string): Promise<WooProduct | null>
     params: { slug },
     revalidate: 60,
   });
-  return products[0] ?? null;
+  const product = products[0] ?? null;
+  return product ? normalizeProduct(product) : null;
 }
 
 export async function getProductById(id: number): Promise<WooProduct> {
-  return wcFetch<WooProduct>(`products/${id}`, { revalidate: 60 });
+  const product = await wcFetch<WooProduct>(`products/${id}`, { revalidate: 60 });
+  return normalizeProduct(product);
 }
 
 export async function getFeaturedProducts(limit = 8): Promise<WooProduct[]> {
@@ -100,7 +134,8 @@ export async function getRelatedProducts(
   };
   if (categoryId) params.category = categoryId;
 
-  return wcFetch<WooProduct[]>('products', { params, revalidate: 60 });
+  const products = await wcFetch<WooProduct[]>('products', { params, revalidate: 60 });
+  return (products || []).map(normalizeProduct);
 }
 
 export async function getCategories(): Promise<WooProductCategory[]> {
@@ -108,13 +143,20 @@ export async function getCategories(): Promise<WooProductCategory[]> {
     params: { per_page: 100, hide_empty: false },
     revalidate: 60,
   });
-  return (categories || []).sort((a, b) => (a.menu_order || 0) - (b.menu_order || 0));
+  return (categories || [])
+    .map(normalizeCategory)
+    .sort((a, b) => (a.menu_order || 0) - (b.menu_order || 0));
 }
 
 export async function getAllProductSlugs(): Promise<string[]> {
-  const products = await wcFetch<Array<{ slug: string }>>('products', {
-    params: { per_page: 100, fields: 'slug' },
-    revalidate: 300,
-  });
-  return products.map((p) => p.slug);
+  try {
+    const products = await wcFetch<Array<{ slug: string }>>('products', {
+      params: { per_page: 100, fields: 'slug' },
+      revalidate: 300,
+    });
+    return (products || []).map((p) => p.slug);
+  } catch (err) {
+    console.error('getAllProductSlugs error:', err);
+    return [];
+  }
 }

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const trimmedEmail = email.toLowerCase().trim();
     const customer = await findCustomerByEmail(trimmedEmail);
 
-    const wcUrl = process.env.NEXT_PUBLIC_WC_URL || 'http://interesting.local';
+    const wcUrl = process.env.NEXT_PUBLIC_WC_URL || 'https://gusty-gravity.localsite.io';
     const wpResetUrl = `${wcUrl}/wp-login.php?action=lostpassword&user_login=${encodeURIComponent(trimmedEmail)}`;
 
     if (!customer) {
