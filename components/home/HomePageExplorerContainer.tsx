@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CuratedCategoryBento, TrustBadges, ZeptoCategoryExplorer } from '@/components/product';
+import { HomeStoryAndFeatures } from '@/components/home/HomeStoryAndFeatures/HomeStoryAndFeatures';
 import type { WooProduct, WooProductCategory } from '@/types';
 
 interface HomePageExplorerContainerProps {
@@ -42,6 +43,7 @@ export function HomePageExplorerContainer({
           onSelectCategoryId={setActiveCategoryId}
         />
       </div>
+      <HomeStoryAndFeatures />
     </>
   );
 }
