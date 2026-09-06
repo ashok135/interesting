@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Sparkles, Layers, ArrowRight, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
+import { Sparkles, Layers, ArrowRight, ChevronDown, ChevronUp, ChevronRight, Loader2 } from 'lucide-react';
 import { ProductCard } from '../ProductCard/ProductCard';
 import { getCategoryHeader } from '../categoryHeaders';
 import { ProductCardSkeleton } from '@/components/ui';
@@ -119,17 +119,38 @@ export function ZeptoCategoryExplorer({
     return ['All', ...children];
   }, [categories, activeCategory]);
 
+  // Immediate preloaded products from server for the active category (0ms instant switch)
+  const serverFallbackForCategory = useMemo(() => {
+    if (!activeCategory || !fallbackProducts.length) return [];
+    return fallbackProducts.filter((p) =>
+      p.categories?.some(
+        (c) =>
+          c.id === activeCategory.id ||
+          c.slug === activeCategory.slug ||
+          c.name.toLowerCase() === activeCategory.name.toLowerCase()
+      )
+    );
+  }, [activeCategory, fallbackProducts]);
+
   // 3. Products directly fetched from WooCommerce using TanStack Query
-  const { data: fetchedProducts = [], isLoading } = useProducts({
+  const {
+    data: fetchedProducts = [],
+    isLoading,
+    isFetching,
+    isPlaceholderData,
+  } = useProducts({
     category: activeCategory ? String(activeCategory.id) : undefined,
     perPage: 30,
-    initialData:
-      activeCategory?.id === 25 && fallbackProducts.length > 0 ? fallbackProducts : undefined,
+    initialData: serverFallbackForCategory.length > 0 ? serverFallbackForCategory : undefined,
   });
 
   // Filter products strictly by active parent category and selected subcategory
   const displayedProducts = useMemo(() => {
-    const rawList = fetchedProducts.length > 0 ? fetchedProducts : fallbackProducts;
+    // If TanStack Query is holding placeholderData from a previous category query,
+    // do NOT use fetchedProducts because it belongs to the previous category!
+    const rawList = isPlaceholderData
+      ? serverFallbackForCategory
+      : (fetchedProducts.length > 0 ? fetchedProducts : serverFallbackForCategory);
 
     // Strictly ensure only products belonging to the selected parent category are included
     const list = rawList.filter((p) => {
@@ -160,7 +181,10 @@ export function ZeptoCategoryExplorer({
     });
 
     return filtered;
-  }, [fetchedProducts, fallbackProducts, activeCategory, activeSubcategory]);
+  }, [isPlaceholderData, fetchedProducts, serverFallbackForCategory, activeCategory, activeSubcategory]);
+
+  const isCategoryLoading =
+    (isLoading || isFetching || isPlaceholderData) && displayedProducts.length === 0;
 
   const INITIAL_LIMIT = 10;
   const hasMoreThanLimit = displayedProducts.length > INITIAL_LIMIT;
@@ -212,6 +236,11 @@ export function ZeptoCategoryExplorer({
                     className={styles.catImg}
                     unoptimized
                   />
+                  {isActive && isCategoryLoading && (
+                    <div className={styles.catSpinOverlay}>
+                      <Loader2 size={16} className={styles.spinIcon} />
+                    </div>
+                  )}
                 </div>
                 <span className={styles.catName}>
                   {idx + 1}. {cat.name}
@@ -245,9 +274,17 @@ export function ZeptoCategoryExplorer({
                 </p>
               </div>
 
-              <span className={styles.productCountBadge}>
-                {displayedProducts.length} items
-              </span>
+              <div className={styles.countAndStatus}>
+                {isFetching && (
+                  <span className={styles.syncingBadge}>
+                    <Loader2 size={11} className={styles.spinIcon} />
+                    <span>Updating</span>
+                  </span>
+                )}
+                <span className={styles.productCountBadge}>
+                  {isCategoryLoading ? 'Loading...' : `${displayedProducts.length} items`}
+                </span>
+              </div>
             </div>
           );
         })()}
@@ -276,7 +313,7 @@ export function ZeptoCategoryExplorer({
 
       {/* 3. Vertically Scrollable 2-Column Product Feed (Not Horizontal!) */}
       <div className={styles.verticalScrollFeed}>
-        {isLoading && displayedProducts.length === 0 ? (
+        {isCategoryLoading ? (
           <div className={styles.grid}>
             {Array.from({ length: 4 }).map((_, i) => (
               <ProductCardSkeleton key={i} />
