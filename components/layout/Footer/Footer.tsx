@@ -111,22 +111,12 @@ export function Footer() {
         </div>
       </div>
 
-      {/* 3. Bottom Legal & Payment Options */}
+      {/* 3. Bottom Legal */}
       <div className={styles.bottomBar}>
         <div className={styles.bottomInner}>
           <p className={styles.copyright}>
             © {new Date().getFullYear()} INTERESTING GOURMET PANTRY. All rights reserved.
           </p>
-
-          <div className={styles.paymentMethods} aria-label="Accepted payment methods">
-            <span className={styles.payBadge}>UPI</span>
-            <span className={styles.payBadge}>GPay</span>
-            <span className={styles.payBadge}>PhonePe</span>
-            <span className={styles.payBadge}>RuPay</span>
-            <span className={styles.payBadge}>Cards</span>
-            <span className={styles.payBadge}>NetBanking</span>
-            <span className={styles.payBadge}>Cash on Delivery</span>
-          </div>
         </div>
       </div>
     </footer>
