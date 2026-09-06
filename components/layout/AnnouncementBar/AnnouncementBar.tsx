@@ -13,7 +13,7 @@ export function AnnouncementBar() {
       </div>
       <span className={styles.divider}>✦</span>
       <div className={styles.item}>
-        <span className={styles.codeBadge}>USE CODE: KAJU100</span>
+        <span className={styles.codeBadge}>USE CODE: WELCOME</span>
         <span className={styles.promoText}>Get ₹100 OFF on your first royal order</span>
       </div>
       <span className={styles.divider}>✦</span>
@@ -32,7 +32,7 @@ export function AnnouncementBar() {
         </div>
 
         <div className={styles.rightGroup}>
-          <span className={styles.codeBadge}>USE CODE: KAJU100</span>
+          <span className={styles.codeBadge}>USE CODE: WELCOME</span>
           <span className={styles.promoText}>Get ₹100 OFF on your first royal order</span>
         </div>
       </div>

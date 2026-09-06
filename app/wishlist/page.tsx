@@ -70,7 +70,7 @@ export default function WishlistPage() {
             </Link>
           </div>
         ) : (
-          <ProductGrid products={products} />
+          <ProductGrid products={products} hideHeader={true} />
         )}
       </div>
     </div>

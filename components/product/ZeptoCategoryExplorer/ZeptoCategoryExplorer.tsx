@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Sparkles, Layers, ArrowRight, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { ProductCard } from '../ProductCard/ProductCard';
+import { getCategoryHeader } from '../categoryHeaders';
 import { ProductCardSkeleton } from '@/components/ui';
 import { useProducts } from '@/hooks/useProducts';
 import type { WooProduct, WooProductCategory } from '@/types';
@@ -224,25 +225,32 @@ export function ZeptoCategoryExplorer({
 
       {/* 2. Subcategory Header & Filter Pills (Zepto / Zomato Quick Commerce) */}
       <div className={styles.subcategoryWrapper}>
-        <div className={styles.categoryMetaHeader}>
-          <div className={styles.metaLeft}>
-            <div className={styles.titleRow}>
-              <h2 className={styles.activeCategoryTitle}>
-                {activeCategory ? activeCategory.name : 'All Products'}
-              </h2>
-              <span className={styles.activeCategoryBadge}>
-                <Sparkles size={11} /> 100% Direct Harvest
+        {(() => {
+          const headerInfo = activeCategory
+            ? getCategoryHeader(activeCategory.slug, activeCategory.name)
+            : null;
+          return (
+            <div className={styles.categoryMetaHeader}>
+              <div className={styles.metaLeft}>
+                <div className={styles.titleRow}>
+                  <h2 className={styles.activeCategoryTitle}>
+                    {activeCategory ? activeCategory.name.replace('&amp;', '&') : 'All Products'}
+                  </h2>
+                  <span className={styles.activeCategoryBadge}>
+                    <Sparkles size={11} /> {headerInfo ? headerInfo.badge : '100% Direct Harvest'}
+                  </span>
+                </div>
+                <p className={styles.metaSubtitle}>
+                  {headerInfo ? headerInfo.subtitle : 'Direct whole harvest • Delivered fresh in 15–30 mins'}
+                </p>
+              </div>
+
+              <span className={styles.productCountBadge}>
+                {displayedProducts.length} items
               </span>
             </div>
-            <p className={styles.metaSubtitle}>
-              Direct whole harvest • Delivered fresh in 15–30 mins
-            </p>
-          </div>
-
-          <span className={styles.productCountBadge}>
-            {displayedProducts.length} items
-          </span>
-        </div>
+          );
+        })()}
 
         {/* Subcategories Horizontal Filter Chips directly from WooCommerce */}
         {activeSubcategories.length > 1 && (

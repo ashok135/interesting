@@ -10,15 +10,17 @@ interface ProductGridProps {
   badge?: string;
   totalCount?: number;
   seeAllLink?: string;
+  hideHeader?: boolean;
 }
 
 export function ProductGrid({
   products,
-  title = 'Cashew Heavens — Fresh Harvest W180 & W240',
-  subtitle = 'Directly cured from Goan & Malabar orchards with guaranteed whole integrity',
-  badge = 'Top Seller',
-  totalCount = 14,
+  title,
+  subtitle,
+  badge,
+  totalCount,
   seeAllLink = '/shop',
+  hideHeader = false,
 }: ProductGridProps) {
   if (products.length === 0) {
     return (
@@ -28,22 +30,26 @@ export function ProductGrid({
     );
   }
 
-  return (
-    <section className={styles.section} aria-label={title}>
-      <div className={styles.header}>
-        <div className={styles.titleGroup}>
-          <div className={styles.titleRow}>
-            <h2 className={styles.title}>{title}</h2>
-            {badge && <span className={styles.badge}>{badge}</span>}
-          </div>
-          {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
-        </div>
+  const showHeader = !hideHeader && Boolean(title);
 
-        <Link href={seeAllLink} className={styles.seeAllLink}>
-          <span>See All ({totalCount || products.length})</span>
-          <span className={styles.chevron}>&gt;</span>
-        </Link>
-      </div>
+  return (
+    <section className={styles.section} aria-label={title || 'Product Grid'}>
+      {showHeader && (
+        <div className={styles.header}>
+          <div className={styles.titleGroup}>
+            <div className={styles.titleRow}>
+              <h2 className={styles.title}>{title}</h2>
+              {badge && <span className={styles.badge}>{badge}</span>}
+            </div>
+            {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+          </div>
+
+          <Link href={seeAllLink} className={styles.seeAllLink}>
+            <span>See All ({totalCount || products.length})</span>
+            <span className={styles.chevron}>&gt;</span>
+          </Link>
+        </div>
+      )}
 
       <div className={styles.grid}>
         {products.map((product, idx) => (

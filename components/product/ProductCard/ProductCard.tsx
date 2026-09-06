@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart, Star, Plus } from 'lucide-react';
+import { Heart, Star, Plus, Minus } from 'lucide-react';
 import { useCartContext } from '@/store/CartContext';
 import { useWishlist } from '@/store/WishlistContext';
 import { formatPrice, getProductImageUrl } from '@/lib/utils/formatters';
@@ -24,8 +24,11 @@ const FALLBACK_SPECS = [
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const { addItem, openDrawer } = useCartContext();
+  const { items, addItem, updateQuantity } = useCartContext();
   const { isInWishlist, toggleWishlist } = useWishlist();
+
+  const cartItem = items.find((i) => i.productId === product.id || i.id === product.id);
+  const quantityInCart = cartItem?.quantity || 0;
 
   const imageUrl = getProductImageUrl(product);
   const isOutOfStock = product.stock_status === 'outofstock';
@@ -75,7 +78,18 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
       image: imageUrl,
       stockStatus: product.stock_status,
     });
-    openDrawer();
+  }
+
+  function handleIncrement(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    updateQuantity(product.id, quantityInCart + 1);
+  }
+
+  function handleDecrement(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    updateQuantity(product.id, quantityInCart - 1);
   }
 
   return (
@@ -147,21 +161,49 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
             )}
           </div>
 
-          <button
-            className={`${styles.addBtn} ${isOutOfStock ? styles.disabled : ''}`}
-            onClick={handleAddToCart}
-            disabled={isOutOfStock}
-            aria-label={`Add ${cleanedName} to cart`}
-          >
-            {isOutOfStock ? (
-              'Sold Out'
-            ) : (
-              <>
+          {quantityInCart > 0 ? (
+            <div
+              className={styles.quantityStepper}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              <button
+                type="button"
+                className={styles.stepperBtn}
+                onClick={handleDecrement}
+                aria-label={`Decrease quantity of ${cleanedName}`}
+              >
+                <Minus size={13} strokeWidth={2.5} />
+              </button>
+              <span className={styles.stepperQty}>{quantityInCart}</span>
+              <button
+                type="button"
+                className={styles.stepperBtn}
+                onClick={handleIncrement}
+                aria-label={`Increase quantity of ${cleanedName}`}
+              >
                 <Plus size={13} strokeWidth={2.5} />
-                <span>Add</span>
-              </>
-            )}
-          </button>
+              </button>
+            </div>
+          ) : (
+            <button
+              className={`${styles.addBtn} ${isOutOfStock ? styles.disabled : ''}`}
+              onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              aria-label={`Add ${cleanedName} to cart`}
+            >
+              {isOutOfStock ? (
+                'Sold Out'
+              ) : (
+                <>
+                  <Plus size={13} strokeWidth={2.5} />
+                  <span>Add</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </Link>

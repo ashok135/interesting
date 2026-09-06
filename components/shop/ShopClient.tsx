@@ -19,6 +19,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { CategoryBar, ProductGrid } from '@/components/product';
+import { getCategoryHeader } from '@/components/product/categoryHeaders';
 import { ProductGridSkeleton } from '@/components/ui';
 import { useProducts } from '@/hooks/useProducts';
 import type { WooProduct, WooProductCategory } from '@/types';
@@ -325,30 +326,17 @@ export function ShopClient({
         {!selectedCategory && !searchQuery ? (
           <div className={styles.categorySectionsWrapper}>
             {categorySections.map(({ category: cat, products: catProducts }) => {
-              const CatIcon = CATEGORY_ICONS[cat.slug] || Sparkles;
+              const headerInfo = getCategoryHeader(cat.slug, cat.name);
               return (
                 <section key={cat.id} className={styles.topicSection} aria-label={cat.name}>
-                  <div className={styles.topicHeader}>
-                    <div className={styles.topicTitleRow}>
-                      <div className={styles.topicIconWrap}>
-                        <CatIcon size={18} strokeWidth={2.2} />
-                      </div>
-                      <div className={styles.topicTitleInfo}>
-                        <h2 className={styles.topicTitle}>{cat.name.replace('&amp;', '&')}</h2>
-                        <span className={styles.topicCount}>{catProducts.length} items</span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className={styles.viewTopicBtn}
-                      onClick={() => handleCategorySelect(cat.slug)}
-                    >
-                      View All {cat.name.replace('&amp;', '&')} <ArrowRight size={13} />
-                    </button>
-                  </div>
-
-                  <ProductGrid products={catProducts} totalCount={catProducts.length} />
+                  <ProductGrid
+                    products={catProducts}
+                    title={headerInfo.title}
+                    subtitle={headerInfo.subtitle}
+                    badge={headerInfo.badge}
+                    totalCount={catProducts.length}
+                    seeAllLink={`/shop?category=${cat.slug}`}
+                  />
                 </section>
               );
             })}
@@ -375,7 +363,7 @@ export function ShopClient({
               </button>
             </div>
           ) : (
-            <ProductGrid products={products} totalCount={products.length} />
+            <ProductGrid products={products} totalCount={products.length} hideHeader={true} />
           )
         )}
       </div>
