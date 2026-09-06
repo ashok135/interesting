@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Sparkles,
@@ -57,6 +57,12 @@ export function ShopClient({
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
   const [searchQuery] = useState<string | undefined>(initialSearch);
   const [sortBy, setSortBy] = useState<SortOption>('date');
+
+  // Sync state when URL searchParams change
+  useEffect(() => {
+    setSelectedCategory(initialCategory === 'all' ? undefined : initialCategory);
+    setSelectedSubcategory('All');
+  }, [initialCategory]);
 
   // Parse orderby and order for WooCommerce API
   const { orderbyParam, orderParam } = useMemo(() => {
