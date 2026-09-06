@@ -4,6 +4,7 @@
   right: 1.5rem;
   z-index: 99;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideUp {
@@ -120,12 +121,20 @@
   transform: translateX(2px);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .container {
-    bottom: 4.5rem;
     right: 0.75rem;
     left: 0.75rem;
   }
+
+  .withCapsule {
+    bottom: calc(4.65rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .withoutCapsule {
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .capsule {
     width: 100%;
     justify-content: space-between;

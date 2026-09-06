@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCartContext } from '@/store/CartContext';
@@ -10,6 +11,44 @@ export function FloatingCartBar() {
   const pathname = usePathname();
   const { itemCount, total, openDrawer, isDrawerOpen } = useCartContext();
 
+  const [isCapsuleVisible, setIsCapsuleVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const diff = currentScrollY - lastScrollY.current;
+
+      if (currentScrollY < 40) {
+        setIsCapsuleVisible(true);
+        lastScrollY.current = currentScrollY;
+        return;
+      }
+
+      if (diff > 8) {
+        setIsCapsuleVisible(false);
+      } else if (diff < -8) {
+        setIsCapsuleVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    const handleCapsuleEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ visible: boolean }>;
+      if (customEvent.detail !== undefined) {
+        setIsCapsuleVisible(customEvent.detail.visible);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('capsule-visibility', handleCapsuleEvent);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('capsule-visibility', handleCapsuleEvent);
+    };
+  }, []);
+
   // Hide floating cart bar if cart is empty, drawer is open, or on checkout / cart pages
   if (itemCount === 0 || isDrawerOpen || pathname === '/checkout' || pathname === '/cart') {
     return null;
@@ -18,7 +57,9 @@ export function FloatingCartBar() {
   const currentTotal = formatPrice(total);
 
   return (
-    <div className={styles.container}>
+    <div
+      className={`${styles.container} ${isCapsuleVisible ? styles.withCapsule : styles.withoutCapsule}`}
+    >
       <button className={styles.capsule} onClick={openDrawer} aria-label="View shopping cart">
         <div className={styles.left}>
           <div className={styles.bagIconWrap}>

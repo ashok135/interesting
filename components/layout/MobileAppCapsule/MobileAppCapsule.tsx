@@ -44,6 +44,14 @@ export function MobileAppCapsule() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Broadcast visibility to floating cart bar
+  useEffect(() => {
+    const isActuallyVisible = isVisible && !isDrawerOpen && pathname !== '/cart';
+    window.dispatchEvent(
+      new CustomEvent('capsule-visibility', { detail: { visible: isActuallyVisible } })
+    );
+  }, [isVisible, isDrawerOpen, pathname]);
+
   // Hide mobile capsule when cart drawer is open or on cart page
   if (isDrawerOpen || pathname === '/cart') {
     return null;
