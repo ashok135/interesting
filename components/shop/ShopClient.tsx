@@ -119,6 +119,36 @@ export function ShopClient({
 
 
 
+  // Group products by parent category when "All" is active
+  const categorySections = useMemo(() => {
+    const parentCats = categories
+      .filter((c) => c.parent === 0 && c.slug !== 'uncategorized')
+      .sort((a, b) => (a.menu_order || 0) - (b.menu_order || 0));
+
+    return parentCats
+      .map((cat) => {
+        const childIds = new Set(
+          categories.filter((c) => c.parent === cat.id).map((c) => c.id)
+        );
+
+        const sectionProducts = rawProducts.filter((p) => {
+          return p.categories?.some(
+            (c) =>
+              c.id === cat.id ||
+              c.slug === cat.slug ||
+              c.name.toLowerCase() === cat.name.toLowerCase() ||
+              childIds.has(c.id)
+          );
+        });
+
+        return {
+          category: cat,
+          products: sectionProducts,
+        };
+      })
+      .filter((s) => s.products.length > 0);
+  }, [categories, rawProducts]);
+
   const handleCategorySelect = (slug: string) => {
     const nextSlug = slug === 'all' || selectedCategory === slug ? undefined : slug;
     setSelectedCategory(nextSlug);
@@ -293,7 +323,7 @@ export function ShopClient({
           </div>
         )}
 
-        {/* 5. Products Display: Clean single grid */}
+        {/* 5. Products Display */}
         {isLoading && products.length === 0 ? (
           <ProductGridSkeleton count={8} />
         ) : products.length === 0 ? (
@@ -313,7 +343,40 @@ export function ShopClient({
               View All Products <ArrowRight size={16} />
             </button>
           </div>
+        ) : !selectedCategory && !searchQuery ? (
+          /* When "All" is active, display products grouped by category */
+          <div className={styles.categorySectionsWrapper}>
+            {categorySections.map(({ category: cat, products: catProducts }) => {
+              const CatIcon = CATEGORY_ICONS[cat.slug] || Sparkles;
+              return (
+                <section key={cat.id} className={styles.topicSection} aria-label={cat.name}>
+                  <div className={styles.topicHeader}>
+                    <div className={styles.topicTitleRow}>
+                      <div className={styles.topicIconWrap}>
+                        <CatIcon size={18} strokeWidth={2.2} />
+                      </div>
+                      <div className={styles.topicTitleInfo}>
+                        <h2 className={styles.topicTitle}>{cat.name.replace('&amp;', '&')}</h2>
+                        <span className={styles.topicCount}>{catProducts.length} items</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={styles.viewTopicBtn}
+                      onClick={() => handleCategorySelect(cat.slug)}
+                    >
+                      View All {cat.name.replace('&amp;', '&')} <ArrowRight size={13} />
+                    </button>
+                  </div>
+
+                  <ProductGrid products={catProducts} hideHeader={true} />
+                </section>
+              );
+            })}
+          </div>
         ) : (
+          /* Focused single category or search results */
           <ProductGrid products={products} totalCount={products.length} hideHeader={true} />
         )}
       </div>
