@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import type { WooProductCategory } from '@/types';
 import styles from './CuratedCategoryBento.module.css';
@@ -10,31 +11,7 @@ interface CuratedCategoryBentoProps {
   categories?: WooProductCategory[];
 }
 
-export function CuratedCategoryBento({ onSelectCategoryId, categories = [] }: CuratedCategoryBentoProps) {
-  const getCatId = (slug: string, fallbackId: number) => {
-    const found = categories.find(
-      (c) => c.slug === slug || c.name.toLowerCase().includes(slug.replace('-', ' '))
-    );
-    return found?.id || fallbackId;
-  };
-
-  const handleCardClick = (slug: string, fallbackId: number) => {
-    const catId = getCatId(slug, fallbackId);
-    if (onSelectCategoryId) {
-      onSelectCategoryId(catId);
-    }
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('select-category', { detail: { id: catId, slug } })
-      );
-    }
-    // Smooth scroll to the category explorer section
-    const target = document.getElementById('zepto-category-explorer');
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
+export function CuratedCategoryBento({ categories = [] }: CuratedCategoryBentoProps) {
   return (
     <section className={styles.bentoSection} aria-label="Curated Categories">
       <div className={styles.bentoCardContainer}>
@@ -56,11 +33,10 @@ export function CuratedCategoryBento({ onSelectCategoryId, categories = [] }: Cu
 
         {/* 2. Zepto/Blinkit Style 5-Card Bento Grid */}
         <div className={styles.bentoGrid}>
-          {/* Card 1: Left Tall Featured Card (Nuts - ID 25) */}
-          <button
-            type="button"
+          {/* Card 1: Left Tall Featured Card (Nuts) */}
+          <Link
+            href="/shop?category=nuts"
             className={`${styles.card} ${styles.tallCard}`}
-            onClick={() => handleCardClick('nuts', 25)}
             aria-label="Shop Nuts & Kaju Favourites"
           >
             <span className={styles.cardTitle}>
@@ -78,13 +54,12 @@ export function CuratedCategoryBento({ onSelectCategoryId, categories = [] }: Cu
             <div className={styles.startingPill}>
               Starting @ ₹249
             </div>
-          </button>
+          </Link>
 
-          {/* Card 2: Top Middle (Seeds - ID 26) */}
-          <button
-            type="button"
+          {/* Card 2: Top Middle (Seeds) */}
+          <Link
+            href="/shop?category=seeds"
             className={styles.card}
-            onClick={() => handleCardClick('seeds', 26)}
             aria-label="Shop Super Seeds & Berries"
           >
             <span className={styles.cardTitle}>
@@ -99,13 +74,12 @@ export function CuratedCategoryBento({ onSelectCategoryId, categories = [] }: Cu
                 className={styles.productImg}
               />
             </div>
-          </button>
+          </Link>
 
-          {/* Card 3: Top Right (Dry Fruits - ID 27) */}
-          <button
-            type="button"
+          {/* Card 3: Top Right (Dry Fruits) */}
+          <Link
+            href="/shop?category=dry-fruits"
             className={styles.card}
-            onClick={() => handleCardClick('dry-fruits', 27)}
             aria-label="Shop Royal Dry Fruits"
           >
             <span className={styles.cardTitle}>
@@ -120,13 +94,12 @@ export function CuratedCategoryBento({ onSelectCategoryId, categories = [] }: Cu
                 className={styles.productImg}
               />
             </div>
-          </button>
+          </Link>
 
-          {/* Card 4: Bottom Middle (Flavoured Nuts - ID 30) */}
-          <button
-            type="button"
+          {/* Card 4: Bottom Middle (Flavoured Nuts) */}
+          <Link
+            href="/shop?category=flavoured-nuts"
             className={styles.card}
-            onClick={() => handleCardClick('flavoured-nuts', 30)}
             aria-label="Shop Flavoured & Roasted Snacks"
           >
             <span className={styles.cardTitle}>
@@ -141,13 +114,12 @@ export function CuratedCategoryBento({ onSelectCategoryId, categories = [] }: Cu
                 className={styles.productImg}
               />
             </div>
-          </button>
+          </Link>
 
-          {/* Card 5: Bottom Right (Premium Gift Packs - ID 33) */}
-          <button
-            type="button"
+          {/* Card 5: Bottom Right (Premium Gift Packs) */}
+          <Link
+            href="/shop?category=premium-gift-packs"
             className={styles.card}
-            onClick={() => handleCardClick('premium-gift-packs', 33)}
             aria-label="Shop Gift Boxes & Hampers"
           >
             <span className={styles.cardTitle}>
@@ -162,14 +134,14 @@ export function CuratedCategoryBento({ onSelectCategoryId, categories = [] }: Cu
                 className={styles.productImg}
               />
             </div>
-          </button>
+          </Link>
         </div>
 
-        {/* 3. Bottom Promotion Strip (Premium Gift Packs - ID 33) */}
-        <button
-          type="button"
+        {/* 3. Bottom Promotion Strip (Premium Gift Packs) */}
+        <Link
+          href="/shop?category=premium-gift-packs"
           className={styles.promoStrip}
-          onClick={() => handleCardClick('premium-gift-packs', 33)}
+          aria-label="Explore Royal Keepsake Hampers"
         >
           <div className={styles.promoLeft}>
             <div className={styles.promoIconWrap}>
@@ -193,7 +165,7 @@ export function CuratedCategoryBento({ onSelectCategoryId, categories = [] }: Cu
           <div className={styles.promoArrowBtn}>
             <ChevronRight size={18} />
           </div>
-        </button>
+        </Link>
       </div>
     </section>
   );

@@ -19,7 +19,6 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { CategoryBar, ProductGrid } from '@/components/product';
-import { getCategoryHeader } from '@/components/product/categoryHeaders';
 import { ProductGridSkeleton } from '@/components/ui';
 import { useProducts } from '@/hooks/useProducts';
 import type { WooProduct, WooProductCategory } from '@/types';
@@ -118,35 +117,7 @@ export function ShopClient({
     });
   }, [rawProducts, selectedSubcategory]);
 
-  // Group products by parent category when "All" is active
-  const categorySections = useMemo(() => {
-    const parentCats = categories
-      .filter((c) => c.parent === 0 && c.slug !== 'uncategorized')
-      .sort((a, b) => (a.menu_order || 0) - (b.menu_order || 0));
 
-    return parentCats
-      .map((cat) => {
-        const childIds = new Set(
-          categories.filter((c) => c.parent === cat.id).map((c) => c.id)
-        );
-
-        const sectionProducts = rawProducts.filter((p) => {
-          return p.categories?.some(
-            (c) =>
-              c.id === cat.id ||
-              c.slug === cat.slug ||
-              c.name.toLowerCase() === cat.name.toLowerCase() ||
-              childIds.has(c.id)
-          );
-        });
-
-        return {
-          category: cat,
-          products: sectionProducts,
-        };
-      })
-      .filter((s) => s.products.length > 0);
-  }, [categories, rawProducts]);
 
   const handleCategorySelect = (slug: string) => {
     const nextSlug = slug === 'all' || selectedCategory === slug ? undefined : slug;
@@ -322,49 +293,28 @@ export function ShopClient({
           </div>
         )}
 
-        {/* 5. Products Display: Grouped by Category Topics when All Items is active */}
-        {!selectedCategory && !searchQuery ? (
-          <div className={styles.categorySectionsWrapper}>
-            {categorySections.map(({ category: cat, products: catProducts }) => {
-              const headerInfo = getCategoryHeader(cat.slug, cat.name);
-              return (
-                <section key={cat.id} className={styles.topicSection} aria-label={cat.name}>
-                  <ProductGrid
-                    products={catProducts}
-                    title={headerInfo.title}
-                    subtitle={headerInfo.subtitle}
-                    badge={headerInfo.badge}
-                    totalCount={catProducts.length}
-                    seeAllLink={`/shop?category=${cat.slug}`}
-                  />
-                </section>
-              );
-            })}
+        {/* 5. Products Display: Clean single grid */}
+        {isLoading && products.length === 0 ? (
+          <ProductGridSkeleton count={8} />
+        ) : products.length === 0 ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIconWrap}>
+              <Sparkles size={32} />
+            </div>
+            <h2 className={styles.emptyTitle}>No gourmet items found</h2>
+            <p className={styles.emptySubtitle}>
+              We couldn&apos;t find any items matching your selected filter. Explore our full pantry.
+            </p>
+            <button
+              type="button"
+              className={styles.emptyBtn}
+              onClick={clearAllFilters}
+            >
+              View All Products <ArrowRight size={16} />
+            </button>
           </div>
         ) : (
-          /* Focused single category or search results */
-          isLoading && products.length === 0 ? (
-            <ProductGridSkeleton count={8} />
-          ) : products.length === 0 ? (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIconWrap}>
-                <Sparkles size={32} />
-              </div>
-              <h2 className={styles.emptyTitle}>No gourmet items found</h2>
-              <p className={styles.emptySubtitle}>
-                We couldn&apos;t find any items matching your selected filter. Explore our full pantry.
-              </p>
-              <button
-                type="button"
-                className={styles.emptyBtn}
-                onClick={clearAllFilters}
-              >
-                View All Products <ArrowRight size={16} />
-              </button>
-            </div>
-          ) : (
-            <ProductGrid products={products} totalCount={products.length} hideHeader={true} />
-          )
+          <ProductGrid products={products} totalCount={products.length} hideHeader={true} />
         )}
       </div>
     </div>
