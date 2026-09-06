@@ -1,28 +1,17 @@
 /**
  * WooCommerce REST API base client
  *
- * Supports two authentication modes (auto-detected from env vars):
- *  1. Consumer Key/Secret  → WC_CONSUMER_KEY + WC_CONSUMER_SECRET
- *  2. Application Password → WC_APP_USER + WC_APP_PASSWORD  (recommended for LocalWP)
- *
- * LocalWP (Lightning server) often strips the Authorization header from
- * query-string auth. Application Passwords bypass this issue.
+ * Supports two authentication modes (auto-detected from target URL):
+ *  1. LocalWP direct (http://interesting.local) → WordPress Application Password
+ *  2. Live Link Tunnel (*.localsite.io) → Tunnel Basic Auth + Consumer Key/Secret
  */
 
-let WC_URL = process.env.NEXT_PUBLIC_WC_URL || 'https://gusty-gravity.localsite.io';
-if (WC_URL.includes('interesting.local') && (process.env.VERCEL || process.env.NODE_ENV === 'production')) {
-  WC_URL = 'https://gusty-gravity.localsite.io';
-}
 const CONSUMER_KEY = process.env.WC_CONSUMER_KEY || 'ck_41bc01e3bd8cbef7ab775b9fed136778b1efd727';
 const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET || 'cs_3b1595d0742b1850ed73df5cd4f8e3405e1212ad';
-const APP_USER = process.env.WC_APP_USER || '';
-const APP_PASSWORD = process.env.WC_APP_PASSWORD || '';
+const APP_USER = process.env.WC_APP_USER || 'ashok';
+const APP_PASSWORD = process.env.WC_APP_PASSWORD || 'G4J1 hiEc rSBt ALs7 Ftyh 6mBf';
 const TUNNEL_USER = process.env.WC_TUNNEL_USER || 'pizzas';
 const TUNNEL_PASSWORD = process.env.WC_TUNNEL_PASSWORD || 'tender';
-
-// Determine auth mode
-const IS_TUNNEL = WC_URL.includes('localsite.io') || (TUNNEL_USER.length > 0 && TUNNEL_PASSWORD.length > 0);
-const USE_APP_PASSWORD = !IS_TUNNEL && APP_USER.length > 0 && APP_PASSWORD.length > 0;
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -34,26 +23,32 @@ interface RequestOptions {
   revalidate?: number;
 }
 
-function buildAuthHeaders(): Record<string, string> {
-  if (IS_TUNNEL) {
-    // When using LocalWP Live Link tunnel, send tunnel credentials to pass the proxy
-    const tunnelCreds = Buffer.from(`${TUNNEL_USER}:${TUNNEL_PASSWORD}`).toString('base64');
-    return { Authorization: `Basic ${tunnelCreds}` };
+function getCandidateBaseUrls(): string[] {
+  const envUrl = (process.env.WC_URL || process.env.NEXT_PUBLIC_WC_URL || '').replace(/\/$/, '');
+  const isVercel = Boolean(process.env.VERCEL);
+
+  const list: string[] = [];
+  if (isVercel) {
+    if (envUrl && !envUrl.includes('.local')) list.push(envUrl);
+    list.push('https://gusty-gravity.localsite.io');
+  } else {
+    // Local dev: prefer direct lightning server domain
+    if (envUrl && envUrl.includes('.local')) list.push(envUrl);
+    list.push('http://interesting.local');
+    if (envUrl && !envUrl.includes('.local')) list.push(envUrl);
+    list.push('https://gusty-gravity.localsite.io');
   }
-  if (USE_APP_PASSWORD) {
-    // Application Password: Basic auth with WP username + app password
-    const credentials = Buffer.from(`${APP_USER}:${APP_PASSWORD}`).toString('base64');
-    return { Authorization: `Basic ${credentials}` };
-  }
-  // Consumer key/secret via query string (handled in buildUrl)
-  return {};
+
+  return Array.from(new Set(list.filter(Boolean)));
 }
 
-function buildUrl(endpoint: string, params?: Record<string, string | number | boolean>): string {
-  const url = new URL(`${WC_URL}/wp-json/wc/v3/${endpoint}`);
+let preferredBaseUrl: string | null = null;
 
-  // When using Tunnel or when NOT using app password, send consumer key/secret in query
-  if (IS_TUNNEL || !USE_APP_PASSWORD) {
+function buildUrlForBase(baseUrl: string, endpoint: string, params?: Record<string, string | number | boolean>): string {
+  const url = new URL(`${baseUrl}/wp-json/wc/v3/${endpoint}`);
+  const isTunnel = baseUrl.includes('localsite.io');
+
+  if (isTunnel) {
     url.searchParams.set('consumer_key', CONSUMER_KEY);
     url.searchParams.set('consumer_secret', CONSUMER_SECRET);
   }
@@ -67,6 +62,21 @@ function buildUrl(endpoint: string, params?: Record<string, string | number | bo
   return url.toString();
 }
 
+function buildHeadersForBase(baseUrl: string): Record<string, string> {
+  const isTunnel = baseUrl.includes('localsite.io');
+  if (isTunnel && TUNNEL_USER && TUNNEL_PASSWORD) {
+    const tunnelCreds = Buffer.from(`${TUNNEL_USER}:${TUNNEL_PASSWORD}`).toString('base64');
+    return { Authorization: `Basic ${tunnelCreds}` };
+  }
+
+  if (!isTunnel && APP_USER && APP_PASSWORD) {
+    const credentials = Buffer.from(`${APP_USER}:${APP_PASSWORD}`).toString('base64');
+    return { Authorization: `Basic ${credentials}` };
+  }
+
+  return {};
+}
+
 // In-memory cache for fast dev/SSR queries without waiting for LocalWP
 const memoryCache = new Map<string, { data: unknown; expires: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -74,10 +84,14 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 export async function wcFetch<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, params, cache = 'default', revalidate = 300 } = options;
 
-  const url = buildUrl(endpoint, params);
-  const cacheKey = `${method}:${url}`;
+  const candidates = getCandidateBaseUrls();
+  const orderedUrls = preferredBaseUrl
+    ? [preferredBaseUrl, ...candidates.filter((u) => u !== preferredBaseUrl)]
+    : candidates;
 
-  // Serve from memory cache if available for GET, unless no-store is requested
+  const cacheKey = `${method}:${endpoint}:${JSON.stringify(params || {})}`;
+
+  // Serve from memory cache if available for GET
   if (method === 'GET' && cache !== 'no-store') {
     const cached = memoryCache.get(cacheKey);
     if (cached && Date.now() < cached.expires) {
@@ -85,48 +99,63 @@ export async function wcFetch<T>(endpoint: string, options: RequestOptions = {})
     }
   }
 
-  const authHeaders = buildAuthHeaders();
+  let lastError: Error | null = null;
 
-  const fetchOptions: RequestInit = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders,
-    },
-    cache: cache === 'no-store' ? 'no-store' : undefined,
-    next: cache === 'no-store' ? { revalidate: 0 } : { revalidate },
-  };
-
-  if (body) {
-    fetchOptions.body = JSON.stringify(body);
-  }
-
-  const response = await fetch(url, fetchOptions);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    let cleanMessage = `Request failed with status ${response.status}`;
+  for (const baseUrl of orderedUrls) {
     try {
-      const parsed = JSON.parse(errorText);
-      if (parsed.message) {
-        cleanMessage = parsed.message.replace(/<[^>]*>/g, '').trim();
+      const url = buildUrlForBase(baseUrl, endpoint, params);
+      const authHeaders = buildHeadersForBase(baseUrl);
+
+      const fetchOptions: RequestInit = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+        cache: cache === 'no-store' ? 'no-store' : undefined,
+        next: cache === 'no-store' ? { revalidate: 0 } : { revalidate },
+      };
+
+      if (body) {
+        fetchOptions.body = JSON.stringify(body);
       }
-    } catch {
-      cleanMessage = errorText.replace(/<[^>]*>/g, '').trim() || cleanMessage;
+
+      const response = await fetch(url, fetchOptions);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let cleanMessage = `Request to ${baseUrl} failed with status ${response.status}`;
+        try {
+          const parsed = JSON.parse(errorText);
+          if (parsed.message) {
+            cleanMessage = parsed.message.replace(/<[^>]*>/g, '').trim();
+          }
+        } catch {
+          cleanMessage = errorText.replace(/<[^>]*>/g, '').trim() || cleanMessage;
+        }
+        const err = new Error(cleanMessage);
+        (err as unknown as { status: number }).status = response.status;
+        lastError = err;
+        // Try next candidate base URL
+        continue;
+      }
+
+      const data = (await response.json()) as T;
+      preferredBaseUrl = baseUrl;
+
+      if (method === 'GET' && cache !== 'no-store') {
+        memoryCache.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS });
+      } else if (method !== 'GET') {
+        memoryCache.clear();
+      }
+
+      return data;
+    } catch (err: unknown) {
+      lastError = err instanceof Error ? err : new Error(String(err));
     }
-    const err = new Error(cleanMessage);
-    (err as unknown as { status: number }).status = response.status;
-    throw err;
   }
 
-  const data = await response.json() as T;
-  if (method === 'GET' && cache !== 'no-store') {
-    memoryCache.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS });
-  } else if (method !== 'GET') {
-    // Invalidate cached GET queries on any creation or modification
-    memoryCache.clear();
-  }
-  return data;
+  throw lastError || new Error(`All WooCommerce endpoints failed for ${endpoint}`);
 }
 
 export function clearWcCache(): void {

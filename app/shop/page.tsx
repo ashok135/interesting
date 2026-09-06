@@ -16,19 +16,32 @@ export const metadata: Metadata = {
   description: 'Browse all premium nuts and dry fruits. Filter by category.',
 };
 
+async function safeFetch<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error('ShopPage fetch error:', err);
+    return fallback;
+  }
+}
+
 export default async function ShopPage({ searchParams }: ShopPageProps) {
   const params = await searchParams;
   const { category, search, page = '1', orderby = 'date' } = params;
 
   const [products, categories] = await Promise.all([
-    getProducts({
-      category,
-      search,
-      page: parseInt(page, 10),
-      orderby: orderby as 'date' | 'popularity' | 'rating' | 'price',
-      perPage: 100,
-    }),
-    getCategories(),
+    safeFetch(
+      () =>
+        getProducts({
+          category,
+          search,
+          page: parseInt(page, 10),
+          orderby: orderby as 'date' | 'popularity' | 'rating' | 'price',
+          perPage: 100,
+        }),
+      []
+    ),
+    safeFetch(() => getCategories(), []),
   ]);
 
   return (
