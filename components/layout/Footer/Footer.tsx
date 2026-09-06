@@ -2,10 +2,6 @@
 
 import Link from 'next/link';
 import {
-  Truck,
-  ShieldCheck,
-  Award,
-  CreditCard,
   Mail,
   Phone,
   MapPin,
@@ -17,50 +13,6 @@ import styles from './Footer.module.css';
 export function Footer() {
   return (
     <footer className={styles.footer}>
-      {/* 1. Top Trust & Assurance Banner */}
-      <div className={styles.trustBar}>
-        <div className={styles.trustInner}>
-          <div className={styles.trustItem}>
-            <div className={styles.trustIcon}>
-              <Truck size={22} strokeWidth={1.75} />
-            </div>
-            <div className={styles.trustContent}>
-              <span className={styles.trustTitle}>Pan-India Express</span>
-              <span className={styles.trustDesc}>Fast doorstep delivery in 2-4 days</span>
-            </div>
-          </div>
-
-          <div className={styles.trustItem}>
-            <div className={styles.trustIcon}>
-              <Award size={22} strokeWidth={1.75} />
-            </div>
-            <div className={styles.trustContent}>
-              <span className={styles.trustTitle}>100% Farm Sourced</span>
-              <span className={styles.trustDesc}>Zero adulteration & pure harvest</span>
-            </div>
-          </div>
-
-          <div className={styles.trustItem}>
-            <div className={styles.trustIcon}>
-              <ShieldCheck size={22} strokeWidth={1.75} />
-            </div>
-            <div className={styles.trustContent}>
-              <span className={styles.trustTitle}>Aroma-Lock Packing</span>
-              <span className={styles.trustDesc}>Nitrogen flushed vacuum tins</span>
-            </div>
-          </div>
-
-          <div className={styles.trustItem}>
-            <div className={styles.trustIcon}>
-              <CreditCard size={22} strokeWidth={1.75} />
-            </div>
-            <div className={styles.trustContent}>
-              <span className={styles.trustTitle}>Safe & Flexible Pay</span>
-              <span className={styles.trustDesc}>UPI, Cards & Cash on Delivery</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* 2. Main Footer Navigation & Brand Section */}
       <div className={styles.mainContent}>

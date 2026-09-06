@@ -12,65 +12,6 @@
   overflow: hidden;
 }
 
-/* 1. Top Trust & Assurance Bar */
-.trustBar {
-  border-bottom: 1px solid var(--color-border, rgba(226, 232, 240, 0.12));
-  background: rgba(0, 0, 0, 0.04);
-  backdrop-filter: blur(8px);
-}
-
-.trustInner {
-  max-width: var(--max-width, 1280px);
-  margin: 0 auto;
-  padding: 1.75rem 1.5rem;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
-}
-
-.trustItem {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.trustIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(20, 83, 45, 0.12);
-  color: var(--color-brand-green, #15803d);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid rgba(20, 83, 45, 0.2);
-  transition: transform 0.2s ease;
-}
-
-.trustItem:hover .trustIcon {
-  transform: translateY(-2px);
-  background: rgba(20, 83, 45, 0.2);
-}
-
-.trustContent {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.trustTitle {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--color-text, #0f172a);
-  letter-spacing: -0.01em;
-}
-
-.trustDesc {
-  font-size: 0.75rem;
-  color: var(--color-text-muted, #64748b);
-  line-height: 1.35;
-}
 
 /* 2. Main Content Layout */
 .mainContent {
@@ -385,30 +326,6 @@
     padding-bottom: 5.5rem;
   }
 
-  .trustInner {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    padding: 1.25rem 1rem;
-  }
-
-  .trustItem {
-    gap: 0.65rem;
-  }
-
-  .trustIcon {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-  }
-
-  .trustTitle {
-    font-size: 0.8rem;
-  }
-
-  .trustDesc {
-    font-size: 0.7rem;
-  }
-
   .mainContent {
     padding: 2.25rem 1rem 1.75rem;
   }
@@ -459,12 +376,5 @@
 
   .paymentMethods {
     justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .trustInner {
-    grid-template-columns: 1fr;
-    gap: 0.85rem;
   }
 }
