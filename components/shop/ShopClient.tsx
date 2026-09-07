@@ -81,35 +81,86 @@ export function ShopClient({
     }
   }, [sortBy]);
 
-  // TanStack Query with in-memory caching
-  const { data: rawProducts = [], isFetching, isLoading } = useProducts({
-    category: selectedCategory,
-    search: searchQuery,
-    orderby: orderbyParam,
-    order: orderParam,
-    perPage: 100,
-    initialData:
-      !selectedCategory || selectedCategory === initialCategory ? initialProducts : undefined,
-  });
-
   // Identify active parent category
   const activeParentCat = useMemo(() => {
     if (!selectedCategory) return null;
     return categories.find((c) => c.slug === selectedCategory) || null;
   }, [categories, selectedCategory]);
 
-  // Child subcategories for the active parent
+  // Child subcategories for the active parent (only subcategories with in-stock products)
   const subcategoryList = useMemo(() => {
     if (!activeParentCat) return [];
-    return categories.filter((c) => c.parent === activeParentCat.id);
+    return categories.filter((c) => c.parent === activeParentCat.id && c.count > 0);
   }, [categories, activeParentCat]);
+
+  // Child category IDs for the active parent
+  const activeChildCatIds = useMemo(() => {
+    if (!activeParentCat) return new Set<number>();
+    return new Set(categories.filter((c) => c.parent === activeParentCat.id).map((c) => c.id));
+  }, [categories, activeParentCat]);
+
+  // Immediate in-memory products from initialProducts for active category (0ms instant switch)
+  const localCategoryProducts = useMemo(() => {
+    if (!activeParentCat) return initialProducts;
+    return initialProducts.filter((p) =>
+      p.categories?.some(
+        (c) =>
+          c.id === activeParentCat.id ||
+          c.slug === activeParentCat.slug ||
+          c.name.toLowerCase() === activeParentCat.name.toLowerCase() ||
+          activeChildCatIds.has(c.id)
+      )
+    );
+  }, [activeParentCat, activeChildCatIds, initialProducts]);
+
+  // TanStack Query with in-memory caching
+  const {
+    data: fetchedProducts = [],
+    isFetching,
+    isLoading,
+    isPlaceholderData,
+  } = useProducts({
+    category: selectedCategory,
+    search: searchQuery,
+    orderby: orderbyParam,
+    order: orderParam,
+    perPage: 100,
+    initialData: localCategoryProducts.length > 0 ? localCategoryProducts : undefined,
+  });
+
+  // Filter products strictly for the selected category so placeholder data from previous categories NEVER leaks
+  const categoryProducts = useMemo(() => {
+    if (!selectedCategory) {
+      return fetchedProducts.length > 0 ? fetchedProducts : initialProducts;
+    }
+
+    // If query is currently holding placeholderData from a different category query,
+    // immediately use the pre-filtered local products for 0ms transition!
+    const candidateList =
+      isPlaceholderData && localCategoryProducts.length > 0
+        ? localCategoryProducts
+        : fetchedProducts.length > 0
+        ? fetchedProducts
+        : localCategoryProducts;
+
+    return candidateList.filter((p) => {
+      if (!activeParentCat) return true;
+      return p.categories?.some(
+        (c) =>
+          c.id === activeParentCat.id ||
+          c.slug === activeParentCat.slug ||
+          c.name.toLowerCase() === activeParentCat.name.toLowerCase() ||
+          activeChildCatIds.has(c.id)
+      );
+    });
+  }, [selectedCategory, isPlaceholderData, localCategoryProducts, fetchedProducts, initialProducts, activeParentCat, activeChildCatIds]);
 
   // Filter products by subcategory if selected
   const products = useMemo(() => {
-    if (selectedSubcategory === 'All') return rawProducts;
+    if (selectedSubcategory === 'All') return categoryProducts;
 
     const cleanSub = selectedSubcategory.toLowerCase().replace(/\(.*?\)/g, '').trim();
-    return rawProducts.filter((p) => {
+    return categoryProducts.filter((p) => {
       const matchCat = p.categories?.some((c) => {
         const catName = c.name.toLowerCase();
         return catName.includes(cleanSub) || cleanSub.includes(catName);
@@ -121,9 +172,7 @@ export function ShopClient({
       const shortDesc = (p.short_description || '').toLowerCase();
       return name.includes(cleanSub) || desc.includes(cleanSub) || shortDesc.includes(cleanSub);
     });
-  }, [rawProducts, selectedSubcategory]);
-
-
+  }, [categoryProducts, selectedSubcategory]);
 
   // Group products by parent category when "All" is active
   const categorySections = useMemo(() => {
@@ -131,13 +180,15 @@ export function ShopClient({
       .filter((c) => c.parent === 0 && c.slug !== 'uncategorized')
       .sort((a, b) => (a.menu_order || 0) - (b.menu_order || 0));
 
+    const sourceProducts = categoryProducts.length > 0 ? categoryProducts : initialProducts;
+
     return parentCats
       .map((cat) => {
         const childIds = new Set(
           categories.filter((c) => c.parent === cat.id).map((c) => c.id)
         );
 
-        const sectionProducts = rawProducts.filter((p) => {
+        const sectionProducts = sourceProducts.filter((p) => {
           return p.categories?.some(
             (c) =>
               c.id === cat.id ||
@@ -153,10 +204,10 @@ export function ShopClient({
         };
       })
       .filter((s) => s.products.length > 0);
-  }, [categories, rawProducts]);
+  }, [categories, categoryProducts, initialProducts]);
 
   const handleCategorySelect = (slug: string) => {
-    const nextSlug = slug === 'all' || selectedCategory === slug ? undefined : slug;
+    const nextSlug = slug === 'all' ? undefined : slug;
     setSelectedCategory(nextSlug);
     setSelectedSubcategory('All');
 
@@ -182,7 +233,7 @@ export function ShopClient({
     ? activeParentCat.name.replace('&amp;', '&')
     : 'All Gourmet Pantry Essentials';
 
-  const totalProductsCount = selectedCategory ? products.length : rawProducts.length;
+  const totalProductsCount = selectedCategory ? products.length : categoryProducts.length;
 
   return (
     <div className={styles.page}>
@@ -298,7 +349,7 @@ export function ShopClient({
                 {activeParentCat?.name.replace('&amp;', '&')}
                 <button
                   type="button"
-                  onClick={() => handleCategorySelect(selectedCategory)}
+                  onClick={clearAllFilters}
                   aria-label="Remove category filter"
                   className={styles.removePillBtn}
                 >
