@@ -15,6 +15,7 @@ import {
   Store,
   Sparkles,
   X,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '@/store/AuthContext';
 import { useCartContext } from '@/store/CartContext';
@@ -253,6 +254,20 @@ export function Header() {
                     <span className={styles.drawerItemText}>Profile &amp; Security</span>
                     <ChevronRight size={14} className={styles.drawerChevron} />
                   </Link>
+
+                  <button
+                    type="button"
+                    className={styles.drawerListItem}
+                    onClick={() => {
+                      setDrawerOpen(false);
+                      window.dispatchEvent(new CustomEvent('open-pwa-install'));
+                    }}
+                    style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit' }}
+                  >
+                    <Download size={17} className={styles.drawerItemIcon} color="#f59e0b" />
+                    <span className={styles.drawerItemText} style={{ fontWeight: 600, color: '#f59e0b' }}>Install / Download App</span>
+                    <span className={styles.drawerBadge}>PWA</span>
+                  </button>
                 </div>
               </div>
 

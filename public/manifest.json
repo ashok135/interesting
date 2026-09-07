@@ -1,22 +1,58 @@
 {
-  "name": "Kaju & Co. — Gourmet Quick Pantry",
-  "short_name": "Kaju & Co.",
-  "description": "Direct Orchard Harvest, 100% Zero Adulteration Premium Nuts & Dry Fruits Delivered Fast",
-  "start_url": "/",
+  "id": "/?source=pwa",
+  "name": "Interesting — Gourmet Quick Pantry",
+  "short_name": "Interesting",
+  "description": "15–30 Mins Express Delivery. Direct Orchard Harvest | 100% Zero Adulteration King Grade Cashews & Gourmet Dry Fruits.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#0d3821",
   "theme_color": "#0d3821",
   "orientation": "portrait",
+  "categories": ["shopping", "food", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pantry Store",
+      "short_name": "Store",
+      "description": "Browse premium dry fruits & nuts",
+      "url": "/shop?source=pwa_shortcut",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Wishlist",
+      "short_name": "Wishlist",
+      "description": "View saved gourmet favorites",
+      "url": "/wishlist?source=pwa_shortcut",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

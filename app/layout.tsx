@@ -5,12 +5,14 @@ import { ThemeProvider } from '@/store/ThemeContext';
 import { AuthProvider } from '@/store/AuthContext';
 import { AnnouncementBar, Header, Footer, MobileAppCapsule } from '@/components/layout';
 import { CartDrawer, FloatingCartBar } from '@/components/cart';
+import { PwaInstallPrompt } from '@/components/pwa';
 
 export const viewport: Viewport = {
   themeColor: '#0d3821',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {
@@ -23,8 +25,17 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'Interesting',
+  },
+  icons: {
+    icon: [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
   keywords: ['cashews', 'dry fruits', 'gourmet pantry', 'express delivery', 'GI certified'],
   openGraph: {
@@ -61,6 +72,7 @@ export default function RootLayout({
                     <CartDrawer />
                     <FloatingCartBar />
                     <MobileAppCapsule />
+                    <PwaInstallPrompt />
                   </WishlistProvider>
                 </ToastProvider>
               </CartProvider>
