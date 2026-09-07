@@ -42,6 +42,21 @@ export function useCart(): CartState & {
     saveCart(items);
   }, [items]);
 
+  // Listen for logout event to immediately clear cart
+  useEffect(() => {
+    const handleLogout = () => {
+      setItems([]);
+      try {
+        localStorage.removeItem(CART_STORAGE_KEY);
+      } catch {
+        // Storage unavailable
+      }
+    };
+
+    window.addEventListener('auth:logout', handleLogout);
+    return () => window.removeEventListener('auth:logout', handleLogout);
+  }, []);
+
   const addItem = useCallback((newItem: Omit<CartItem, 'quantity'>) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.productId === newItem.productId);
@@ -72,6 +87,11 @@ export function useCart(): CartState & {
 
   const clearCart = useCallback(() => {
     setItems([]);
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } catch {
+      // Storage unavailable
+    }
   }, []);
 
   return {

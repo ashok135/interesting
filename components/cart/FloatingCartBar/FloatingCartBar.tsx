@@ -49,8 +49,9 @@ export function FloatingCartBar() {
     };
   }, []);
 
-  // Hide floating cart bar if cart is empty, drawer is open, or on checkout / cart pages
-  if (itemCount === 0 || isDrawerOpen || pathname === '/checkout' || pathname === '/cart') {
+  // Hide floating cart bar if cart is empty, drawer is open, or on checkout, cart, or auth pages
+  const isAuthOrSpecialPage = ['/checkout', '/cart', '/login', '/signup', '/forgot-password', '/reset-password'].includes(pathname);
+  if (itemCount === 0 || isDrawerOpen || isAuthOrSpecialPage) {
     return null;
   }
 

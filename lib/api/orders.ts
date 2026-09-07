@@ -43,3 +43,28 @@ export async function getOrder(orderId: number): Promise<WooOrder> {
 
   return wcFetch<WooOrder>(`orders/${orderId}`);
 }
+
+export async function cancelOrder(orderId: number, reason?: string): Promise<WooOrder> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/orders', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ orderId, reason }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to cancel order.');
+    }
+    return data.order as WooOrder;
+  }
+
+  return wcFetch<WooOrder>(`orders/${orderId}`, {
+    method: 'PUT',
+    body: {
+      status: 'cancelled',
+      customer_note: reason ? `Cancelled by customer: ${reason}` : 'Cancelled by customer',
+    },
+  });
+}

@@ -42,6 +42,8 @@ export interface WooOrder {
   id: number;
   status: string;
   total: string;
+  customer_id?: number;
+  customer_note?: string;
   payment_method?: string;
   payment_method_title?: string;
   billing: OrderBilling;

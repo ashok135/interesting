@@ -4,6 +4,9 @@ import { wcFetch, clearWcCache } from '@/lib/api/client';
 import { updateCustomer } from '@/lib/api/customers';
 import type { OrderPayload, WooOrder } from '@/types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(req: NextRequest) {
   try {
     const sessionUser = await getCurrentUser(req);
@@ -147,6 +150,86 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     console.error('Get order error:', error);
     const message = error instanceof Error ? error.message : 'Failed to retrieve order.';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const sessionUser = await getCurrentUser(req);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: 'Please sign in to cancel your order.' },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const orderId = Number(body.id || body.orderId);
+    const reason = (body.reason || 'Cancelled by customer').trim();
+
+    if (!orderId || isNaN(orderId)) {
+      return NextResponse.json(
+        { error: 'Valid Order ID is required.' },
+        { status: 400 }
+      );
+    }
+
+    // Retrieve the existing order from WooCommerce
+    const existingOrder = await wcFetch<WooOrder>(`orders/${orderId}`, { cache: 'no-store' });
+    if (!existingOrder || !existingOrder.id) {
+      return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
+    }
+
+    // Security check: order customer ID or email must match logged-in user
+    const orderCustomerId = existingOrder.customer_id ? Number(existingOrder.customer_id) : null;
+    const sessionUserId = sessionUser.id ? Number(sessionUser.id) : null;
+    const orderEmail = existingOrder.billing?.email?.toLowerCase().trim();
+    const sessionEmail = sessionUser.email?.toLowerCase().trim();
+
+    const isOwner =
+      (orderCustomerId && sessionUserId && orderCustomerId === sessionUserId) ||
+      (orderEmail && sessionEmail && orderEmail === sessionEmail);
+
+    if (!isOwner) {
+      return NextResponse.json(
+        { error: 'You do not have permission to cancel this order.' },
+        { status: 403 }
+      );
+    }
+
+    // Check if order is in a cancellable status
+    const currentStatus = (existingOrder.status || '').toLowerCase();
+    if (['completed', 'cancelled', 'refunded', 'failed'].includes(currentStatus)) {
+      return NextResponse.json(
+        { error: `Order #${orderId} cannot be cancelled because it is already ${currentStatus}.` },
+        { status: 400 }
+      );
+    }
+
+    // Update status to 'cancelled' in WooCommerce
+    const notePrefix = existingOrder.customer_note ? `${existingOrder.customer_note} | ` : '';
+    const updatedNote = `${notePrefix}Cancelled by customer: ${reason}`;
+
+    const updatedOrder = await wcFetch<WooOrder>(`orders/${orderId}`, {
+      method: 'PUT',
+      body: {
+        status: 'cancelled',
+        customer_note: updatedNote,
+      },
+    });
+
+    // Invalidate caches so the updated status reflects immediately
+    clearWcCache();
+
+    return NextResponse.json({
+      success: true,
+      message: `Order #${orderId} has been cancelled successfully.`,
+      order: updatedOrder,
+    });
+  } catch (error: unknown) {
+    console.error('Cancel order error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to cancel order.';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

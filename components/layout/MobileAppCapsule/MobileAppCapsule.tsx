@@ -52,8 +52,8 @@ export function MobileAppCapsule() {
     );
   }, [isVisible, isDrawerOpen, pathname]);
 
-  // Hide mobile capsule when cart drawer is open or on cart page
-  if (isDrawerOpen || pathname === '/cart') {
+  // Hide mobile capsule when cart drawer is open or on cart / checkout pages
+  if (isDrawerOpen || pathname === '/cart' || pathname === '/checkout') {
     return null;
   }
 

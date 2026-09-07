@@ -24,8 +24,8 @@ import { ThemeToggle } from '@/components/ui';
 import styles from './Header.module.css';
 
 export function Header() {
-  const { itemCount, openDrawer } = useCartContext();
-  const { wishlistCount } = useWishlist();
+  const { itemCount, openDrawer, clearCart } = useCartContext();
+  const { wishlistCount, clearWishlist } = useWishlist();
   const { user, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -274,6 +274,8 @@ export function Header() {
                   className={styles.drawerLogoutBtn}
                   onClick={() => {
                     setDrawerOpen(false);
+                    clearCart();
+                    clearWishlist();
                     logout();
                   }}
                 >

@@ -111,6 +111,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setCustomer(null);
       setOrders([]);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('intersting_cart');
+          localStorage.removeItem('intersting_wishlist_ids');
+          window.dispatchEvent(new Event('auth:logout'));
+        } catch {
+          // Ignore localStorage errors
+        }
+      }
     } catch (err) {
       console.error('Logout error:', err);
     }

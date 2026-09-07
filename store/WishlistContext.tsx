@@ -48,6 +48,21 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
   }, [wishlistIds, isHydrated]);
 
+  // Clear wishlist immediately on logout
+  useEffect(() => {
+    const handleLogout = () => {
+      setWishlistIds([]);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener('auth:logout', handleLogout);
+    return () => window.removeEventListener('auth:logout', handleLogout);
+  }, []);
+
   const isInWishlist = useCallback(
     (productId: number) => wishlistIds.includes(productId),
     [wishlistIds]

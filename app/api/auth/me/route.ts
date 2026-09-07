@@ -4,6 +4,9 @@ import { findCustomerByEmail, getCustomerById, getCustomerOrders, type WooCustom
 import { wcFetch } from '@/lib/api/client';
 import type { WooOrder } from '@/types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);

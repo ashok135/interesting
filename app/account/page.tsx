@@ -26,10 +26,14 @@ import {
   RotateCcw,
   ShoppingBag,
   HelpCircle,
+  XCircle,
+  AlertCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '@/store/AuthContext';
 import { useToast } from '@/store/ToastContext';
 import { useCartContext } from '@/store/CartContext';
+import { useWishlist } from '@/store/WishlistContext';
 import { formatPrice } from '@/lib/utils/formatters';
 import type { WooOrder } from '@/types';
 import styles from './page.module.css';
@@ -86,10 +90,44 @@ export default function AccountPage() {
   const router = useRouter();
   const { user, customer, orders, loading, logout, refresh } = useAuth();
   const { showSuccess, showError } = useToast();
-  const { addItem, openDrawer } = useCartContext();
+  const { addItem, openDrawer, clearCart } = useCartContext();
+  const { clearWishlist } = useWishlist();
 
   const [activeTab, setActiveTab] = useState<TabKey>('orders');
   const [selectedOrder, setSelectedOrder] = useState<WooOrder | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<WooOrder | null>(null);
+  const [cancelReason, setCancelReason] = useState('Ordered by mistake');
+  const [cancelComments, setCancelComments] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  async function handleConfirmCancel() {
+    if (!cancellingOrder) return;
+    setIsCancelling(true);
+    try {
+      const reasonText = cancelReason + (cancelComments.trim() ? ` - ${cancelComments.trim()}` : '');
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: cancellingOrder.id, reason: reasonText }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to cancel order.');
+      }
+      showSuccess(`Order #${cancellingOrder.id} has been cancelled successfully.`);
+      setCancellingOrder(null);
+      setCancelComments('');
+      if (selectedOrder?.id === cancellingOrder.id) {
+        setSelectedOrder(null);
+      }
+      await refresh();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Could not cancel order. Please try again.';
+      showError(msg);
+    } finally {
+      setIsCancelling(false);
+    }
+  }
 
   function handleBuyAgain(item: { product_id?: number; id: number; name: string; total: string; price?: number; image?: { src: string } }) {
     const prodId = item.product_id || item.id;
@@ -208,6 +246,8 @@ export default function AccountPage() {
   };
 
   const handleLogout = async () => {
+    clearCart();
+    clearWishlist();
     await logout();
     showSuccess('You have been signed out.');
     router.push('/login');
@@ -624,9 +664,44 @@ export default function AccountPage() {
                   </div>
                 ) : (
                   orders.map((order) => {
-                    const isCompleted = order.status === 'completed';
-                    const isProcessing = order.status === 'processing';
-                    const isPending = order.status === 'pending';
+                    const status = (order.status || '').toLowerCase();
+                    const isCompleted = status === 'completed';
+                    const isShipped = status === 'shipped' || status === 'in-transit';
+                    const isProcessing = status === 'processing';
+                    const isOnHold = status === 'on-hold';
+                    const isPending = status === 'pending';
+                    const isCancelled = status === 'cancelled';
+                    const isRefunded = status === 'refunded';
+                    const isFailed = status === 'failed';
+
+                    // Customer can cancel if order is in active unfulfilled status
+                    const canCancel = ['pending', 'processing', 'on-hold'].includes(status);
+
+                    let statusChipClass = styles.statusChipPending;
+                    let statusLabel = order.status.toUpperCase();
+
+                    if (isCompleted) {
+                      statusChipClass = styles.statusChipCompleted;
+                      statusLabel = 'DELIVERED';
+                    } else if (isShipped) {
+                      statusChipClass = styles.statusChipShipped;
+                      statusLabel = 'SHIPPED';
+                    } else if (isProcessing) {
+                      statusChipClass = styles.statusChipProcessing;
+                      statusLabel = 'CONFIRMED';
+                    } else if (isCancelled) {
+                      statusChipClass = styles.statusChipCancelled;
+                      statusLabel = 'CANCELLED';
+                    } else if (isOnHold) {
+                      statusChipClass = styles.statusChipOnHold;
+                      statusLabel = 'ON HOLD';
+                    } else if (isRefunded) {
+                      statusChipClass = styles.statusChipRefunded;
+                      statusLabel = 'REFUNDED';
+                    } else if (isFailed) {
+                      statusChipClass = styles.statusChipFailed;
+                      statusLabel = 'FAILED';
+                    }
 
                     return (
                       <div key={order.id} className={styles.amazonOrderCard}>
@@ -656,21 +731,37 @@ export default function AccountPage() {
                           </div>
                           <div className={styles.stripColRight}>
                             <span className={styles.orderIdBadge}>ORDER #{order.id}</span>
-                            <span className={`${styles.statusChip} ${isCompleted ? styles.statusChipCompleted : isProcessing ? styles.statusChipProcessing : styles.statusChipPending}`}>
-                              {isCompleted ? 'DELIVERED' : isProcessing ? 'CONFIRMED' : order.status.toUpperCase()}
+                            <span className={`${styles.statusChip} ${statusChipClass}`}>
+                              {statusLabel}
                             </span>
                           </div>
                         </div>
 
                         {/* ── 2. Delivery Status Headline ── */}
-                        <div className={styles.statusHighlightBar}>
+                        <div className={`${styles.statusHighlightBar} ${isCancelled || isFailed ? styles.statusHighlightBarCancelled : ''}`}>
                           <div className={styles.statusHeadline}>
-                            {isProcessing ? (
+                            {isCancelled ? (
                               <>
-                                <span className={styles.livePulse} />
+                                <XCircle size={18} className={styles.cancelledCross} />
                                 <div>
-                                  <strong>Arriving in 3–5 Days • Preparing for Dispatch</strong>
-                                  <span className={styles.statusSubtext}>Your package has been confirmed and is being packed fresh at the orchard pantry.</span>
+                                  <strong style={{ color: '#dc2626' }}>Order Cancelled</strong>
+                                  <span className={styles.statusSubtext}>This order was cancelled in WooCommerce. No payment or delivery is pending.</span>
+                                </div>
+                              </>
+                            ) : isRefunded ? (
+                              <>
+                                <RotateCcw size={18} style={{ color: '#7e22ce', flexShrink: 0 }} />
+                                <div>
+                                  <strong style={{ color: '#7e22ce' }}>Order Cancelled &amp; Refunded</strong>
+                                  <span className={styles.statusSubtext}>Payment has been refunded back to your source account.</span>
+                                </div>
+                              </>
+                            ) : isFailed ? (
+                              <>
+                                <AlertTriangle size={18} className={styles.failedAlert} />
+                                <div>
+                                  <strong style={{ color: '#dc2626' }}>Payment Failed</strong>
+                                  <span className={styles.statusSubtext}>Transaction was not completed. You can re-order using Buy Again.</span>
                                 </div>
                               </>
                             ) : isCompleted ? (
@@ -681,11 +772,35 @@ export default function AccountPage() {
                                   <span className={styles.statusSubtext}>Package was safely handed over to the recipient.</span>
                                 </div>
                               </>
+                            ) : isShipped ? (
+                              <>
+                                <Truck size={18} style={{ color: '#0e7490', flexShrink: 0 }} />
+                                <div>
+                                  <strong>In Transit • Package Shipped</strong>
+                                  <span className={styles.statusSubtext}>Your package has been dispatched and is on its way.</span>
+                                </div>
+                              </>
+                            ) : isProcessing ? (
+                              <>
+                                <span className={styles.livePulse} />
+                                <div>
+                                  <strong>Arriving in 3–5 Days • Preparing for Dispatch</strong>
+                                  <span className={styles.statusSubtext}>Your package has been confirmed and is being packed fresh at the orchard pantry.</span>
+                                </div>
+                              </>
+                            ) : isOnHold ? (
+                              <>
+                                <AlertCircle size={18} className={styles.onHoldClock} />
+                                <div>
+                                  <strong>Order On Hold</strong>
+                                  <span className={styles.statusSubtext}>Our team is currently verifying order details.</span>
+                                </div>
+                              </>
                             ) : (
                               <>
                                 <Clock size={18} className={styles.pendingClock} />
                                 <div>
-                                  <strong>Order Placed • Pending Processing</strong>
+                                  <strong>Order Placed • Awaiting Payment</strong>
                                   <span className={styles.statusSubtext}>Your order details have been securely logged.</span>
                                 </div>
                               </>
@@ -696,28 +811,102 @@ export default function AccountPage() {
                           </span>
                         </div>
 
-                        {/* ── 3. Flipkart 4-Stage Mini Progress Tracker ── */}
-                        <div className={styles.miniTracker}>
-                          <div className={`${styles.trackerStep} ${styles.trackerStepDone}`}>
-                            <span className={styles.trackerDot} />
-                            <span className={styles.trackerLabel}>Confirmed</span>
+                        {/* ── 3. 4-Stage Mini Progress Tracker ── */}
+                        {isCancelled ? (
+                          <div className={styles.miniTracker}>
+                            <div className={`${styles.trackerStep} ${styles.trackerStepDone}`}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Order Placed</span>
+                            </div>
+                            <div className={`${styles.trackerLine} ${styles.trackerLineCancelled}`} />
+                            <div className={`${styles.trackerStep} ${styles.trackerStepCancelled}`}>
+                              <span className={styles.trackerDot}>
+                                <X size={9} strokeWidth={3.5} color="#fff" />
+                              </span>
+                              <span className={styles.trackerLabel}>Cancelled</span>
+                            </div>
+                            <div className={styles.trackerLine} />
+                            <div className={styles.trackerStep}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Voided</span>
+                            </div>
+                            <div className={styles.trackerLine} />
+                            <div className={styles.trackerStep}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Closed</span>
+                            </div>
                           </div>
-                          <div className={`${styles.trackerLine} ${isProcessing || isCompleted ? styles.trackerLineActive : ''}`} />
-                          <div className={`${styles.trackerStep} ${isProcessing || isCompleted ? styles.trackerStepDone : ''}`}>
-                            <span className={styles.trackerDot} />
-                            <span className={styles.trackerLabel}>Packed</span>
+                        ) : isRefunded ? (
+                          <div className={styles.miniTracker}>
+                            <div className={`${styles.trackerStep} ${styles.trackerStepDone}`}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Order Placed</span>
+                            </div>
+                            <div className={`${styles.trackerLine} ${styles.trackerLineCancelled}`} />
+                            <div className={`${styles.trackerStep} ${styles.trackerStepCancelled}`}>
+                              <span className={styles.trackerDot}>
+                                <X size={9} strokeWidth={3.5} color="#fff" />
+                              </span>
+                              <span className={styles.trackerLabel}>Cancelled</span>
+                            </div>
+                            <div className={`${styles.trackerLine} ${styles.trackerLineCancelled}`} />
+                            <div className={`${styles.trackerStep} ${styles.trackerStepAmber}`}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Refunded</span>
+                            </div>
+                            <div className={styles.trackerLine} />
+                            <div className={styles.trackerStep}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Closed</span>
+                            </div>
                           </div>
-                          <div className={`${styles.trackerLine} ${isCompleted ? styles.trackerLineActive : ''}`} />
-                          <div className={`${styles.trackerStep} ${isCompleted ? styles.trackerStepDone : ''}`}>
-                            <span className={styles.trackerDot} />
-                            <span className={styles.trackerLabel}>Shipped</span>
+                        ) : isFailed ? (
+                          <div className={styles.miniTracker}>
+                            <div className={`${styles.trackerStep} ${styles.trackerStepDone}`}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Order Placed</span>
+                            </div>
+                            <div className={`${styles.trackerLine} ${styles.trackerLineCancelled}`} />
+                            <div className={`${styles.trackerStep} ${styles.trackerStepCancelled}`}>
+                              <span className={styles.trackerDot}>
+                                <X size={9} strokeWidth={3.5} color="#fff" />
+                              </span>
+                              <span className={styles.trackerLabel}>Failed</span>
+                            </div>
+                            <div className={styles.trackerLine} />
+                            <div className={styles.trackerStep}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Voided</span>
+                            </div>
+                            <div className={styles.trackerLine} />
+                            <div className={styles.trackerStep}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Closed</span>
+                            </div>
                           </div>
-                          <div className={`${styles.trackerLine} ${isCompleted ? styles.trackerLineActive : ''}`} />
-                          <div className={`${styles.trackerStep} ${isCompleted ? styles.trackerStepDone : ''}`}>
-                            <span className={styles.trackerDot} />
-                            <span className={styles.trackerLabel}>Delivered</span>
+                        ) : (
+                          <div className={styles.miniTracker}>
+                            <div className={`${styles.trackerStep} ${styles.trackerStepDone}`}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Confirmed</span>
+                            </div>
+                            <div className={`${styles.trackerLine} ${isProcessing || isShipped || isCompleted ? styles.trackerLineActive : ''}`} />
+                            <div className={`${styles.trackerStep} ${isProcessing || isShipped || isCompleted ? styles.trackerStepDone : ''}`}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Packed</span>
+                            </div>
+                            <div className={`${styles.trackerLine} ${isShipped || isCompleted ? styles.trackerLineActive : ''}`} />
+                            <div className={`${styles.trackerStep} ${isShipped || isCompleted ? styles.trackerStepDone : ''}`}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Shipped</span>
+                            </div>
+                            <div className={`${styles.trackerLine} ${isCompleted ? styles.trackerLineActive : ''}`} />
+                            <div className={`${styles.trackerStep} ${isCompleted ? styles.trackerStepDone : ''}`}>
+                              <span className={styles.trackerDot} />
+                              <span className={styles.trackerLabel}>Delivered</span>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* ── 4. Product Items List with Photos ── */}
                         <div className={styles.cardItemsList}>
@@ -753,7 +942,7 @@ export default function AccountPage() {
                           ))}
                         </div>
 
-                        {/* ── 5. Action Buttons (Track Package, Details, Help) ── */}
+                        {/* ── 5. Action Buttons (Track Package, Details, Cancel, Help) ── */}
                         <div className={styles.cardFooterActions}>
                           <button
                             type="button"
@@ -769,6 +958,15 @@ export default function AccountPage() {
                           >
                             View Details
                           </button>
+                          {canCancel && (
+                            <button
+                              type="button"
+                              onClick={() => setCancellingOrder(order)}
+                              className={styles.cancelOrderBtn}
+                            >
+                              <XCircle size={15} /> Cancel Order
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
@@ -1284,36 +1482,59 @@ export default function AccountPage() {
 
             <div className={styles.modalBody}>
               {/* Timeline */}
-              <div className={styles.timeline}>
-                <div className={`${styles.step} ${styles.stepActive}`}>
-                  <div className={styles.stepDot}>
-                    <Check size={14} />
+              {selectedOrder.status === 'cancelled' ? (
+                <div className={styles.timeline}>
+                  <div className={`${styles.step} ${styles.stepActive}`}>
+                    <div className={styles.stepDot}>
+                      <Check size={14} />
+                    </div>
+                    <span className={styles.stepLabel}>Placed</span>
                   </div>
-                  <span className={styles.stepLabel}>Placed</span>
-                </div>
-                <div
-                  className={`${styles.step} ${
-                    ['processing', 'completed'].includes(selectedOrder.status)
-                      ? styles.stepActive
-                      : ''
-                  }`}
-                >
-                  <div className={styles.stepDot}>
-                    <Clock size={14} />
+                  <div className={`${styles.step} ${styles.stepActive}`}>
+                    <div className={styles.stepDot} style={{ background: '#dc2626', borderColor: '#dc2626', color: '#fff' }}>
+                      <X size={14} strokeWidth={3} />
+                    </div>
+                    <span className={styles.stepLabel} style={{ color: '#dc2626', fontWeight: 800 }}>Cancelled</span>
                   </div>
-                  <span className={styles.stepLabel}>Packed</span>
-                </div>
-                <div
-                  className={`${styles.step} ${
-                    selectedOrder.status === 'completed' ? styles.stepActive : ''
-                  }`}
-                >
-                  <div className={styles.stepDot}>
-                    <Truck size={14} />
+                  <div className={styles.step}>
+                    <div className={styles.stepDot}>
+                      <Clock size={14} />
+                    </div>
+                    <span className={styles.stepLabel}>Closed</span>
                   </div>
-                  <span className={styles.stepLabel}>Delivered</span>
                 </div>
-              </div>
+              ) : (
+                <div className={styles.timeline}>
+                  <div className={`${styles.step} ${styles.stepActive}`}>
+                    <div className={styles.stepDot}>
+                      <Check size={14} />
+                    </div>
+                    <span className={styles.stepLabel}>Placed</span>
+                  </div>
+                  <div
+                    className={`${styles.step} ${
+                      ['processing', 'shipped', 'completed'].includes(selectedOrder.status)
+                        ? styles.stepActive
+                        : ''
+                    }`}
+                  >
+                    <div className={styles.stepDot}>
+                      <Clock size={14} />
+                    </div>
+                    <span className={styles.stepLabel}>Packed</span>
+                  </div>
+                  <div
+                    className={`${styles.step} ${
+                      ['shipped', 'completed'].includes(selectedOrder.status) ? styles.stepActive : ''
+                    }`}
+                  >
+                    <div className={styles.stepDot}>
+                      <Truck size={14} />
+                    </div>
+                    <span className={styles.stepLabel}>{selectedOrder.status === 'shipped' ? 'In Transit' : 'Delivered'}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Items List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
@@ -1387,6 +1608,110 @@ export default function AccountPage() {
                   </span>
                 </div>
               </div>
+
+              {['pending', 'processing', 'on-hold'].includes((selectedOrder.status || '').toLowerCase()) && (
+                <div style={{ borderTop: '1px solid #f4f4f5', paddingTop: '0.85rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const orderToCancel = selectedOrder;
+                      setSelectedOrder(null);
+                      setCancellingOrder(orderToCancel);
+                    }}
+                    className={styles.cancelOrderBtn}
+                    style={{ width: '100%', justifyContent: 'center', padding: '0.65rem' }}
+                  >
+                    <XCircle size={16} /> Cancel This Order
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cancel Order Customer Confirmation Modal ── */}
+      {cancellingOrder && (
+        <div className={styles.cancelModalOverlay} onClick={() => !isCancelling && setCancellingOrder(null)}>
+          <div className={styles.cancelModalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.cancelModalHeader}>
+              <h3 className={styles.cancelModalTitle}>
+                <XCircle size={20} color="#dc2626" /> Cancel Order #{cancellingOrder.id}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCancellingOrder(null)}
+                disabled={isCancelling}
+                className={styles.closeBtn}
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className={styles.cancelModalBody}>
+              <div className={styles.cancelNoticeBox}>
+                <AlertCircle size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong>Are you sure you want to cancel this order?</strong>
+                  <span>Once confirmed, this order will be immediately cancelled in our system and will not be dispatched.</span>
+                </div>
+              </div>
+
+              <div className={styles.cancelReasonGroup}>
+                <label htmlFor="cancel-reason" className={styles.cancelReasonLabel}>
+                  Reason for cancellation
+                </label>
+                <select
+                  id="cancel-reason"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className={styles.cancelReasonSelect}
+                  disabled={isCancelling}
+                >
+                  <option value="Ordered by mistake">Ordered by mistake</option>
+                  <option value="Need to change delivery address or contact info">Need to change delivery address or phone</option>
+                  <option value="Need to change items or pack size">Need to change items or pack size</option>
+                  <option value="Delivery time is too long">Delivery time is too long</option>
+                  <option value="Found a better price elsewhere">Found a better price elsewhere</option>
+                  <option value="Want to change payment method">Want to change payment method</option>
+                  <option value="Other reason">Other reason</option>
+                </select>
+              </div>
+
+              <div className={styles.cancelReasonGroup}>
+                <label htmlFor="cancel-comments" className={styles.cancelReasonLabel}>
+                  Additional feedback (optional)
+                </label>
+                <textarea
+                  id="cancel-comments"
+                  rows={2}
+                  value={cancelComments}
+                  onChange={(e) => setCancelComments(e.target.value)}
+                  placeholder="Help us understand why you are cancelling..."
+                  className={styles.cancelCommentsInput}
+                  disabled={isCancelling}
+                />
+              </div>
+            </div>
+
+            <div className={styles.cancelModalFooter}>
+              <button
+                type="button"
+                onClick={() => setCancellingOrder(null)}
+                disabled={isCancelling}
+                className={styles.cancelKeepBtn}
+              >
+                Keep Order
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancel}
+                disabled={isCancelling}
+                className={styles.cancelConfirmBtn}
+              >
+                {isCancelling ? 'Cancelling Order...' : 'Yes, Cancel Order'}
+              </button>
             </div>
           </div>
         </div>
