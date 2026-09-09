@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/session';
 import { wcFetch, clearWcCache } from '@/lib/api/client';
 import { updateCustomer } from '@/lib/api/customers';
+import { sendOrderConfirmationSms } from '@/lib/sms/httpsms';
 import type { OrderPayload, WooOrder } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -123,6 +124,13 @@ export async function POST(req: NextRequest) {
       } catch (custErr) {
         console.warn('Failed to auto-save address to customer profile:', custErr);
       }
+    }
+
+    // Dispatch order confirmation SMS via httpSMS
+    try {
+      await sendOrderConfirmationSms(order);
+    } catch (smsErr) {
+      console.error('[httpSMS] Non-blocking error sending order SMS:', smsErr);
     }
 
     return NextResponse.json({
