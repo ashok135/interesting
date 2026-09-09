@@ -1267,15 +1267,8 @@ function AccountContent() {
                           ))}
                         </div>
 
-                        {/* ── 5. Action Buttons (Track Package, Details, Cancel, Help) ── */}
+                        {/* ── 5. Action Buttons (Details, Cancel, Help) ── */}
                         <div className={styles.cardFooterActions}>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedOrder(order)}
-                            className={styles.trackPackageBtn}
-                          >
-                            <Truck size={15} /> Track Package
-                          </button>
                           <button
                             type="button"
                             onClick={() => setSelectedOrder(order)}
