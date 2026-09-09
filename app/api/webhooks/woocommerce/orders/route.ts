@@ -43,14 +43,22 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. Verify HMAC-SHA256 signature only if a secret is configured in env
-    if (webhookSecret && signature) {
+    // 2. Verify HMAC-SHA256 signature if a secret is configured in env
+    if (webhookSecret) {
+      if (!signature) {
+        console.warn('[WooCommerce Webhook] Missing x-wc-webhook-signature header.');
+        return NextResponse.json({ error: 'Missing webhook signature header' }, { status: 401 });
+      }
+
       const computedSignature = crypto
         .createHmac('sha256', webhookSecret)
         .update(rawBody, 'utf8')
         .digest('base64');
 
-      if (computedSignature !== signature) {
+      const computedBuf = Buffer.from(computedSignature, 'utf8');
+      const sigBuf = Buffer.from(signature, 'utf8');
+
+      if (computedBuf.length !== sigBuf.length || !crypto.timingSafeEqual(computedBuf, sigBuf)) {
         console.warn('[WooCommerce Webhook] Invalid signature detected.');
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
       }
