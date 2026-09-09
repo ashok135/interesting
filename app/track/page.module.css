@@ -1,0 +1,363 @@
+.container {
+  min-height: 80vh;
+  padding: 3rem 1rem 5rem;
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: inherit;
+  color: var(--foreground, #111827);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* Search bar when looking up order */
+.searchBox {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 460px;
+  margin: 0 auto 2rem;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  background: var(--card-bg, #ffffff);
+  color: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  border-color: #000000;
+}
+
+.searchBtn {
+  background: #000000;
+  color: #ffffff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: opacity 0.2s;
+}
+
+.searchBtn:hover {
+  opacity: 0.85;
+}
+
+/* Loading & error states */
+.statusState {
+  text-align: center;
+  padding: 4rem 1rem;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #f3f4f6;
+  border-top-color: #000000;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Card */
+.orderCard {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.orderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.orderMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.orderNumber {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.orderDate {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badgeProcessing {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.badgeCompleted {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.badgeCancelled {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.badgePending {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+/* Progress Tracker */
+.stepperSection {
+  padding: 2.5rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.stepper {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.stepper::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  right: 30px;
+  height: 3px;
+  background: #e5e7eb;
+  z-index: 1;
+}
+
+.stepperProgress {
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  height: 3px;
+  background: #000000;
+  z-index: 2;
+  transition: width 0.4s ease;
+}
+
+.stepNode {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 80px;
+  text-align: center;
+}
+
+.stepIconWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.stepActive .stepIconWrap {
+  border-color: #000000;
+  background: #000000;
+  color: #ffffff;
+}
+
+.stepDone .stepIconWrap {
+  border-color: #000000;
+  background: #000000;
+  color: #ffffff;
+}
+
+.stepLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.stepActive .stepLabel,
+.stepDone .stepLabel {
+  color: #000000;
+  font-weight: 700;
+}
+
+/* Details sections */
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detailBox {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.boxTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.addressText {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
+/* Items list */
+.itemsSection {
+  padding: 1.5rem 0;
+}
+
+.itemsSectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: #fafafa;
+  border-radius: 10px;
+}
+
+.itemName {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.itemQty {
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.itemPrice {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* Summary Box */
+.summaryBox {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.totalAmount {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+/* Action buttons */
+.actionRow {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.btnPrimary {
+  background: #000000;
+  color: #ffffff;
+  padding: 0.85rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btnSecondary {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+  padding: 0.85rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}

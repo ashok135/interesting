@@ -155,10 +155,18 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
   const paymentTitle = order.payment_method_title || order.payment_method || 'Order';
   const itemCount = (order.line_items || []).reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-  // Compose customer SMS
+  const siteUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  ).replace(/\/$/, '');
+
+  const trackingUrl = `${siteUrl}/track?id=${orderId}`;
+
+  // Compose customer SMS with tracking link
   const customerMessage =
-    `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been successfully placed! ` +
-    `We will notify you once it ships. Thank you for shopping with Interesting!`;
+    `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been confirmed! ` +
+    `Track your order: ${trackingUrl} . ` +
+    `Thank you for shopping with Interesting!`;
 
   let customerResult: SmsResult;
 
@@ -182,7 +190,7 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
   if (adminPhone) {
     const adminMessage =
       `New Order Alert! #${orderId} by ${customerName} for Rs.${total} (${paymentTitle}). ` +
-      `Items: ${itemCount}. Status: ${order.status || 'processing'}.`;
+      `Items: ${itemCount}. Status: ${order.status || 'processing'}. Track: ${trackingUrl}`;
 
     adminResult = await sendHttpSms({
       to: adminPhone,
