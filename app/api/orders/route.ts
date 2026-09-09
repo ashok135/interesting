@@ -126,9 +126,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Dispatch order confirmation SMS via httpSMS
+    // Dispatch order confirmation SMS via httpSMS (with live tracking link)
     try {
-      await sendOrderConfirmationSms(order);
+      const smsResult = await sendOrderConfirmationSms(order);
+      console.log(`[httpSMS] Order #${order.id} SMS dispatch result:`, JSON.stringify(smsResult));
     } catch (smsErr) {
       console.error('[httpSMS] Non-blocking error sending order SMS:', smsErr);
     }
