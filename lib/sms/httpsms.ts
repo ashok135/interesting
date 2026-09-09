@@ -160,7 +160,7 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
   ).replace(/\/$/, '');
 
-  const trackingUrl = `${siteUrl}/track?id=${orderId}`;
+  const trackingUrl = `${siteUrl}/account?order=${orderId}`;
 
   // Compose customer SMS with tracking link
   const customerMessage =

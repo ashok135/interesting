@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Package,
   MapPin,
@@ -23,6 +23,7 @@ import {
   ArrowRight,
   Clock,
   Truck,
+  CreditCard,
   RotateCcw,
   ShoppingBag,
   HelpCircle,
@@ -86,8 +87,11 @@ function getItemImageUrl(item?: { name?: string; image?: { src?: string } } | nu
   return '/images/categories/nuts.jpg';
 }
 
-export default function AccountPage() {
+function AccountContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const orderQueryId = searchParams?.get('order') || searchParams?.get('orderId') || searchParams?.get('id');
+
   const { user, customer, orders, loading, logout, refresh } = useAuth();
   const { showSuccess, showError } = useToast();
   const { addItem, openDrawer, clearCart } = useCartContext();
@@ -99,6 +103,27 @@ export default function AccountPage() {
   const [cancelReason, setCancelReason] = useState('Ordered by mistake');
   const [cancelComments, setCancelComments] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+
+  // Auto-detect ?order=ID from SMS tracking link and open modal immediately
+  useEffect(() => {
+    if (!orderQueryId) return;
+    setActiveTab('orders');
+
+    const matched = orders.find((o) => String(o.id) === String(orderQueryId));
+    if (matched) {
+      setSelectedOrder(matched);
+      return;
+    }
+
+    fetch(`/api/orders?id=${orderQueryId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && d.order) {
+          setSelectedOrder(d.order);
+        }
+      })
+      .catch((err) => console.warn('Could not auto-load order from query param:', err));
+  }, [orderQueryId, orders]);
 
   async function handleConfirmCancel() {
     if (!cancellingOrder) return;
@@ -488,6 +513,305 @@ export default function AccountPage() {
     }
   };
 
+  const renderOrderModal = () => {
+    if (!selectedOrder) return null;
+
+    const status = (selectedOrder.status || '').toLowerCase();
+    const isCompleted = status === 'completed';
+    const isShipped = status === 'shipped' || status === 'in-transit';
+    const isProcessing = status === 'processing';
+    const isCancelled = status === 'cancelled';
+    const isPending = status === 'pending';
+
+    let statusChipClass = styles.statusChipProcessing;
+    let statusLabel = (selectedOrder.status || 'CONFIRMED').toUpperCase();
+
+    if (isCompleted) {
+      statusChipClass = styles.statusChipCompleted;
+      statusLabel = 'DELIVERED';
+    } else if (isShipped) {
+      statusChipClass = styles.statusChipShipped;
+      statusLabel = 'OUT FOR DELIVERY';
+    } else if (isProcessing) {
+      statusChipClass = styles.statusChipProcessing;
+      statusLabel = 'CONFIRMED & PACKED';
+    } else if (isCancelled) {
+      statusChipClass = styles.statusChipCancelled;
+      statusLabel = 'CANCELLED';
+    } else if (isPending) {
+      statusChipClass = styles.statusChipPending;
+      statusLabel = 'PENDING PAYMENT';
+    }
+
+    const canCancel = ['pending', 'processing', 'on-hold'].includes(status);
+    const shippingAddr = selectedOrder.shipping?.address_1 ? selectedOrder.shipping : selectedOrder.billing;
+
+    return (
+      <div className={styles.modalOverlay} onClick={() => setSelectedOrder(null)}>
+        <div className={styles.modal} style={{ maxWidth: '620px', borderRadius: '22px' }} onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div className={styles.modalHeader} style={{ background: '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                <h3 className={styles.modalTitle} style={{ fontSize: '1.25rem', fontWeight: 800 }}>
+                  Order #{selectedOrder.id}
+                </h3>
+                <span className={`${styles.statusChip} ${statusChipClass}`}>
+                  {statusLabel}
+                </span>
+              </div>
+              <span style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Clock size={13} />
+                Placed on{' '}
+                {new Date(selectedOrder.date_created).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedOrder(null)}
+              className={styles.closeBtn}
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className={styles.modalBody} style={{ padding: '1.5rem', gap: '1.25rem' }}>
+            {/* Live Delivery Status Headline Banner */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.85rem',
+                padding: '0.9rem 1.15rem',
+                background: isCancelled ? '#fef2f2' : isCompleted ? '#f0fdf4' : '#f8fafc',
+                borderRadius: '14px',
+                border: isCancelled ? '1px solid #fee2e2' : isCompleted ? '1px solid #dcfce7' : '1px solid #e2e8f0',
+              }}
+            >
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: isCancelled ? '#fee2e2' : isCompleted ? '#dcfce7' : '#000',
+                  color: isCancelled ? '#dc2626' : isCompleted ? '#16a34a' : '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {isCancelled ? <XCircle size={20} /> : isCompleted ? <CheckCircle2 size={20} /> : <Truck size={20} />}
+              </div>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: isCancelled ? '#dc2626' : isCompleted ? '#16a34a' : '#111827' }}>
+                  {isCancelled
+                    ? 'Order Cancelled'
+                    : isCompleted
+                    ? 'Delivered to your doorstep'
+                    : isShipped
+                    ? 'Package is in transit'
+                    : 'Order Confirmed & Preparing for Dispatch'}
+                </strong>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                  {isCancelled
+                    ? 'No payment or delivery is pending.'
+                    : isCompleted
+                    ? 'We hope you love your fresh harvest!'
+                    : 'Estimated delivery: 3–5 business days via Free Express Courier.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Stepper Timeline */}
+            {isCancelled ? (
+              <div className={styles.timeline}>
+                <div className={`${styles.step} ${styles.stepActive}`}>
+                  <div className={styles.stepDot}>
+                    <Check size={14} />
+                  </div>
+                  <span className={styles.stepLabel}>Placed</span>
+                </div>
+                <div className={`${styles.step} ${styles.stepActive}`}>
+                  <div className={styles.stepDot} style={{ background: '#dc2626', borderColor: '#dc2626', color: '#fff' }}>
+                    <X size={14} strokeWidth={3} />
+                  </div>
+                  <span className={styles.stepLabel} style={{ color: '#dc2626', fontWeight: 800 }}>Cancelled</span>
+                </div>
+                <div className={styles.step}>
+                  <div className={styles.stepDot}>
+                    <Clock size={14} />
+                  </div>
+                  <span className={styles.stepLabel}>Closed</span>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.timeline}>
+                <div className={`${styles.step} ${styles.stepActive}`}>
+                  <div className={styles.stepDot}>
+                    <Check size={14} />
+                  </div>
+                  <span className={styles.stepLabel}>Placed</span>
+                </div>
+                <div
+                  className={`${styles.step} ${
+                    ['processing', 'shipped', 'completed'].includes(status) ? styles.stepActive : ''
+                  }`}
+                >
+                  <div className={styles.stepDot}>
+                    <Package size={14} />
+                  </div>
+                  <span className={styles.stepLabel}>Packed</span>
+                </div>
+                <div
+                  className={`${styles.step} ${
+                    ['shipped', 'completed'].includes(status) ? styles.stepActive : ''
+                  }`}
+                >
+                  <div className={styles.stepDot}>
+                    <Truck size={14} />
+                  </div>
+                  <span className={styles.stepLabel}>In Transit</span>
+                </div>
+                <div className={`${styles.step} ${isCompleted ? styles.stepActive : ''}`}>
+                  <div className={styles.stepDot}>
+                    <CheckCircle2 size={14} />
+                  </div>
+                  <span className={styles.stepLabel}>Delivered</span>
+                </div>
+              </div>
+            )}
+
+            {/* Delivery Address & Payment Summary Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.85rem' }}>
+              {/* Delivery Address */}
+              <div style={{ background: '#fafafa', borderRadius: '12px', padding: '1rem', border: '1px solid #f1f5f9' }}>
+                <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <MapPin size={14} /> Delivery Address
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.86rem', color: '#1e293b', lineHeight: 1.5 }}>
+                  <strong>
+                    {shippingAddr?.first_name} {shippingAddr?.last_name}
+                  </strong>
+                  <br />
+                  {shippingAddr?.address_1}
+                  {shippingAddr?.address_2 && `, ${shippingAddr.address_2}`}
+                  <br />
+                  {shippingAddr?.city}, {shippingAddr?.state} - {shippingAddr?.postcode}
+                  <br />
+                  <span style={{ color: '#64748b' }}>Phone: {shippingAddr?.phone || selectedOrder.billing?.phone || 'N/A'}</span>
+                </p>
+              </div>
+
+              {/* Payment Details */}
+              <div style={{ background: '#fafafa', borderRadius: '12px', padding: '1rem', border: '1px solid #f1f5f9' }}>
+                <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <CreditCard size={14} /> Payment &amp; Total
+                </h4>
+                <div style={{ fontSize: '0.86rem', color: '#1e293b', lineHeight: 1.6 }}>
+                  <div><strong>Method:</strong> {selectedOrder.payment_method_title || selectedOrder.payment_method || 'Cash on Delivery'}</div>
+                  <div><strong>Shipping:</strong> Free Express Delivery</div>
+                  <div style={{ marginTop: '0.35rem', paddingTop: '0.35rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700 }}>Total Paid:</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#000' }}>{formatPrice(selectedOrder.total)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Items List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Order Items</span>
+                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+                  {selectedOrder.line_items.length} {selectedOrder.line_items.length === 1 ? 'item' : 'items'}
+                </span>
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {selectedOrder.line_items.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.65rem 0.85rem',
+                      background: '#fafafa',
+                      borderRadius: '10px',
+                      border: '1px solid #f1f5f9',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div
+                        style={{
+                          position: 'relative',
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          background: '#f4f4f5',
+                          flexShrink: 0,
+                          border: '1px solid #e4e4e7',
+                        }}
+                      >
+                        <Image
+                          src={getItemImageUrl(item)}
+                          alt={item.name}
+                          fill
+                          sizes="42px"
+                          style={{ objectFit: 'cover' }}
+                          unoptimized
+                        />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#111' }}>{item.name}</div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Qty: {item.quantity}</div>
+                      </div>
+                    </div>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatPrice(item.total)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+              <Link
+                href="/faq"
+                className={styles.secondaryBtn}
+                style={{ flex: 1, padding: '0.65rem 1rem', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', textDecoration: 'none' }}
+              >
+                <HelpCircle size={15} /> Need Help?
+              </Link>
+
+              {canCancel && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const orderToCancel = selectedOrder;
+                    setSelectedOrder(null);
+                    setCancellingOrder(orderToCancel);
+                  }}
+                  className={styles.cancelOrderBtn}
+                  style={{ flex: 1, padding: '0.65rem 1rem', fontSize: '0.85rem', justifyContent: 'center' }}
+                >
+                  <XCircle size={15} /> Cancel Order
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -528,6 +852,7 @@ export default function AccountPage() {
             </div>
           </div>
         </div>
+        {renderOrderModal()}
       </div>
     );
   }
@@ -1453,182 +1778,7 @@ export default function AccountPage() {
       )}
 
       {/* Order Details & Tracking Modal */}
-      {selectedOrder && (
-        <div className={styles.modalOverlay} onClick={() => setSelectedOrder(null)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h3 className={styles.modalTitle}>Order #{selectedOrder.id}</h3>
-                <span style={{ fontSize: '0.8rem', color: '#71717a' }}>
-                  Placed on{' '}
-                  {new Date(selectedOrder.date_created).toLocaleDateString('en-IN', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedOrder(null)}
-                className={styles.closeBtn}
-                aria-label="Close modal"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              {/* Timeline */}
-              {selectedOrder.status === 'cancelled' ? (
-                <div className={styles.timeline}>
-                  <div className={`${styles.step} ${styles.stepActive}`}>
-                    <div className={styles.stepDot}>
-                      <Check size={14} />
-                    </div>
-                    <span className={styles.stepLabel}>Placed</span>
-                  </div>
-                  <div className={`${styles.step} ${styles.stepActive}`}>
-                    <div className={styles.stepDot} style={{ background: '#dc2626', borderColor: '#dc2626', color: '#fff' }}>
-                      <X size={14} strokeWidth={3} />
-                    </div>
-                    <span className={styles.stepLabel} style={{ color: '#dc2626', fontWeight: 800 }}>Cancelled</span>
-                  </div>
-                  <div className={styles.step}>
-                    <div className={styles.stepDot}>
-                      <Clock size={14} />
-                    </div>
-                    <span className={styles.stepLabel}>Closed</span>
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.timeline}>
-                  <div className={`${styles.step} ${styles.stepActive}`}>
-                    <div className={styles.stepDot}>
-                      <Check size={14} />
-                    </div>
-                    <span className={styles.stepLabel}>Placed</span>
-                  </div>
-                  <div
-                    className={`${styles.step} ${
-                      ['processing', 'shipped', 'completed'].includes(selectedOrder.status)
-                        ? styles.stepActive
-                        : ''
-                    }`}
-                  >
-                    <div className={styles.stepDot}>
-                      <Clock size={14} />
-                    </div>
-                    <span className={styles.stepLabel}>Packed</span>
-                  </div>
-                  <div
-                    className={`${styles.step} ${
-                      ['shipped', 'completed'].includes(selectedOrder.status) ? styles.stepActive : ''
-                    }`}
-                  >
-                    <div className={styles.stepDot}>
-                      <Truck size={14} />
-                    </div>
-                    <span className={styles.stepLabel}>{selectedOrder.status === 'shipped' ? 'In Transit' : 'Delivered'}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Items List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700 }}>
-                  Items in this Order
-                </h4>
-                {selectedOrder.line_items.map((item) => (
-                  <div key={item.id} className={styles.itemRow} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <div style={{ position: 'relative', width: '38px', height: '38px', borderRadius: '8px', overflow: 'hidden', background: '#f4f4f5', flexShrink: 0, border: '1px solid #e4e4e7' }}>
-                        <Image
-                          src={getItemImageUrl(item)}
-                          alt={item.name}
-                          fill
-                          sizes="38px"
-                          style={{ objectFit: 'cover' }}
-                          unoptimized
-                        />
-                      </div>
-                      <span style={{ fontSize: '0.85rem' }}>
-                        {item.quantity}× {item.name}
-                      </span>
-                    </div>
-                    <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{formatPrice(item.total)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Delivery Address */}
-              {selectedOrder.shipping?.address_1 && (
-                <div style={{ borderTop: '1px solid #f4f4f5', paddingTop: '0.85rem' }}>
-                  <h4 style={{ margin: '0 0 0.35rem', fontSize: '0.85rem', fontWeight: 700 }}>
-                    Delivery Address
-                  </h4>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#555', lineHeight: 1.4 }}>
-                    {selectedOrder.shipping.first_name} {selectedOrder.shipping.last_name}
-                    <br />
-                    {selectedOrder.shipping.address_1}
-                    {selectedOrder.shipping.address_2 && `, ${selectedOrder.shipping.address_2}`}
-                    <br />
-                    {selectedOrder.shipping.city}, {selectedOrder.shipping.state} -{' '}
-                    {selectedOrder.shipping.postcode}
-                  </p>
-                </div>
-              )}
-
-              {/* Total Breakdown */}
-              <div
-                style={{
-                  borderTop: '1px solid #f4f4f5',
-                  paddingTop: '0.85rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div>
-                  <span style={{ fontSize: '0.8rem', color: '#666', display: 'block' }}>
-                    Payment Method
-                  </span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                    {selectedOrder.payment_method_title || selectedOrder.payment_method || 'Cash on Delivery'}
-                  </span>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#666', display: 'block' }}>
-                    Grand Total
-                  </span>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#111' }}>
-                    {formatPrice(selectedOrder.total)}
-                  </span>
-                </div>
-              </div>
-
-              {['pending', 'processing', 'on-hold'].includes((selectedOrder.status || '').toLowerCase()) && (
-                <div style={{ borderTop: '1px solid #f4f4f5', paddingTop: '0.85rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const orderToCancel = selectedOrder;
-                      setSelectedOrder(null);
-                      setCancellingOrder(orderToCancel);
-                    }}
-                    className={styles.cancelOrderBtn}
-                    style={{ width: '100%', justifyContent: 'center', padding: '0.65rem' }}
-                  >
-                    <XCircle size={16} /> Cancel This Order
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {renderOrderModal()}
 
       {/* ── Cancel Order Customer Confirmation Modal ── */}
       {cancellingOrder && (
@@ -1717,5 +1867,19 @@ export default function AccountPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <div className={styles.spinner} />
+        </div>
+      }
+    >
+      <AccountContent />
+    </React.Suspense>
   );
 }
