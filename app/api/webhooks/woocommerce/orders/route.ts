@@ -80,16 +80,30 @@ export async function POST(req: NextRequest) {
     }
 
     const orderId = orderData.id;
-    const orderStatus = (orderData.status || '').toLowerCase();
+    const orderStatus = (orderData.status || '').toLowerCase().trim();
 
     console.log(`[WooCommerce Webhook] Order #${orderId} event received. Topic: "${topic}", Status: "${orderStatus}"`);
+
+    // 3. Skip sending SMS for intermediate or pending states ('pending', 'pending payment', 'on-hold', 'checkout-draft', 'failed')
+    const SILENT_STATUSES = ['pending', 'pending payment', 'pending-payment', 'on-hold', 'checkout-draft', 'auto-draft', 'failed'];
+    if (SILENT_STATUSES.includes(orderStatus) || orderStatus.includes('pending')) {
+      console.log(`[WooCommerce Webhook] Order #${orderId} status is "${orderStatus}". Skipping customer SMS.`);
+      return NextResponse.json({
+        success: true,
+        orderId,
+        status: orderStatus,
+        topic,
+        message: `Status "${orderStatus}" does not trigger customer SMS notification.`,
+      });
+    }
 
     let smsResult;
 
     if (topic === 'order.created') {
+      // Order created in WooCommerce
       smsResult = await sendOrderConfirmationSms(orderData);
     } else {
-      // order.updated or default
+      // order.updated: triggers when status moves to completed, shipped, processing, cancelled, refunded
       smsResult = await sendOrderStatusUpdateSms(orderData, orderStatus);
     }
 

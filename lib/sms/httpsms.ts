@@ -162,11 +162,13 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
 
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;
 
+  const status = (order.status || '').toLowerCase();
+  const isPending = status.includes('pending');
+
   // Compose customer SMS with tracking link
-  const customerMessage =
-    `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been confirmed! ` +
-    `Track your order: ${trackingUrl} . ` +
-    `Thank you for shopping with Interesting!`;
+  const customerMessage = isPending
+    ? `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been received. Track your order: ${trackingUrl} . Thank you for shopping with Interesting!`
+    : `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been confirmed! Track your order: ${trackingUrl} . Thank you for shopping with Interesting!`;
 
   let customerResult: SmsResult;
 
@@ -205,7 +207,21 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
 }
 
 /**
- * Sends an SMS update when an order status changes (e.g., to Completed / Delivered, Shipped, Cancelled).
+ * Statuses that should NOT trigger a status-update SMS to the customer.
+ * E.g. 'pending', 'pending payment', 'on-hold' are intermediate states that confuse customers.
+ */
+const SILENT_STATUSES = new Set([
+  'pending',
+  'pending payment',
+  'pending-payment',
+  'on-hold',
+  'checkout-draft',
+  'auto-draft',
+  'failed',
+]);
+
+/**
+ * Sends an SMS update when an order status changes (e.g., to Completed / Delivered, Shipped, Processing, Cancelled).
  */
 export async function sendOrderStatusUpdateSms(
   order: WooOrder,
@@ -218,7 +234,15 @@ export async function sendOrderStatusUpdateSms(
     .trim() || 'Valued Customer';
 
   const orderId = order.id;
-  const status = (newStatus || order.status || '').toLowerCase();
+  const status = (newStatus || order.status || '').toLowerCase().trim();
+
+  // 1. Skip SMS completely for pending, draft, or failed states to prevent confusing the customer
+  if (SILENT_STATUSES.has(status) || status.includes('pending')) {
+    console.log(`[httpSMS] Skipping customer status SMS for Order #${orderId} with status "${status}".`);
+    return {
+      customerSms: { success: true, status: 'skipped' },
+    };
+  }
 
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -238,14 +262,25 @@ export async function sendOrderStatusUpdateSms(
       `Hi ${customerName}, exciting news! Your order #${orderId} has been shipped and is on its way. ` +
       `Track your delivery: ${trackingUrl} . ` +
       `Thank you for shopping with Interesting!`;
+  } else if (status === 'processing') {
+    customerMessage =
+      `Hi ${customerName}, payment confirmed! Your order #${orderId} is now being processed and packed. ` +
+      `Track your order: ${trackingUrl} . ` +
+      `Thank you for shopping with Interesting!`;
   } else if (status === 'cancelled') {
     customerMessage =
       `Hi ${customerName}, your order #${orderId} has been cancelled. ` +
       `View order details or contact support: ${trackingUrl}`;
-  } else {
+  } else if (status === 'refunded') {
     customerMessage =
-      `Hi ${customerName}, your order #${orderId} status has been updated to ${status.toUpperCase()}. ` +
-      `Track order details: ${trackingUrl}`;
+      `Hi ${customerName}, a refund has been processed for your order #${orderId}. ` +
+      `View order details: ${trackingUrl}`;
+  } else {
+    // For other unmapped statuses, do not send confusing SMS to customer
+    console.log(`[httpSMS] No customer SMS configured for status "${status}". Skipping.`);
+    return {
+      customerSms: { success: true, status: 'skipped' },
+    };
   }
 
   let customerResult: SmsResult;
