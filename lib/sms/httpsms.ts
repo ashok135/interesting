@@ -203,3 +203,72 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
     adminSms: adminResult,
   };
 }
+
+/**
+ * Sends an SMS update when an order status changes (e.g., to Completed / Delivered, Shipped, Cancelled).
+ */
+export async function sendOrderStatusUpdateSms(
+  order: WooOrder,
+  newStatus?: string
+): Promise<{ customerSms: SmsResult; adminSms?: SmsResult }> {
+  const customerPhone = order.billing?.phone;
+  const customerName = [order.billing?.first_name, order.billing?.last_name]
+    .filter(Boolean)
+    .join(' ')
+    .trim() || 'Valued Customer';
+
+  const orderId = order.id;
+  const status = (newStatus || order.status || '').toLowerCase();
+
+  const siteUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://interesting-ten.vercel.app')
+  ).replace(/\/$/, '');
+
+  const trackingUrl = `${siteUrl}/account?order=${orderId}`;
+
+  let customerMessage = '';
+  if (status === 'completed') {
+    customerMessage =
+      `Hi ${customerName}, your order #${orderId} has been marked as Completed & Delivered! ` +
+      `We hope you love your purchase. View order: ${trackingUrl} . ` +
+      `Thank you for shopping with Interesting!`;
+  } else if (status === 'shipped') {
+    customerMessage =
+      `Hi ${customerName}, exciting news! Your order #${orderId} has been shipped and is on its way. ` +
+      `Track your delivery: ${trackingUrl} . ` +
+      `Thank you for shopping with Interesting!`;
+  } else if (status === 'cancelled') {
+    customerMessage =
+      `Hi ${customerName}, your order #${orderId} has been cancelled. ` +
+      `View order details or contact support: ${trackingUrl}`;
+  } else {
+    customerMessage =
+      `Hi ${customerName}, your order #${orderId} status has been updated to ${status.toUpperCase()}. ` +
+      `Track order details: ${trackingUrl}`;
+  }
+
+  let customerResult: SmsResult;
+  if (customerPhone) {
+    customerResult = await sendHttpSms({
+      to: customerPhone,
+      content: customerMessage,
+    });
+  } else {
+    customerResult = {
+      success: false,
+      error: 'Order has no billing phone number.',
+    };
+  }
+
+  let adminResult: SmsResult | undefined = undefined;
+  const adminPhone = process.env.HTTPSMS_ADMIN_PHONE;
+  if (adminPhone) {
+    adminResult = await sendHttpSms({
+      to: adminPhone,
+      content: `Order #${orderId} status changed to ${status.toUpperCase()} for ${customerName}. View: ${trackingUrl}`,
+    });
+  }
+
+  return { customerSms: customerResult, adminSms: adminResult };
+}
