@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit AI Code Review Configuration for Interesting App
+
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  sequence_diagrams: true
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "master"
+  tools:
+    shellcheck:
+      enabled: true
+    markdownlint:
+      enabled: true
+
+# Exclude generated, compiled, or dependency files from code reviews
+path_filters:
+  - "!node_modules/**"
+  - "!**/.next/**"
+  - "!out/**"
+  - "!coverage/**"
+  - "!package-lock.json"
+  - "!*.tsbuildinfo"
+  - "!scratch/**"
+  - "!.agents/**"
+
+# Context and guidelines tailored for this Next.js 16 + WooCommerce app
+path_instructions:
+  - path: "app/**"
+    instructions: |
+      - This project uses Next.js App Router with React 19. Ensure proper usage of 'use client' directives.
+      - Never expose server-only environment variables (e.g., WC_CONSUMER_SECRET, WC_APP_PASSWORD, HTTPSMS_API_KEY, WC_WEBHOOK_SECRET) to client components.
+      - Ensure dynamic server routes (like webhooks and auth) have proper error handling and dynamic exports where needed.
+  - path: "lib/sms/**"
+    instructions: |
+      - httpSMS phone numbers must be properly formatted to E.164 (+91...).
+      - Avoid spamming customers with intermediate order statuses like pending or on-hold.
+  - path: "app/api/webhooks/**"
+    instructions: |
+      - Ensure incoming webhooks validate HMAC-SHA256 signatures with crypto.timingSafeEqual.
+      - Webhooks should respond promptly with appropriate HTTP status codes.
+
+chat:
+  auto_reply: true
