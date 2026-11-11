@@ -1,7 +1,7 @@
-# INTERSTING — Headless WooCommerce & Next.js Architecture Guide
+# INTERSTING — Headless WooCommerce & Next.js Production Architecture Guide
 
 > **Core Philosophy:** **99% of all business logic resides strictly inside WordPress & WooCommerce.**  
-> The Next.js frontend is a pure, lightning-fast presentation and shopping layer. Whatever you add, update, or remove in your WordPress Admin (`https://intersting.duckdns.org/wp-admin`) instantly drives the website.
+> The Next.js frontend is a pure, lightning-fast presentation and shopping layer. Whatever you add, update, or remove in your WordPress Admin (`https://intersting.duckdns.org/wp-admin`) instantly drives the live website.
 
 ---
 
@@ -9,37 +9,51 @@
 
 ```mermaid
 graph LR
-    subgraph WordPress ["WordPress + WooCommerce (Backend)"]
+    subgraph WordPress ["WordPress + WooCommerce (Production Backend)"]
         Products["📦 Products & Pricing"]
         Inventory["📊 Stock & Inventory"]
         Categories["🏷️ Categories & Taxonomies"]
         Orders["🛒 Orders & Customers"]
+        Media["🖼️ Direct Media (wp-content/uploads)"]
         WCApi["⚡ WooCommerce REST API v3"]
     end
 
     subgraph NextJs ["Next.js App Router (Frontend)"]
-        UI["🎨 Presentation Layer (Full White & Black Theme)"]
+        UI["🎨 Presentation Layer (White & Black Theme)"]
         Hero["🌟 Dynamic Hero (Featured Product)"]
         Catalog["🛍️ Categories & Product Grid"]
         Cart["👜 Persistent Cart & Drawer"]
         Checkout["💳 Headless Checkout"]
+        SMS["📱 httpSMS Order Notification Service"]
     end
 
     Products --> WCApi
     Inventory --> WCApi
     Categories --> WCApi
+    Media --> UI
     WCApi --> UI
     Checkout -->|POST /orders| WCApi
     WCApi --> Orders
+    Orders -->|Webhook: order.created| SMS
 ```
 
 ---
 
-## 2. Managing Your Business Logic in WordPress
+## 2. Production Backend Details
+
+- **Store Backend Domain:** `https://intersting.duckdns.org`
+- **WordPress Admin:** `https://intersting.duckdns.org/wp-admin`
+- **WooCommerce REST Endpoint:** `https://intersting.duckdns.org/wp-json/wc/v3`
+- **Authentication:** Standard WooCommerce Basic Auth using `WC_CONSUMER_KEY` and `WC_CONSUMER_SECRET` over HTTPS (or WordPress Application Password).
+- **Direct Media Delivery:** High-resolution product images and category thumbnails are served directly from `https://intersting.duckdns.org/wp-content/uploads/...` with Next.js image optimization, eliminating serverless proxy bottlenecks.
+
+---
+
+## 3. Managing Your Store in WordPress
 
 Every aspect of your e-commerce store is controlled directly from your WordPress dashboard:
 
-### 2.1 Products & Pricing
+### 3.1 Products & Pricing
 - **Add / Edit / Delete Products:**  
   Go to **WordPress Admin → Products → All Products / Add New**.
 - **Regular & Sale Price:**  
@@ -47,37 +61,37 @@ Every aspect of your e-commerce store is controlled directly from your WordPress
 - **Product Descriptions:**  
   - **Main Description:** Shows on the dedicated product detail page (`/product/[slug]`).
   - **Short Description:** Displays on the product cards and summary snippets.
-- **Product Images:**  
-  Upload the **Product image** and **Product gallery** in the right sidebar. Next.js pulls and optimizes these images directly.
+- **Product Images & Gallery:**  
+  Upload the **Product image** and **Product gallery** in the right sidebar. Next.js pulls and optimizes these images directly from `intersting.duckdns.org`.
 
-### 2.2 Featured Products (Hero Section)
+### 3.2 Featured Products (Hero Banner)
 - In **Products → All Products**, click the **Star (★)** icon next to any product to mark it as **Featured**.
-- The Next.js homepage Hero Banner automatically features that product dynamically (showing its title, price, image, and direct link).
+- The Next.js homepage Hero Banner dynamically showcases that featured product (title, badge, pricing, image, and direct link).
 
-### 2.3 Categories
+### 3.3 Categories
 - Go to **Products → Categories**.
-- Any category you create (e.g., *Nuts & Kaju, Super Seeds, Dry Fruits*) appears automatically in the top navigation category bar.
+- Any category you create (e.g., *Nuts & Kaju, Super Seeds, Dry Fruits*) appears automatically in the top navigation category bar and explorer.
 - Upload a thumbnail image for the category in WordPress to customize its circular navigation icon.
 
-### 2.4 Stock & Inventory Management
+### 3.4 Stock & Inventory Management
 - In product settings, under **Inventory**:
   - Set **Stock status** to *In stock* or *Out of stock*.
   - When set to *Out of stock*, the Next.js add-to-cart button automatically changes to **"Sold Out"** and disables ordering.
   - Enable **Manage stock** to track exact inventory quantities.
 
-### 2.5 Customer Orders
-- When a customer checks out on the Next.js site, the frontend issues a `POST /wp-json/wc/v3/orders` request to WooCommerce.
+### 3.5 Customer Orders
+- When a customer checks out on the Next.js site, the frontend issues an authenticated `POST /wp-json/wc/v3/orders` request to WooCommerce.
 - The order instantly appears in **WooCommerce → Orders** with:
   - Customer billing & shipping address
   - Line items, quantities, and line totals
-  - Payment method (e.g., Cash on Delivery / UPI)
+  - Payment method (Cash on Delivery / UPI)
   - Order status set to `processing` or `pending`
 
 ---
 
-## 3. Themes: Full White & Black Theme
+## 4. Themes: Full White & Black Theme
 
-The application features a minimalist monochrome design system supporting both **Full White Theme** and **Black Theme**:
+The storefront features an ultra-clean minimalist monochrome design system supporting both **Full White Theme** and **Black Theme**:
 
 | Element | Full White Theme (Default) | Black Theme (Dark Mode) |
 |---|---|---|
@@ -89,99 +103,75 @@ The application features a minimalist monochrome design system supporting both *
 
 ---
 
-## 4. How Changes in WordPress Reflect on the Website
+## 5. Customer Authentication & Google OAuth
 
-### Development Mode (Current):
-- In development, API calls are configured with `cache: 'no-store'`.
-- Whenever you update a price, product title, image, or category in WordPress, simply **refresh your browser** to see the changes immediately.
-
-### Production Deployment:
-- Next.js uses **Incremental Static Regeneration (ISR)** with periodic revalidation (e.g., 60 seconds).
-- **Instant On-Demand Revalidation:** You can configure a WooCommerce Webhook (`product.updated`, `product.created`, `order.created`) that hits a Next.js revalidation route (`/api/revalidate`) to purge the cache instantly when you save changes in WordPress.
-
----
-
-## 5. Project Directory Architecture
-
-```
-intersting-app/
-├── app/
-│   ├── page.tsx                  ← Dynamic Homepage (Hero, Categories, Products)
-│   ├── layout.tsx                ← Root Layout (ThemeProvider, CartProvider, Header, Footer)
-│   ├── globals.css               ← Full White & Black Theme CSS Tokens
-│   ├── shop/page.tsx             ← Shop Catalog with Category & Search Filters
-│   ├── product/[slug]/page.tsx   ← Product Details & Server-rendered attributes
-│   ├── cart/page.tsx             ← Full Shopping Cart Page
-│   ├── checkout/page.tsx         ← Headless Checkout sending orders to WooCommerce
-│   └── account/page.tsx          ← Customer Portal linked to WooCommerce My Account
-├── components/
-│   ├── layout/                   ← AnnouncementBar, Header, Footer
-│   ├── product/                  ← HeroBanner, CategoryBar, ProductCard, ProductGrid, TrustBadges
-│   ├── cart/                     ← CartDrawer, FloatingCartBar
-│   └── ui/                       ← ThemeToggle, Button, Badge, QuantitySelector
-├── lib/
-│   ├── api/
-│   │   ├── client.ts             ← Base WooCommerce REST API fetch client
-│   │   ├── products.ts           ← Product & category data fetching functions
-│   │   └── orders.ts             ← Order creation endpoint
-│   └── utils/formatters.ts       ← Currency formatting (INR), HTML stripping, calculations
-├── store/
-│   ├── CartContext.tsx           ← Persistent Cart Context with localStorage sync
-│   └── ThemeContext.tsx          ← White & Black Theme Provider
-└── types/                        ← Strict TypeScript interfaces matching WooCommerce REST API
-```
-
----
-
-## 6. Environment Configuration
-
-Your `.env.local` contains the secure credentials to connect with your local WordPress installation:
-
-```env
-# WooCommerce Site URL
-NEXT_PUBLIC_WC_URL=https://intersting.duckdns.org
-
-# WordPress Application Password (recommended for LocalWP)
-WC_APP_USER=ashok
-WC_APP_PASSWORD=G4J1 hiEc rSBt ALs7 Ftyh 6mBf
-
-# Consumer Key & Secret (Fallback)
-WC_CONSUMER_KEY=ck_41bc01e3bd8cbef7ab775b9fed136778b1efd727
-WC_CONSUMER_SECRET=cs_3b1595d0742b1850ed73df5cd4f8e3405e1212ad
-```
-
----
-
-## 7. Summary of Changes Implemented
-
-1. **Full White & Black Theme**: Implemented dynamic theme toggling with white as the crisp default and black as the sleek dark mode.
-2. **Removed 15-minute Delivery**: Cleaned out all hardcoded "15 mins" references across the codebase and in the database. Delivery timings can now be configured in WooCommerce shipping settings if needed.
-3. **100% Data-Driven Presentation**: Removed hardcoded product cards, fake promotional aside cards, and static text. Everything is drawn directly from your WooCommerce live catalog.
-
----
-
-## 8. Customer Authentication & Google OAuth Setup
-
-### 8.1 How It Works
 - **Google OAuth:** Users click "Continue with Google" → Next.js verifies the Google profile → automatically searches or registers the customer in WooCommerce (`POST /wp-json/wc/v3/customers`) → creates a secure HTTP-only session cookie.
-- **Email / Password:** Users can also register and log in with standard email and password.
+- **Email / Password:** Users can register and log in with standard credentials.
 - **Forgot Password:** Users enter their registered email at `/forgot-password` to trigger password reset instructions verified with WooCommerce.
 - **Checkout Pre-Fill:** Logged-in customers have their name, email, phone, and saved shipping address auto-filled at checkout, and the order is linked directly to their WooCommerce customer ID.
 
-### 8.2 Setting Up Live Google OAuth Credentials:
+### Setting Up Live Google OAuth Credentials:
 1. Go to [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a Project (or select an existing one) → Navigate to **APIs & Services → Credentials**.
-3. Click **Create Credentials → OAuth client ID**.
-4. Select **Application type: Web application**.
-5. Under **Authorized redirect URIs**, add:
+2. Create a Project → Navigate to **APIs & Services → Credentials**.
+3. Click **Create Credentials → OAuth client ID** (Application type: *Web application*).
+4. Under **Authorized redirect URIs**, add your production domain:
    ```
-   http://localhost:3000/api/auth/google/callback
+   https://interesting-ten.vercel.app/api/auth/google/callback
    ```
-   *(For production, also add your live domain: `https://yourdomain.com/api/auth/google/callback`)*
-6. Copy the **Client ID** and **Client Secret** and add them to your `.env.local`:
-   ```env
-   GOOGLE_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=your_client_secret_here
-   ```
-7. In development mode (before credentials are added), clicking "Continue with Google" operates in instant Local Dev Test Mode so you can test the entire customer creation flow immediately!
+5. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to your environment variables.
 
+---
+
+## 6. Automated SMS Notifications (httpSMS Gateway)
+
+Instant customer SMS alerts are dispatched when orders are placed or updated:
+- **Order Confirmation:** Sent to customer upon successful checkout.
+- **Admin Alert:** Instant notification to store owner for new orders.
+- **Status Updates:** Triggered when order status changes to *Completed*, *Shipped*, or *Cancelled* via WooCommerce Webhooks.
+
+---
+
+## 7. Production Environment Configuration
+
+In your production hosting environment (e.g. Vercel), set the following environment variables:
+
+```env
+# WooCommerce Production Backend URL
+NEXT_PUBLIC_WC_URL=https://intersting.duckdns.org
+
+# WooCommerce REST API Credentials
+WC_CONSUMER_KEY=ck_41bc01e3bd8cbef7ab775b9fed136778b1efd727
+WC_CONSUMER_SECRET=cs_3b1595d0742b1850ed73df5cd4f8e3405e1212ad
+
+# WordPress Application Password
+WC_APP_USER=ashok
+WC_APP_PASSWORD=G4J1 hiEc rSBt ALs7 Ftyh 6mBf
+
+# Secret key for customer session cookies
+SESSION_SECRET=intersting-headless-secret-key-2026-production
+
+# httpSMS Gateway
+HTTPSMS_API_KEY=uk_6vpalX4-aPPjXEdPknHq0rSWxhndeol-BbJZjztNb_yQwp9m7jY9OCUoENSXUD1I
+HTTPSMS_FROM_PHONE=+919994847167
+HTTPSMS_ADMIN_PHONE=+919994847167
+DEFAULT_PHONE_COUNTRY_CODE=+91
+HTTPSMS_ENABLED=true
+
+# WooCommerce Webhook Secret
+WC_WEBHOOK_SECRET=}MYZ?JES&VOk*Jj_jIjD@OGL&ul&q>>=$Y?7<=q@x-u80y(/7h
+```
+
+---
+
+## 8. WooCommerce Webhook Configuration
+
+To receive automatic order status and dispatch updates from WooCommerce:
+1. Open **WordPress Admin → WooCommerce → Settings → Advanced → Webhooks**.
+2. Click **Add Webhook**:
+   - **Name:** Next.js Order Webhook
+   - **Status:** Active
+   - **Topic:** Order updated (and create another for Order created)
+   - **Delivery URL:** `https://interesting-ten.vercel.app/api/webhooks/woocommerce/orders`
+   - **Secret:** Copy the value of `WC_WEBHOOK_SECRET`
+   - **API Version:** WP REST API Integration v3
+3. Save the webhook.

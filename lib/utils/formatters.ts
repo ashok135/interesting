@@ -48,12 +48,19 @@ export function calculateItemCount(items: Array<{ quantity: number }>): number {
 
 // Fallback image if WooCommerce product doesn't have an image uploaded yet
 const FALLBACK_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=800&q=80';
+const PROD_WC_URL = (process.env.NEXT_PUBLIC_WC_URL || process.env.WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
 
 export function getProductImageUrl(product?: { images?: Array<{ src: string }>; slug?: string; name?: string }): string {
   if (product?.images && product.images.length > 0 && product.images[0]?.src) {
-    let src = product.images[0].src;
+    const src = product.images[0].src;
     if (src.includes('/wp-content/uploads/')) {
-      return `/api/media/${src.split('/wp-content/uploads/')[1]}`;
+      const match = src.match(/\/wp-content\/uploads\/(.+)$/);
+      if (match) {
+        return `${PROD_WC_URL}/wp-content/uploads/${match[1]}`;
+      }
+    }
+    if (src.startsWith('/api/media/')) {
+      return `${PROD_WC_URL}/wp-content/uploads/${src.replace('/api/media/', '')}`;
     }
     return src;
   }

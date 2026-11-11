@@ -74,13 +74,37 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Woo
   return (products || []).map(normalizeProduct);
 }
 
-function normalizeImageUrl(url: string): string {
-  if (!url) return url;
-  if (url.includes('/wp-content/uploads/')) {
-    const parts = url.split('/wp-content/uploads/');
-    return `/api/media/${parts[1]}`;
+const PROD_WC_URL = (process.env.NEXT_PUBLIC_WC_URL || process.env.WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
+
+export function normalizeImageUrl(url?: string | null): string {
+  if (!url) return '';
+  const cleanUrl = url.trim();
+
+  // If already a full URL
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+    // Rewrite old local or tunnel domains to the production WooCommerce URL
+    if (cleanUrl.includes('interesting.local') || cleanUrl.includes('localsite.io')) {
+      const match = cleanUrl.match(/\/wp-content\/uploads\/(.+)$/);
+      if (match) {
+        return `${PROD_WC_URL}/wp-content/uploads/${match[1]}`;
+      }
+    }
+    // Ensure https for our domain
+    if (cleanUrl.includes('intersting.duckdns.org') && cleanUrl.startsWith('http://')) {
+      return cleanUrl.replace('http://', 'https://');
+    }
+    return cleanUrl;
   }
-  return url;
+
+  // Handle relative paths
+  if (cleanUrl.startsWith('/api/media/')) {
+    return `${PROD_WC_URL}/wp-content/uploads/${cleanUrl.replace('/api/media/', '')}`;
+  }
+  if (cleanUrl.startsWith('/wp-content/uploads/')) {
+    return `${PROD_WC_URL}${cleanUrl}`;
+  }
+
+  return cleanUrl;
 }
 
 function normalizeProduct(p: WooProduct): WooProduct {

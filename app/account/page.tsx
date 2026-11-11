@@ -75,8 +75,11 @@ function getItemImageUrl(item?: { name?: string; image?: { src?: string } } | nu
   const src = item.image?.src;
   if (src) {
     if (src.includes('/wp-content/uploads/')) {
-      const parts = src.split('/wp-content/uploads/');
-      return `/api/media/${parts[1]}`;
+      const match = src.match(/\/wp-content\/uploads\/(.+)$/);
+      return match ? `https://intersting.duckdns.org/wp-content/uploads/${match[1]}` : src;
+    }
+    if (src.startsWith('/api/media/')) {
+      return `https://intersting.duckdns.org/wp-content/uploads/${src.replace('/api/media/', '')}`;
     }
     return src;
   }

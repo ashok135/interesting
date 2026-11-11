@@ -120,10 +120,13 @@ export async function getOrCreateCustomer(data: CreateCustomerData): Promise<Woo
 
 function normalizeOrder(order: WooOrder): WooOrder {
   if (!order || !order.line_items) return order;
+  const prodWcUrl = (process.env.NEXT_PUBLIC_WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
   order.line_items = order.line_items.map((item) => {
     if (item.image?.src && item.image.src.includes('/wp-content/uploads/')) {
-      const parts = item.image.src.split('/wp-content/uploads/');
-      item.image.src = `/api/media/${parts[1]}`;
+      const match = item.image.src.match(/\/wp-content\/uploads\/(.+)$/);
+      if (match) {
+        item.image.src = `${prodWcUrl}/wp-content/uploads/${match[1]}`;
+      }
     }
     return item;
   });

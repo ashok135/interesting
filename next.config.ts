@@ -2,10 +2,9 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   images: {
-    dangerouslyAllowLocalIP: true,
     remotePatterns: [
       {
-        // Allow images from migrated WooCommerce (DuckDNS)
+        // Production WooCommerce Host (DuckDNS)
         protocol: 'https',
         hostname: 'intersting.duckdns.org',
         pathname: '/**',
@@ -16,27 +15,17 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        // Allow images from your local WooCommerce
-        protocol: 'http',
-        hostname: 'interesting.local',
-        pathname: '/wp-content/uploads/**',
-      },
-      {
-        // Allow images from LocalWP Live Link
-        protocol: 'https',
-        hostname: '**.localsite.io',
-        pathname: '/**',
-      },
-      {
-        // Allow WooCommerce placeholder images
+        // WooCommerce placeholder images
         protocol: 'https',
         hostname: '**.woocommerce.com',
       },
       {
+        // Unsplash assets
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
       {
+        // Gravatar customer avatars
         protocol: 'https',
         hostname: '**.gravatar.com',
       },
@@ -45,12 +34,13 @@ const nextConfig: NextConfig = {
         hostname: 'secure.gravatar.com',
       },
       {
+        // Google OAuth user avatars
         protocol: 'https',
         hostname: '**.googleusercontent.com',
       },
     ],
   },
-  // Enable ISR revalidation logging in dev
+  // Logging fetches in development
   logging: {
     fetches: {
       fullUrl: true,
