@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { AuthUser } from '@/lib/auth/session';
 import type { WooCustomer } from '@/lib/api/customers';
 import type { WooOrder } from '@/types';
+import { signInWithGoogleFirebase, signOutFirebase } from '@/lib/firebase/auth';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -12,6 +13,7 @@ interface AuthContextValue {
   loading: boolean;
   loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signupWithEmail: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message?: string; resetUrl?: string; error?: string }>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -88,6 +90,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      const res = await signInWithGoogleFirebase();
+      if (!res.success) {
+        return { success: false, error: res.error || 'Google login failed' };
+      }
+      await checkAuth();
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Google login error';
+      return { success: false, error: msg };
+    }
+  };
+
   const forgotPassword = async (email: string) => {
     try {
       const res = await fetch('/api/auth/forgot-password', {
@@ -107,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      await signOutFirebase();
       await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
       setCustomer(null);
@@ -134,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         loginWithEmail,
         signupWithEmail,
+        loginWithGoogle,
         forgotPassword,
         logout,
         refresh: checkAuth,

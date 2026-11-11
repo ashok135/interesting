@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { findCustomerByEmail } from '@/lib/api/customers';
+import { findCustomerByEmail, verifyCustomerCredentials } from '@/lib/api/customers';
 import { createSessionToken } from '@/lib/auth/session';
 
 export async function POST(req: NextRequest) {
@@ -17,6 +17,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'No account found with this email. Please sign up first.' },
         { status: 404 }
+      );
+    }
+
+    // Verify credentials directly against WordPress authentication
+    const isValid = await verifyCustomerCredentials(trimmedEmail, password);
+    if (!isValid) {
+      return NextResponse.json(
+        { error: 'Invalid password. Please try again or use Google Sign-In.' },
+        { status: 401 }
       );
     }
 

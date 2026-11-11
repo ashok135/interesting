@@ -84,6 +84,35 @@ export async function getCustomerById(id: number): Promise<WooCustomer | null> {
 }
 
 /**
+ * Verifies a customer's password directly against the WordPress authentication engine
+ */
+export async function verifyCustomerCredentials(emailOrUsername: string, password: string): Promise<boolean> {
+  try {
+    const prodWcUrl = (process.env.NEXT_PUBLIC_WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
+    const form = new URLSearchParams();
+    form.set('log', emailOrUsername);
+    form.set('pwd', password);
+    form.set('rememberme', 'forever');
+
+    const res = await fetch(`${prodWcUrl}/wp-login.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form,
+      redirect: 'manual',
+      cache: 'no-store',
+    });
+
+    const cookies = res.headers.getSetCookie ? res.headers.getSetCookie() : [res.headers.get('set-cookie') || ''];
+    const hasAuthCookie = cookies.some((c) => c && c.includes('wordpress_logged_in_'));
+
+    return res.status === 302 && hasAuthCookie;
+  } catch (err) {
+    console.error('Password verification error:', err);
+    return false;
+  }
+}
+
+/**
  * Creates a new customer in WooCommerce
  */
 export async function createWooCustomer(data: CreateCustomerData): Promise<WooCustomer> {
