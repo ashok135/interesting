@@ -157,7 +157,7 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
 
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://intersting.duckdns.org')
   ).replace(/\/$/, '');
 
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;
@@ -167,8 +167,8 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
 
   // Compose customer SMS with tracking link
   const customerMessage = isPending
-    ? `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been received. Track your order: ${trackingUrl} . Thank you for shopping with Interesting!`
-    : `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been confirmed! Track your order: ${trackingUrl} . Thank you for shopping with Interesting!`;
+    ? `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been received. Track your order: ${trackingUrl} . Thank you for shopping with INTERSTING!`
+    : `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been confirmed! Track your order: ${trackingUrl} . Thank you for shopping with INTERSTING!`;
 
   let customerResult: SmsResult;
 
@@ -246,7 +246,7 @@ export async function sendOrderStatusUpdateSms(
 
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://interesting-ten.vercel.app')
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://intersting.duckdns.org')
   ).replace(/\/$/, '');
 
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;
@@ -256,17 +256,17 @@ export async function sendOrderStatusUpdateSms(
     customerMessage =
       `Hi ${customerName}, your order #${orderId} has been marked as Completed & Delivered! ` +
       `We hope you love your purchase. View order: ${trackingUrl} . ` +
-      `Thank you for shopping with Interesting!`;
+      `Thank you for shopping with INTERSTING!`;
   } else if (status === 'shipped') {
     customerMessage =
       `Hi ${customerName}, exciting news! Your order #${orderId} has been shipped and is on its way. ` +
       `Track your delivery: ${trackingUrl} . ` +
-      `Thank you for shopping with Interesting!`;
+      `Thank you for shopping with INTERSTING!`;
   } else if (status === 'processing') {
     customerMessage =
       `Hi ${customerName}, payment confirmed! Your order #${orderId} is now being processed and packed. ` +
       `Track your order: ${trackingUrl} . ` +
-      `Thank you for shopping with Interesting!`;
+      `Thank you for shopping with INTERSTING!`;
   } else if (status === 'cancelled') {
     customerMessage =
       `Hi ${customerName}, your order #${orderId} has been cancelled. ` +

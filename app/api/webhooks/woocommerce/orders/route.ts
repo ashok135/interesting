@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Health check / verification
- * GET https://interesting-ten.vercel.app/api/webhooks/woocommerce/orders
+ * GET https://intersting.duckdns.org/api/webhooks/woocommerce/orders
  */
 export async function GET() {
   return NextResponse.json({
@@ -20,7 +20,7 @@ export async function GET() {
 
 /**
  * WooCommerce Webhook Listener
- * POST https://interesting-ten.vercel.app/api/webhooks/woocommerce/orders
+ * POST https://intersting.duckdns.org/api/webhooks/woocommerce/orders
  *
  * Supports:
  * - Ping verification (action.woocommerce_webhook_ping)

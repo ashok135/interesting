@@ -163,7 +163,7 @@ export function Header() {
                 </div>
                 <div className={styles.drawerUserMeta}>
                   <p className={styles.drawerUserName}>
-                    {user ? user.name : 'Welcome to Interesting!'}
+                    {user ? user.name : 'Welcome to INTERSTING!'}
                   </p>
                   <p className={styles.drawerUserSub}>
                     {user ? user.email : 'Log in for express checkout & saved addresses'}

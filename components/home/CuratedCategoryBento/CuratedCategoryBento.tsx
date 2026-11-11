@@ -37,7 +37,7 @@ export function CuratedCategoryBento({ categories = [] }: CuratedCategoryBentoPr
           <Link
             href="/shop?category=nuts"
             className={`${styles.card} ${styles.tallCard}`}
-            aria-label="Shop Nuts & Kaju Favourites"
+            aria-label="Shop Nuts &amp; Cashews Favourites"
           >
             <span className={styles.cardTitle}>
               Harvest<br />Favourites

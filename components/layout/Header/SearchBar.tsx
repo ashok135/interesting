@@ -20,7 +20,7 @@ interface SearchProduct {
   stock_status?: string;
 }
 
-const POPULAR_SUGGESTIONS = ['W180 Cashews', 'Tellicherry Pepper', 'Saffron', 'Salted Kaju'];
+const POPULAR_SUGGESTIONS = ['W180 Cashews', 'Tellicherry Pepper', 'Saffron', 'Cashew Nuts'];
 
 async function fetchSearchResults(searchTerm: string): Promise<SearchProduct[]> {
   if (!searchTerm.trim()) return [];
