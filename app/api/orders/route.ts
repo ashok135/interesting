@@ -67,10 +67,10 @@ export async function POST(req: NextRequest) {
     // Build payload for WooCommerce REST API
     const wcPayload: Record<string, unknown> = {
       payment_method: isCod ? 'cod' : (body.payment_method || 'bacs'),
-      payment_method_title: isCod ? 'Cash on Delivery' : (body.payment_method_title || 'Online Payment'),
+      payment_method_title: isCod ? 'Pay on Delivery (Cash / UPI)' : (body.payment_method_title || 'Direct UPI Transfer'),
       set_paid: isCod ? false : (body.set_paid ?? false),
-      // Cash on Delivery is confirmed immediately -> status 'processing' (not 'pending')
-      status: isCod ? 'processing' : (body.set_paid ? 'processing' : 'pending'),
+      // COD is immediately confirmed -> status 'processing'. UPI awaits UTR verification -> status 'on-hold'
+      status: isCod ? 'processing' : (body.set_paid ? 'processing' : 'on-hold'),
       billing: billingAddress,
       shipping: shippingAddress,
       line_items: body.line_items.map((item) => ({

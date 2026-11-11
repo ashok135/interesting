@@ -35,13 +35,15 @@ import {
   TriangleAlert,
   LocateFixed,
   Navigation,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import type { OrderBilling } from '@/types';
 import styles from './page.module.css';
 
 type CheckoutStep = 'auth' | 'address' | 'payment' | 'success';
 type AuthMode = 'login' | 'signup';
-type PaymentMethod = 'cod' | 'upi' | 'card';
+type PaymentMethod = 'cod' | 'upi';
 
 interface WooCommerceCoupon {
   id: number;
@@ -91,6 +93,8 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<WooCommerceCoupon | null>(null);
 
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cod');
+  const [upiRef, setUpiRef] = useState('');
+  const [copiedUpi, setCopiedUpi] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [orderId, setOrderId] = useState<number | null>(null);
@@ -304,21 +308,36 @@ export default function CheckoutPage() {
       phone: addr.phone || '',
     };
 
+    const storeUpiId = process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi';
     const orderItemCount = items.reduce((sum, i) => sum + i.quantity, 0);
     const orderGrandTotal = grandTotal;
-    const orderPaymentTitle = payMethod === 'cod' ? 'Cash on Delivery' : payMethod === 'upi' ? 'UPI' : 'Card';
+    const orderPaymentTitle = payMethod === 'cod' ? 'Pay on Delivery (Cash / UPI)' : 'Direct UPI Transfer';
+
+    if (payMethod === 'upi') {
+      const cleanRef = upiRef.trim();
+      if (!cleanRef) {
+        setOrderError('Please enter your 12-digit UPI Reference / UTR Number to confirm your payment.');
+        setPlacing(false);
+        return;
+      }
+      if (cleanRef.length < 6) {
+        setOrderError('Please enter a valid UPI Reference / UTR Number from your payment app.');
+        setPlacing(false);
+        return;
+      }
+    }
 
     try {
       const order = await createOrder({
         customer_id: user?.id,
-        payment_method: payMethod === 'cod' ? 'cod' : (payMethod === 'upi' ? 'bacs' : 'bacs'),
+        payment_method: payMethod === 'cod' ? 'cod' : 'bacs',
         payment_method_title: orderPaymentTitle,
         set_paid: false,
         billing: finalBilling,
         shipping: finalBilling,
         line_items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
         coupon_code: appliedCoupon?.code,
-        discount_amount: discount > 0 ? discount : undefined,
+        customer_note: payMethod === 'upi' ? `Paid via UPI to ${storeUpiId}. UTR / Ref No: ${upiRef.trim()}` : undefined,
         shipping_lines: [
           {
             method_id: delivery === 0 ? 'free_shipping' : 'flat_rate',
@@ -363,7 +382,7 @@ export default function CheckoutPage() {
     const oId = confirmedOrder?.id || orderId;
     const oTotal = confirmedOrder?.total ?? grandTotal;
     const oItems = confirmedOrder?.itemCount ?? (items.length || 1);
-    const oPay = confirmedOrder?.paymentTitle ?? (payMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment');
+    const oPay = confirmedOrder?.paymentTitle ?? (payMethod === 'cod' ? 'Pay on Delivery (Cash / UPI)' : 'Direct UPI Transfer');
 
     return (
       <div className={styles.successPage}>
@@ -691,9 +710,8 @@ export default function CheckoutPage() {
 
                 <div className={styles.paymentOptions}>
                   {[
-                    { id: 'cod',  Icon: Banknote,   label: 'Cash on Delivery',      sub: 'Pay when your order arrives', badge: null    },
-                    { id: 'upi',  icon: 'UPI',       label: 'UPI / PhonePe / GPay',  sub: 'Instant payment via UPI',    badge: 'Popular' },
-                    { id: 'card', Icon: CreditCard,  label: 'Credit / Debit Card',   sub: 'Visa, Mastercard, RuPay',    badge: null    },
+                    { id: 'cod',  Icon: Banknote,   label: 'Pay on Delivery (Cash / UPI)',          sub: 'Pay at your doorstep via Cash or scan delivery partner UPI QR', badge: 'Most Popular' },
+                    { id: 'upi',  icon: 'UPI',       label: 'Direct UPI Transfer (GPay / PhonePe / Paytm)', sub: 'Scan QR code & enter 12-digit UPI Reference (UTR)', badge: 'Instant' },
                   ].map((opt) => (
                     <label
                       key={opt.id}
@@ -702,7 +720,10 @@ export default function CheckoutPage() {
                     >
                       <input type="radio" id={`pay-${opt.id}`} name="payment" value={opt.id}
                         checked={payMethod === opt.id as PaymentMethod}
-                        onChange={() => setPayMethod(opt.id as PaymentMethod)}
+                        onChange={() => {
+                          setPayMethod(opt.id as PaymentMethod);
+                          setOrderError('');
+                        }}
                         className={styles.radioInput} />
                       <span className={styles.payOptIcon}>
                         {'icon' in opt ? <span className={styles.upiIcon}>{opt.icon}</span> : <opt.Icon size={20} />}
@@ -717,10 +738,74 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                {payMethod !== 'cod' && (
-                  <div className={styles.paymentNote}>
-                    <ShieldCheck size={14} />
-                    <span>Demo store — no real payment will be charged. Order placed as pending.</span>
+                {payMethod === 'cod' && (
+                  <div className={styles.codNote}>
+                    <ShieldCheck size={18} />
+                    <span><strong>100% Safe &amp; Contactless Delivery:</strong> You can pay in cash or scan the delivery executive&apos;s UPI QR code upon arrival.</span>
+                  </div>
+                )}
+
+                {payMethod === 'upi' && (
+                  <div className={styles.upiBox}>
+                    <div className={styles.upiHeader}>
+                      <span className={styles.upiTitle}>Scan QR or Transfer via UPI</span>
+                      <span className={styles.upiIdBadge}>
+                        {process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi'}
+                        <button
+                          type="button"
+                          className={styles.upiCopyBtn}
+                          onClick={() => {
+                            navigator.clipboard.writeText(process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi');
+                            setCopiedUpi(true);
+                            setTimeout(() => setCopiedUpi(false), 2000);
+                          }}
+                          title="Copy UPI ID"
+                        >
+                          <Copy size={13} /> {copiedUpi ? 'Copied!' : 'Copy'}
+                        </button>
+                      </span>
+                    </div>
+
+                    <div className={styles.upiQrArea}>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                          `upi://pay?pa=${process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi'}&pn=${encodeURIComponent(
+                            process.env.NEXT_PUBLIC_STORE_UPI_NAME || 'INTERSTING'
+                          )}&am=${grandTotal}&cu=INR&tn=Order_Payment`
+                        )}`}
+                        alt="UPI Payment QR Code"
+                        className={styles.upiQrImg}
+                      />
+                      <div className={styles.upiInstructions}>
+                        <div><strong>Step 1:</strong> Scan QR with GPay, PhonePe, Paytm, or any UPI app.</div>
+                        <div><strong>Step 2:</strong> Pay exact order total of <strong>{formatPrice(grandTotal)}</strong>.</div>
+                        <div><strong>Step 3:</strong> Paste the 12-digit <strong>UPI Reference / UTR Number</strong> below to confirm.</div>
+
+                        <a
+                          href={`upi://pay?pa=${process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi'}&pn=${encodeURIComponent(
+                            process.env.NEXT_PUBLIC_STORE_UPI_NAME || 'INTERSTING'
+                          )}&am=${grandTotal}&cu=INR&tn=Order_Payment`}
+                          className={styles.upiIntentBtn}
+                        >
+                          <ExternalLink size={14} /> Pay with UPI App on Mobile
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className={styles.upiInputGroup}>
+                      <label htmlFor="upi-ref-input" className={styles.upiInputLabel}>
+                        12-digit UPI Reference / UTR Number <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <input
+                        id="upi-ref-input"
+                        type="text"
+                        placeholder="e.g. 412356789012"
+                        value={upiRef}
+                        onChange={(e) => setUpiRef(e.target.value.replace(/[^0-9a-zA-Z]/g, ''))}
+                        maxLength={22}
+                        className={styles.upiInput}
+                      />
+                    </div>
                   </div>
                 )}
 
