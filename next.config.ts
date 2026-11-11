@@ -5,6 +5,17 @@ const nextConfig: NextConfig = {
     dangerouslyAllowLocalIP: true,
     remotePatterns: [
       {
+        // Allow images from migrated WooCommerce (DuckDNS)
+        protocol: 'https',
+        hostname: 'intersting.duckdns.org',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'intersting.duckdns.org',
+        pathname: '/**',
+      },
+      {
         // Allow images from your local WooCommerce
         protocol: 'http',
         hostname: 'interesting.local',

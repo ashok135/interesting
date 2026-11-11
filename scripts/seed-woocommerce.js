@@ -1,6 +1,6 @@
 // seed-woocommerce.js
 const auth = Buffer.from('ashok:G4J1 hiEc rSBt ALs7 Ftyh 6mBf').toString('base64');
-const baseUrl = 'http://interesting.local/wp-json';
+const baseUrl = (process.env.NEXT_PUBLIC_WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '') + '/wp-json';
 
 async function wcRequest(endpoint, method = 'GET', body = null) {
   const options = {

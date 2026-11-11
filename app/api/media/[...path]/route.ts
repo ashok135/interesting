@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-let WC_URL = process.env.NEXT_PUBLIC_WC_URL || 'https://gusty-gravity.localsite.io';
+let WC_URL = (process.env.NEXT_PUBLIC_WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
 if (WC_URL.includes('interesting.local') && (process.env.VERCEL || process.env.NODE_ENV === 'production')) {
-  WC_URL = 'https://gusty-gravity.localsite.io';
+  WC_URL = 'https://intersting.duckdns.org';
 }
 const TUNNEL_USER = process.env.WC_TUNNEL_USER || 'pizzas';
 const TUNNEL_PASSWORD = process.env.WC_TUNNEL_PASSWORD || 'tender';
@@ -17,14 +17,15 @@ export async function GET(
       return new NextResponse('Image path required', { status: 400 });
     }
 
+    const currentWcUrl = (process.env.NEXT_PUBLIC_WC_URL || WC_URL).replace(/\/$/, '');
     const imagePath = path.join('/');
-    const targetUrl = `${WC_URL}/wp-content/uploads/${imagePath}`;
+    const targetUrl = `${currentWcUrl}/wp-content/uploads/${imagePath}`;
 
     const headers: Record<string, string> = {
       'User-Agent': 'NextJS-Media-Proxy/1.0',
     };
 
-    if (WC_URL.includes('localsite.io') || (TUNNEL_USER && TUNNEL_PASSWORD)) {
+    if (currentWcUrl.includes('localsite.io') && TUNNEL_USER && TUNNEL_PASSWORD) {
       const basicAuth = Buffer.from(`${TUNNEL_USER}:${TUNNEL_PASSWORD}`).toString('base64');
       headers['Authorization'] = `Basic ${basicAuth}`;
     }

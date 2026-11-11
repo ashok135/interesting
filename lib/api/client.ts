@@ -28,16 +28,14 @@ function getCandidateBaseUrls(): string[] {
   const isVercel = Boolean(process.env.VERCEL);
 
   const list: string[] = [];
-  if (isVercel) {
-    if (envUrl && !envUrl.includes('.local')) list.push(envUrl);
-    list.push('https://gusty-gravity.localsite.io');
-  } else {
-    // Local dev: prefer direct lightning server domain
-    if (envUrl && envUrl.includes('.local')) list.push(envUrl);
-    list.push('http://interesting.local');
-    if (envUrl && !envUrl.includes('.local')) list.push(envUrl);
-    list.push('https://gusty-gravity.localsite.io');
+  if (envUrl) {
+    list.push(envUrl);
   }
+  list.push('https://intersting.duckdns.org');
+  if (!isVercel) {
+    list.push('http://interesting.local');
+  }
+  list.push('https://gusty-gravity.localsite.io');
 
   return Array.from(new Set(list.filter(Boolean)));
 }
@@ -71,6 +69,11 @@ function buildHeadersForBase(baseUrl: string): Record<string, string> {
 
   if (!isTunnel && APP_USER && APP_PASSWORD) {
     const credentials = Buffer.from(`${APP_USER}:${APP_PASSWORD}`).toString('base64');
+    return { Authorization: `Basic ${credentials}` };
+  }
+
+  if (!isTunnel && CONSUMER_KEY && CONSUMER_SECRET) {
+    const credentials = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString('base64');
     return { Authorization: `Basic ${credentials}` };
   }
 

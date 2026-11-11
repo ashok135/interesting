@@ -1,7 +1,7 @@
 # INTERSTING — Headless WooCommerce & Next.js Architecture Guide
 
 > **Core Philosophy:** **99% of all business logic resides strictly inside WordPress & WooCommerce.**  
-> The Next.js frontend is a pure, lightning-fast presentation and shopping layer. Whatever you add, update, or remove in your WordPress Admin (`http://interesting.local/wp-admin`) instantly drives the website.
+> The Next.js frontend is a pure, lightning-fast presentation and shopping layer. Whatever you add, update, or remove in your WordPress Admin (`https://intersting.duckdns.org/wp-admin`) instantly drives the website.
 
 ---
 
@@ -139,7 +139,7 @@ Your `.env.local` contains the secure credentials to connect with your local Wor
 
 ```env
 # WooCommerce Site URL
-NEXT_PUBLIC_WC_URL=http://interesting.local
+NEXT_PUBLIC_WC_URL=https://intersting.duckdns.org
 
 # WordPress Application Password (recommended for LocalWP)
 WC_APP_USER=ashok
