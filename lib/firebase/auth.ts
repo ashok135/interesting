@@ -67,7 +67,20 @@ export async function signInWithGoogleFirebase(): Promise<{ success: boolean; us
     return { success: true, user: userProfile };
   } catch (err: unknown) {
     console.error('Firebase Google sign-in error:', err);
-    const message = err instanceof Error ? err.message : 'Google sign-in failed. Please try again.';
+    let message = 'Google sign-in failed. Please try again.';
+    if (err && typeof err === 'object') {
+      const fbErr = err as { code?: string; message?: string };
+      if (fbErr.code === 'auth/unauthorized-domain') {
+        const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        message = `Unauthorized Domain: Please add "${currentDomain}" to Firebase Console -> Authentication -> Settings -> Authorized domains.`;
+      } else if (fbErr.code === 'auth/popup-closed-by-user') {
+        message = 'Google sign-in popup was closed before completing.';
+      } else if (fbErr.code === 'auth/cancelled-popup-request') {
+        message = 'Only one sign-in window can be open at a time.';
+      } else if (fbErr.message) {
+        message = fbErr.message;
+      }
+    }
     return { success: false, error: message };
   }
 }
