@@ -110,15 +110,15 @@ The storefront features an ultra-clean minimalist monochrome design system suppo
 - **Forgot Password:** Users enter their registered email at `/forgot-password` to trigger password reset instructions verified with WooCommerce.
 - **Checkout Pre-Fill:** Logged-in customers have their name, email, phone, and saved shipping address auto-filled at checkout, and the order is linked directly to their WooCommerce customer ID.
 
-### Setting Up Live Google OAuth Credentials:
-1. Go to [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a Project → Navigate to **APIs & Services → Credentials**.
-3. Click **Create Credentials → OAuth client ID** (Application type: *Web application*).
-4. Under **Authorized redirect URIs**, add your production domain:
-   ```
-   https://interesting-ten.vercel.app/api/auth/google/callback
-   ```
-5. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to your environment variables.
+### Setting Up Google Sign-In (Firebase):
+> **Note:** Google Sign-In is now handled via **Firebase Authentication** (project `ngl-1b75b`). No separate Google Cloud OAuth credentials are needed in Next.js.
+1. Go to [Firebase Console](https://console.firebase.google.com/project/ngl-1b75b).
+2. Navigate to **Authentication → Sign-in method**.
+3. Click **Google → Enable → Save**.
+4. Go to **Authentication → Settings → Authorized domains** and add:
+   - `intersting.duckdns.org`
+   - Your Vercel deployment domain (e.g. `*.vercel.app`)
+5. Add `NEXT_PUBLIC_FIREBASE_*` variables to your environment (see `.env.example`).
 
 ---
 
@@ -139,26 +139,38 @@ In your production hosting environment (e.g. Vercel), set the following environm
 # WooCommerce Production Backend URL
 NEXT_PUBLIC_WC_URL=https://intersting.duckdns.org
 
+# Production site URL (used in SMS tracking links)
+NEXT_PUBLIC_SITE_URL=https://intersting.duckdns.org
+
 # WooCommerce REST API Credentials
-WC_CONSUMER_KEY=ck_41bc01e3bd8cbef7ab775b9fed136778b1efd727
-WC_CONSUMER_SECRET=cs_3b1595d0742b1850ed73df5cd4f8e3405e1212ad
+WC_CONSUMER_KEY=ck_...
+WC_CONSUMER_SECRET=cs_...
 
 # WordPress Application Password
-WC_APP_USER=ashok
-WC_APP_PASSWORD=G4J1 hiEc rSBt ALs7 Ftyh 6mBf
+WC_APP_USER=your_wordpress_username
+WC_APP_PASSWORD=your app password here
 
 # Secret key for customer session cookies
-SESSION_SECRET=intersting-headless-secret-key-2026-production
+SESSION_SECRET=your-random-secret-key
+
+# Firebase Authentication (project: ngl-1b75b)
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=ngl-1b75b.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=ngl-1b75b
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=ngl-1b75b.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=...
 
 # httpSMS Gateway
-HTTPSMS_API_KEY=uk_6vpalX4-aPPjXEdPknHq0rSWxhndeol-BbJZjztNb_yQwp9m7jY9OCUoENSXUD1I
-HTTPSMS_FROM_PHONE=+919994847167
-HTTPSMS_ADMIN_PHONE=+919994847167
+HTTPSMS_API_KEY=...
+HTTPSMS_FROM_PHONE=+91XXXXXXXXXX
+HTTPSMS_ADMIN_PHONE=+91XXXXXXXXXX
 DEFAULT_PHONE_COUNTRY_CODE=+91
 HTTPSMS_ENABLED=true
 
 # WooCommerce Webhook Secret
-WC_WEBHOOK_SECRET=}MYZ?JES&VOk*Jj_jIjD@OGL&ul&q>>=$Y?7<=q@x-u80y(/7h
+WC_WEBHOOK_SECRET=your_webhook_secret_here
 ```
 
 ---
@@ -171,7 +183,7 @@ To receive automatic order status and dispatch updates from WooCommerce:
    - **Name:** Next.js Order Webhook
    - **Status:** Active
    - **Topic:** Order updated (and create another for Order created)
-   - **Delivery URL:** `https://interesting-ten.vercel.app/api/webhooks/woocommerce/orders`
+   - **Delivery URL:** `https://intersting.duckdns.org/api/webhooks/woocommerce/orders`
    - **Secret:** Copy the value of `WC_WEBHOOK_SECRET`
    - **API Version:** WP REST API Integration v3
 3. Save the webhook.
