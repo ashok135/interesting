@@ -83,17 +83,9 @@ export async function POST(req: NextRequest) {
       wcPayload.customer_id = customerId;
     }
 
-    // Apply coupon directly through WooCommerce if provided
+    // Apply coupon directly through WooCommerce (WooCommerce validates code, limits, and calculates discount)
     if (body.coupon_code) {
       wcPayload.coupon_lines = [{ code: body.coupon_code.trim().toLowerCase() }];
-    } else if (body.discount_amount && body.discount_amount > 0) {
-      // Fallback discount fee if no coupon code
-      wcPayload.fee_lines = [
-        {
-          name: 'Special Discount',
-          total: `-${Number(body.discount_amount).toFixed(2)}`,
-        },
-      ];
     }
 
     // Handle shipping lines
