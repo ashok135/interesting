@@ -77,21 +77,23 @@ export function Footer() {
               <Link href="/account" className={styles.link}>My Account</Link>
               <Link href="/account" className={styles.link}>Track Orders</Link>
               <Link href="/cart" className={styles.link}>View Basket</Link>
-              <Link href="/wishlist" className={styles.link}>Wishlist</Link>
-              <Link href="/faq" className={styles.link}>Shipping & FAQs</Link>
-              <Link href="/returns" className={styles.link}>Easy Returns</Link>
-              <Link href="/terms" className={styles.link}>Privacy & Terms</Link>
+              <Link href="/shipping" className={styles.link}>Shipping & Delivery</Link>
+              <Link href="/returns" className={styles.link}>Cancellation & Returns</Link>
+              <Link href="/faq" className={styles.link}>FAQs & Help</Link>
+              <Link href="/privacy" className={styles.link}>Privacy Policy</Link>
+              <Link href="/terms" className={styles.link}>Terms of Service</Link>
+              <Link href="/contact" className={styles.link}>Contact Us</Link>
             </div>
 
             <div className={styles.col}>
               <h4 className={styles.colTitle}>Contact Us</h4>
               <div className={styles.contactItem}>
                 <Phone size={15} className={styles.contactIcon} />
-                <a href="tel:+919876543210" className={styles.contactLink}>+91 98765 43210</a>
+                <a href="tel:+919994847167" className={styles.contactLink}>+91 99948 47167</a>
               </div>
               <div className={styles.contactItem}>
                 <Mail size={15} className={styles.contactIcon} />
-                <a href="mailto:support@interesting.com" className={styles.contactLink}>support@interesting.com</a>
+                <a href="mailto:support@intersting.duckdns.org" className={styles.contactLink}>support@intersting.duckdns.org</a>
               </div>
               <div className={styles.contactItem}>
                 <MapPin size={15} className={styles.contactIcon} />
