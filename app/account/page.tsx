@@ -549,21 +549,57 @@ function AccountContent() {
     const canCancel = ['pending', 'processing', 'on-hold'].includes(status);
     const shippingAddr = selectedOrder.shipping?.address_1 ? selectedOrder.shipping : selectedOrder.billing;
 
+    // Status hero styling & content
+    let heroClass = styles.statusHeroProcessing;
+    let iconClass = styles.statusHeroIconProcessing;
+    let heroIcon = <Truck size={22} />;
+    let heroTitle = 'Order Confirmed & Preparing for Dispatch';
+    let heroSubtext = 'Estimated delivery: 3–5 business days via Free Express Courier.';
+
+    if (isCompleted) {
+      heroClass = styles.statusHeroCompleted;
+      iconClass = styles.statusHeroIconCompleted;
+      heroIcon = <CheckCircle2 size={22} />;
+      heroTitle = 'Delivered to your doorstep';
+      heroSubtext = 'We hope you love your fresh harvest!';
+    } else if (isShipped) {
+      heroClass = styles.statusHeroShipped;
+      iconClass = styles.statusHeroIconShipped;
+      heroIcon = <Truck size={22} />;
+      heroTitle = 'Package is out for delivery';
+      heroSubtext = 'Your package is with the courier partner and will arrive soon.';
+    } else if (isCancelled) {
+      heroClass = styles.statusHeroCancelled;
+      iconClass = styles.statusHeroIconCancelled;
+      heroIcon = <XCircle size={22} />;
+      heroTitle = 'Order Cancelled';
+      heroSubtext = 'No payment or delivery is pending.';
+    } else if (isPending) {
+      heroClass = styles.statusHeroPending;
+      iconClass = styles.statusHeroIconPending;
+      heroIcon = <Clock size={22} />;
+      heroTitle = 'Pending Payment';
+      heroSubtext = 'Awaiting payment confirmation before processing.';
+    }
+
     return (
       <div className={styles.modalOverlay} onClick={() => setSelectedOrder(null)}>
-        <div className={styles.modal} style={{ maxWidth: '620px', borderRadius: '22px' }} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={`${styles.modal} ${styles.orderDetailCard}`}
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header */}
-          <div className={styles.modalHeader} style={{ background: '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-                <h3 className={styles.modalTitle} style={{ fontSize: '1.25rem', fontWeight: 800 }}>
+          <div className={styles.orderDetailHeader}>
+            <div className={styles.orderDetailHeaderInfo}>
+              <div className={styles.orderDetailTitleRow}>
+                <h3 className={styles.orderDetailId}>
                   Order #{selectedOrder.id}
                 </h3>
                 <span className={`${styles.statusChip} ${statusChipClass}`}>
                   {statusLabel}
                 </span>
               </div>
-              <span style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span className={styles.orderDetailDate}>
                 <Clock size={13} />
                 Placed on{' '}
                 {new Date(selectedOrder.date_created).toLocaleDateString('en-IN', {
@@ -578,220 +614,172 @@ function AccountContent() {
             <button
               type="button"
               onClick={() => setSelectedOrder(null)}
-              className={styles.closeBtn}
+              className={styles.orderDetailCloseBtn}
               aria-label="Close modal"
             >
-              <X size={20} />
+              <X size={18} strokeWidth={2.5} />
             </button>
           </div>
 
-          <div className={styles.modalBody} style={{ padding: '1.5rem', gap: '1.25rem' }}>
+          <div className={styles.orderDetailBody}>
             {/* Live Delivery Status Headline Banner */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.85rem',
-                padding: '0.9rem 1.15rem',
-                background: isCancelled ? '#fef2f2' : isCompleted ? '#f0fdf4' : '#f8fafc',
-                borderRadius: '14px',
-                border: isCancelled ? '1px solid #fee2e2' : isCompleted ? '1px solid #dcfce7' : '1px solid #e2e8f0',
-              }}
-            >
-              <div
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '10px',
-                  background: isCancelled ? '#fee2e2' : isCompleted ? '#dcfce7' : '#000',
-                  color: isCancelled ? '#dc2626' : isCompleted ? '#16a34a' : '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {isCancelled ? <XCircle size={20} /> : isCompleted ? <CheckCircle2 size={20} /> : <Truck size={20} />}
+            <div className={`${styles.statusHeroBanner} ${heroClass}`}>
+              <div className={`${styles.statusHeroIconBox} ${iconClass}`}>
+                {heroIcon}
               </div>
-              <div>
-                <strong style={{ fontSize: '0.92rem', color: isCancelled ? '#dc2626' : isCompleted ? '#16a34a' : '#111827' }}>
-                  {isCancelled
-                    ? 'Order Cancelled'
-                    : isCompleted
-                    ? 'Delivered to your doorstep'
-                    : isShipped
-                    ? 'Package is in transit'
-                    : 'Order Confirmed & Preparing for Dispatch'}
-                </strong>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
-                  {isCancelled
-                    ? 'No payment or delivery is pending.'
-                    : isCompleted
-                    ? 'We hope you love your fresh harvest!'
-                    : 'Estimated delivery: 3–5 business days via Free Express Courier.'}
-                </p>
+              <div className={styles.statusHeroText}>
+                <div className={styles.statusHeroHeading}>{heroTitle}</div>
+                <p className={styles.statusHeroSubtext}>{heroSubtext}</p>
               </div>
             </div>
 
             {/* Stepper Timeline */}
             {isCancelled ? (
-              <div className={styles.timeline}>
-                <div className={`${styles.step} ${styles.stepActive}`}>
-                  <div className={styles.stepDot}>
-                    <Check size={14} />
+              <div className={styles.orderStepper}>
+                <div className={`${styles.stepperItem} ${styles.stepperActive}`}>
+                  <div className={styles.stepperCircle}>
+                    <Check size={16} strokeWidth={2.5} />
                   </div>
-                  <span className={styles.stepLabel}>Placed</span>
+                  <span className={styles.stepperText}>Placed</span>
                 </div>
-                <div className={`${styles.step} ${styles.stepActive}`}>
-                  <div className={styles.stepDot} style={{ background: '#dc2626', borderColor: '#dc2626', color: '#fff' }}>
-                    <X size={14} strokeWidth={3} />
+                <div className={`${styles.stepperItem} ${styles.stepperActive}`}>
+                  <div className={`${styles.stepperCircle} ${styles.stepperCircleCancelled}`}>
+                    <X size={16} strokeWidth={2.5} />
                   </div>
-                  <span className={styles.stepLabel} style={{ color: '#dc2626', fontWeight: 800 }}>Cancelled</span>
+                  <span className={styles.stepperText} style={{ color: '#dc2626', fontWeight: 700 }}>Cancelled</span>
                 </div>
-                <div className={styles.step}>
-                  <div className={styles.stepDot}>
-                    <Clock size={14} />
+                <div className={styles.stepperItem}>
+                  <div className={styles.stepperCircle}>
+                    <Clock size={16} />
                   </div>
-                  <span className={styles.stepLabel}>Closed</span>
+                  <span className={styles.stepperText}>Closed</span>
                 </div>
               </div>
             ) : (
-              <div className={styles.timeline}>
-                <div className={`${styles.step} ${styles.stepActive}`}>
-                  <div className={styles.stepDot}>
-                    <Check size={14} />
+              <div className={styles.orderStepper}>
+                <div className={`${styles.stepperItem} ${styles.stepperActive}`}>
+                  <div className={styles.stepperCircle}>
+                    <Check size={16} strokeWidth={2.5} />
                   </div>
-                  <span className={styles.stepLabel}>Placed</span>
+                  <span className={styles.stepperText}>Placed</span>
                 </div>
                 <div
-                  className={`${styles.step} ${
-                    ['processing', 'shipped', 'completed'].includes(status) ? styles.stepActive : ''
+                  className={`${styles.stepperItem} ${
+                    ['processing', 'shipped', 'completed'].includes(status) ? styles.stepperActive : ''
                   }`}
                 >
-                  <div className={styles.stepDot}>
-                    <Package size={14} />
+                  <div className={styles.stepperCircle}>
+                    <Package size={16} />
                   </div>
-                  <span className={styles.stepLabel}>Packed</span>
+                  <span className={styles.stepperText}>Packed</span>
                 </div>
                 <div
-                  className={`${styles.step} ${
-                    ['shipped', 'completed'].includes(status) ? styles.stepActive : ''
+                  className={`${styles.stepperItem} ${
+                    ['shipped', 'completed'].includes(status) ? styles.stepperActive : ''
                   }`}
                 >
-                  <div className={styles.stepDot}>
-                    <Truck size={14} />
+                  <div className={styles.stepperCircle}>
+                    <Truck size={16} />
                   </div>
-                  <span className={styles.stepLabel}>In Transit</span>
+                  <span className={styles.stepperText}>In Transit</span>
                 </div>
-                <div className={`${styles.step} ${isCompleted ? styles.stepActive : ''}`}>
-                  <div className={styles.stepDot}>
-                    <CheckCircle2 size={14} />
+                <div className={`${styles.stepperItem} ${isCompleted ? styles.stepperActive : ''}`}>
+                  <div className={styles.stepperCircle}>
+                    <CheckCircle2 size={16} strokeWidth={2.5} />
                   </div>
-                  <span className={styles.stepLabel}>Delivered</span>
+                  <span className={styles.stepperText}>Delivered</span>
                 </div>
               </div>
             )}
 
-            {/* Delivery Address & Payment Summary Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.85rem' }}>
+            {/* Delivery Address & Payment Summary Cards Bento */}
+            <div className={styles.orderSummaryGrid}>
               {/* Delivery Address */}
-              <div style={{ background: '#fafafa', borderRadius: '12px', padding: '1rem', border: '1px solid #f1f5f9' }}>
-                <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <MapPin size={14} /> Delivery Address
+              <div className={styles.orderSummaryCard}>
+                <h4 className={styles.orderSummaryCardTitle}>
+                  <MapPin size={14} color="#16a34a" /> Delivery Address
                 </h4>
-                <p style={{ margin: 0, fontSize: '0.86rem', color: '#1e293b', lineHeight: 1.5 }}>
-                  <strong>
+                <p className={styles.orderSummaryCardContent}>
+                  <strong style={{ display: 'block', color: '#0f172a', marginBottom: '0.2rem' }}>
                     {shippingAddr?.first_name} {shippingAddr?.last_name}
                   </strong>
-                  <br />
                   {shippingAddr?.address_1}
                   {shippingAddr?.address_2 && `, ${shippingAddr.address_2}`}
                   <br />
                   {shippingAddr?.city}, {shippingAddr?.state} - {shippingAddr?.postcode}
                   <br />
-                  <span style={{ color: '#64748b' }}>Phone: {shippingAddr?.phone || selectedOrder.billing?.phone || 'N/A'}</span>
+                  <span style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.3rem', display: 'inline-block' }}>
+                    Phone: {shippingAddr?.phone || selectedOrder.billing?.phone || 'N/A'}
+                  </span>
                 </p>
               </div>
 
               {/* Payment Details */}
-              <div style={{ background: '#fafafa', borderRadius: '12px', padding: '1rem', border: '1px solid #f1f5f9' }}>
-                <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <CreditCard size={14} /> Payment &amp; Total
+              <div className={styles.orderSummaryCard}>
+                <h4 className={styles.orderSummaryCardTitle}>
+                  <CreditCard size={14} color="#0284c7" /> Payment &amp; Total
                 </h4>
-                <div style={{ fontSize: '0.86rem', color: '#1e293b', lineHeight: 1.6 }}>
-                  <div><strong>Method:</strong> {selectedOrder.payment_method_title || selectedOrder.payment_method || 'Cash on Delivery'}</div>
-                  <div><strong>Shipping:</strong> Free Express Delivery</div>
-                  <div style={{ marginTop: '0.35rem', paddingTop: '0.35rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700 }}>Total Paid:</span>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#000' }}>{formatPrice(selectedOrder.total)}</span>
+                <div className={styles.orderSummaryCardContent} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <div>
+                    <span style={{ color: '#64748b' }}>Method: </span>
+                    <strong style={{ color: '#0f172a' }}>
+                      {selectedOrder.payment_method_title || selectedOrder.payment_method || 'Cash on Delivery'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b' }}>Shipping: </span>
+                    <span style={{ color: '#16a34a', fontWeight: 600 }}>Free Express Delivery</span>
+                  </div>
+                  <div className={styles.orderSummaryTotalRow}>
+                    <span className={styles.orderSummaryTotalLabel}>Total Amount:</span>
+                    <span className={styles.orderSummaryTotalAmount}>
+                      {formatPrice(selectedOrder.total)}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Items List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Order Items</span>
-                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+            <div className={styles.orderItemsSection}>
+              <div className={styles.orderItemsHeader}>
+                <h4 className={styles.orderItemsHeading}>Order Items</h4>
+                <span className={styles.orderItemsCount}>
                   {selectedOrder.line_items.length} {selectedOrder.line_items.length === 1 ? 'item' : 'items'}
                 </span>
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              </div>
+              <div className={styles.orderItemsContainer}>
                 {selectedOrder.line_items.map((item) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.65rem 0.85rem',
-                      background: '#fafafa',
-                      borderRadius: '10px',
-                      border: '1px solid #f1f5f9',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div
-                        style={{
-                          position: 'relative',
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          background: '#f4f4f5',
-                          flexShrink: 0,
-                          border: '1px solid #e4e4e7',
-                        }}
-                      >
+                  <div key={item.id} className={styles.orderItemRow}>
+                    <div className={styles.orderItemLeft}>
+                      <div className={styles.orderItemThumb}>
                         <Image
                           src={getItemImageUrl(item)}
                           alt={item.name}
                           fill
-                          sizes="42px"
+                          sizes="44px"
                           style={{ objectFit: 'cover' }}
                           unoptimized
                         />
                       </div>
-                      <div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#111' }}>{item.name}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Qty: {item.quantity}</div>
+                      <div className={styles.orderItemDetails}>
+                        <span className={styles.orderItemName}>{item.name}</span>
+                        <span className={styles.orderItemQty}>Qty: {item.quantity}</span>
                       </div>
                     </div>
-                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatPrice(item.total)}</span>
+                    <span className={styles.orderItemPrice}>{formatPrice(item.total)}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Footer Actions */}
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+            <div className={styles.orderDetailFooter}>
               <Link
                 href="/faq"
-                className={styles.secondaryBtn}
-                style={{ flex: 1, padding: '0.65rem 1rem', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', textDecoration: 'none' }}
+                className={styles.helpActionBtn}
               >
-                <HelpCircle size={15} /> Need Help?
+                <HelpCircle size={16} /> Need Help?
               </Link>
 
               {canCancel && (
@@ -802,10 +790,9 @@ function AccountContent() {
                     setSelectedOrder(null);
                     setCancellingOrder(orderToCancel);
                   }}
-                  className={styles.cancelOrderBtn}
-                  style={{ flex: 1, padding: '0.65rem 1rem', fontSize: '0.85rem', justifyContent: 'center' }}
+                  className={styles.cancelActionBtn}
                 >
-                  <XCircle size={15} /> Cancel Order
+                  <XCircle size={16} /> Cancel Order
                 </button>
               )}
             </div>

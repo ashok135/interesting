@@ -1839,25 +1839,49 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
-  padding: 1rem;
+  z-index: 9999;
+  padding: 1.25rem;
+  animation: overlayFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {
-  background: #fff;
-  border-radius: 18px;
+  background: #ffffff;
+  border-radius: 24px;
   width: 100%;
-  max-width: 560px;
-  max-height: 90vh;
+  max-width: 600px;
+  max-height: 88vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
+  animation: modalScaleUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+@keyframes modalScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @media (max-width: 640px) {
@@ -1867,13 +1891,593 @@
   }
 
   .modal {
-    max-height: 88vh;
+    max-height: 90vh;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    border-top-left-radius: 22px;
-    border-top-right-radius: 22px;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
     padding-bottom: env(safe-area-inset-bottom, 1rem);
+    animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
+  @keyframes modalSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Premium Order Details Card Layout */
+.orderDetailCard {
+  max-width: 620px;
+}
+
+.orderDetailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+}
+
+.orderDetailHeaderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.orderDetailTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.orderDetailId {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  margin: 0;
+}
+
+.orderDetailDate {
+  font-size: 0.8rem;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+}
+
+.orderDetailCloseBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.orderDetailCloseBtn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  transform: rotate(90deg);
+}
+
+.orderDetailBody {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Live Status Hero Banner */
+.statusHeroBanner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+}
+
+.statusHeroProcessing {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-color: #bbf7d0;
+}
+
+.statusHeroCompleted {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #86efac;
+}
+
+.statusHeroShipped {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #bae6fd;
+}
+
+.statusHeroCancelled {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #fecaca;
+}
+
+.statusHeroPending {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fde68a;
+}
+
+.statusHeroIconBox {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.statusHeroIconProcessing {
+  background: #14532d;
+  color: #ffffff;
+}
+
+.statusHeroIconCompleted {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.statusHeroIconShipped {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.statusHeroIconCancelled {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.statusHeroIconPending {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.statusHeroText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.statusHeroHeading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.statusHeroSubtext {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Stepper Modern */
+.orderStepper {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin: 0.75rem 0 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.orderStepper::before {
+  content: '';
+  position: absolute;
+  top: 17px;
+  left: 8%;
+  right: 8%;
+  height: 3px;
+  background: #e2e8f0;
+  z-index: 1;
+  border-radius: 2px;
+}
+
+.stepperItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  z-index: 2;
+  position: relative;
+}
+
+.stepperCircle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #e2e8f0;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.stepperActive .stepperCircle {
+  background: #14532d;
+  color: #ffffff;
+  border-color: #14532d;
+  box-shadow: 0 0 0 4px rgba(20, 83, 45, 0.15);
+}
+
+.stepperCircleCancelled {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.15) !important;
+}
+
+.stepperText {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: -0.01em;
+}
+
+.stepperActive .stepperText {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* Summary Bento Row */
+.orderSummaryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+@media (max-width: 580px) {
+  .orderSummaryGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.orderSummaryCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.orderSummaryCardTitle {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.orderSummaryCardContent {
+  font-size: 0.86rem;
+  color: #1e293b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.orderSummaryTotalRow {
+  margin-top: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #cbd5e1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.orderSummaryTotalLabel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.orderSummaryTotalAmount {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Items List Clean */
+.orderItemsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.orderItemsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.orderItemsHeading {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.orderItemsCount {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.orderItemsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.orderItemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.9rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  gap: 0.75rem;
+}
+
+.orderItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.orderItemThumb {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  border: 1px solid #cbd5e1;
+}
+
+.orderItemDetails {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.orderItemName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.orderItemQty {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.orderItemPrice {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+/* Modal Footer Actions */
+.orderDetailFooter {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.helpActionBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.helpActionBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.cancelActionBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1rem;
+  background: #fff5f5;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cancelActionBtn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+/* Dark theme overrides for Order Detail Card */
+[data-theme="dark"] .orderDetailHeader {
+  background: #111827;
+  border-bottom-color: #1f2937;
+}
+
+[data-theme="dark"] .orderDetailId {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .orderDetailCloseBtn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .orderDetailCloseBtn:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .statusHeroProcessing {
+  background: #064e3b;
+  border-color: #047857;
+}
+
+[data-theme="dark"] .statusHeroCompleted {
+  background: #064e3b;
+  border-color: #059669;
+}
+
+[data-theme="dark"] .statusHeroShipped {
+  background: #075985;
+  border-color: #0284c7;
+}
+
+[data-theme="dark"] .statusHeroCancelled {
+  background: #7f1d1d;
+  border-color: #991b1b;
+}
+
+[data-theme="dark"] .statusHeroPending {
+  background: #78350f;
+  border-color: #92400e;
+}
+
+[data-theme="dark"] .statusHeroHeading {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .statusHeroSubtext {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .orderStepper::before {
+  background: #1f2937;
+}
+
+[data-theme="dark"] .stepperCircle {
+  background: #1e293b;
+  border-color: #334155;
+  color: #64748b;
+}
+
+[data-theme="dark"] .stepperActive .stepperCircle {
+  background: #22c55e;
+  border-color: #22c55e;
+}
+
+[data-theme="dark"] .stepperActive .stepperText {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .orderSummaryCard {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .orderSummaryCardContent {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .orderSummaryTotalAmount {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .orderItemRow {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .orderItemName {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .orderItemPrice {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .helpActionBtn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .helpActionBtn:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .cancelActionBtn {
+  background: #450a0a;
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
+[data-theme="dark"] .cancelActionBtn:hover {
+  background: #7f1d1d;
+  color: #fca5a5;
 }
 
 .modalHeader {
