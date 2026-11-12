@@ -21,7 +21,7 @@ import { useAuth } from '@/store/AuthContext';
 import { useCartContext } from '@/store/CartContext';
 import { useWishlist } from '@/store/WishlistContext';
 import { SearchBar } from './SearchBar';
-import { ThemeToggle } from '@/components/ui';
+import { ThemeToggle, BrandLogo } from '@/components/ui';
 import styles from './Header.module.css';
 
 export function Header() {
@@ -58,15 +58,9 @@ export function Header() {
     <>
       <header className={styles.header}>
         <div className={styles.inner}>
-          {/* Left: Brand Logo: INTERESTING */}
-          <Link href="/" className={styles.brand} aria-label="Interesting Home">
-            <div className={styles.monogram}>
-              <span className={styles.monoText}>INT</span>
-            </div>
-            <div className={styles.brandText}>
-              <span className={styles.brandName}>INTERESTING</span>
-              <span className={styles.brandTagline}>GOURMET PANTRY</span>
-            </div>
+          {/* Left: Brand Logo: INTERSTING */}
+          <Link href="/" className={styles.brand} aria-label="INTERSTING Home">
+            <BrandLogo size={38} variant="horizontal" />
           </Link>
 
           {/* Search Bar (Desktop: full center; Mobile: small, neat search bar beside user icon) */}

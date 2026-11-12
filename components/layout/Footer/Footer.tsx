@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ArrowRight,
 } from 'lucide-react';
+import { BrandLogo } from '@/components/ui';
 import styles from './Footer.module.css';
 
 export function Footer() {
@@ -19,14 +20,8 @@ export function Footer() {
         <div className={styles.inner}>
           {/* Brand Col */}
           <div className={styles.brandCol}>
-            <Link href="/" className={styles.brand} aria-label="Interesting Home">
-              <div className={styles.monogram}>
-                <span className={styles.monoText}>INT</span>
-              </div>
-              <div className={styles.brandText}>
-                <span className={styles.brandName}>INTERESTING</span>
-                <span className={styles.brandTagline}>GOURMET PANTRY</span>
-              </div>
+            <Link href="/" className={styles.brand} aria-label="INTERSTING Home">
+              <BrandLogo size={42} variant="horizontal" />
             </Link>
 
             <p className={styles.tagline}>
@@ -115,7 +110,7 @@ export function Footer() {
       <div className={styles.bottomBar}>
         <div className={styles.bottomInner}>
           <p className={styles.copyright}>
-            © {new Date().getFullYear()} INTERESTING GOURMET PANTRY. All rights reserved.
+            © {new Date().getFullYear()} INTERSTING GOURMET PANTRY. All rights reserved.
           </p>
         </div>
       </div>
