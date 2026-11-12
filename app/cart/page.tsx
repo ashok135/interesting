@@ -63,11 +63,13 @@ export default function CartPage() {
                     {item.name}
                   </Link>
                   <p className={styles.itemPrice}>{formatPrice(item.price)} each</p>
-                  <QuantitySelector
-                    quantity={item.quantity}
-                    onIncrease={() => updateQuantity(item.productId, item.quantity + 1)}
-                    onDecrease={() => updateQuantity(item.productId, item.quantity - 1)}
-                  />
+                  <div className={styles.itemQuantityWrap}>
+                    <QuantitySelector
+                      quantity={item.quantity}
+                      onIncrease={() => updateQuantity(item.productId, item.quantity + 1)}
+                      onDecrease={() => updateQuantity(item.productId, item.quantity - 1)}
+                    />
+                  </div>
                 </div>
 
                 <div className={styles.itemRight}>

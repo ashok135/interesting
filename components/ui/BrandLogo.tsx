@@ -127,3 +127,4 @@ export function BrandLogo({ size = 36, variant = 'horizontal', className }: Logo
     </div>
   );
 }
+
