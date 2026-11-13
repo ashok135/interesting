@@ -10,7 +10,7 @@ export interface AuthUser {
 }
 
 const COOKIE_NAME = 'intersting_session';
-const SECRET_KEY = process.env.SESSION_SECRET || 'intersting-headless-secret-key-2026-production';
+const SECRET_KEY = process.env.SESSION_SECRET || '';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 14; // 14 days in seconds
 
 /**
