@@ -71,7 +71,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Woo
     params,
     revalidate: 60, // ISR: revalidate every 60 seconds
   });
-  return (products || []).map(normalizeProduct);
+  return (Array.isArray(products) ? products : []).map(normalizeProduct);
 }
 
 const PROD_WC_URL = (process.env.NEXT_PUBLIC_WC_URL || process.env.WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
@@ -134,7 +134,7 @@ export async function getProductBySlug(slug: string): Promise<WooProduct | null>
     params: { slug },
     revalidate: 60,
   });
-  const product = products[0] ?? null;
+  const product = Array.isArray(products) && products.length > 0 ? products[0] : null;
   return product ? normalizeProduct(product) : null;
 }
 
@@ -159,7 +159,7 @@ export async function getRelatedProducts(
   if (categoryId) params.category = categoryId;
 
   const products = await wcFetch<WooProduct[]>('products', { params, revalidate: 60 });
-  return (products || []).map(normalizeProduct);
+  return (Array.isArray(products) ? products : []).map(normalizeProduct);
 }
 
 export async function getCategories(): Promise<WooProductCategory[]> {
@@ -167,7 +167,7 @@ export async function getCategories(): Promise<WooProductCategory[]> {
     params: { per_page: 100, hide_empty: false },
     revalidate: 60,
   });
-  return (categories || [])
+  return (Array.isArray(categories) ? categories : [])
     .map(normalizeCategory)
     .sort((a, b) => (a.menu_order || 0) - (b.menu_order || 0));
 }
@@ -178,7 +178,7 @@ export async function getAllProductSlugs(): Promise<string[]> {
       params: { per_page: 100, fields: 'slug' },
       revalidate: 300,
     });
-    return (products || []).map((p) => p.slug);
+    return (Array.isArray(products) ? products : []).map((p) => p.slug);
   } catch (err) {
     console.error('getAllProductSlugs error:', err);
     return [];

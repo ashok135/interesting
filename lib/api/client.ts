@@ -107,7 +107,14 @@ export async function wcFetch<T>(endpoint: string, options: RequestOptions = {})
     throw err;
   }
 
-  const data = (await response.json()) as T;
+  let data: T;
+  try {
+    const text = await response.text();
+    data = text ? (JSON.parse(text) as T) : ({} as T);
+  } catch (err) {
+    console.error(`Failed to parse JSON response for ${endpoint}:`, err);
+    data = [] as unknown as T;
+  }
 
   if (method === 'GET' && cache !== 'no-store') {
     memoryCache.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS });

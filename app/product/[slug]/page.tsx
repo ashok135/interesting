@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getProductBySlug, getAllProductSlugs, getRelatedProducts } from '@/lib/api/products';
-import { getProductReviews } from '@/lib/api/reviews';
+import { getProductReviews, type WooReview } from '@/lib/api/reviews';
+import type { WooProduct, WooAttribute } from '@/types';
 import { ProductGrid, ProductReviews } from '@/components/product';
 import { AddToCartSection } from './AddToCartSection';
 import { ProductGallery } from './ProductGallery';
@@ -24,39 +25,77 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  let product: WooProduct | null = null;
+  try {
+    product = await getProductBySlug(slug);
+  } catch (err) {
+    console.error('generateMetadata error:', err);
+  }
   if (!product) return { title: 'Product Not Found' };
+
+  const firstImage = Array.isArray(product.images) && product.images[0]?.src ? product.images[0].src : undefined;
 
   return {
     title: product.name,
-    description: stripHtml(product.short_description || product.description).slice(0, 160),
+    description: stripHtml(product.short_description || product.description || '').slice(0, 160),
     openGraph: {
-      images: product.images[0] ? [{ url: product.images[0].src }] : [],
+      images: firstImage ? [{ url: firstImage }] : [],
     },
   };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  let product: WooProduct | null = null;
+  try {
+    product = await getProductBySlug(slug);
+  } catch (err) {
+    console.error(`Failed to fetch product for slug "${slug}":`, err);
+  }
 
   if (!product) notFound();
 
-  const related = await getRelatedProducts(
-    product.id,
-    product.categories[0]?.id,
-    4
-  );
+  // Defensively normalize arrays to prevent runtime crashes
+  const images = Array.isArray(product.images) ? product.images : [];
+  const categories = Array.isArray(product.categories) ? product.categories : [];
+  const attributes = Array.isArray(product.attributes) ? product.attributes : [];
 
-  const reviews = await getProductReviews(product.id);
-  const reviewsCount = reviews.length;
+  let related: WooProduct[] = [];
+  try {
+    related = await getRelatedProducts(
+      product.id,
+      categories[0]?.id,
+      4
+    );
+  } catch (err) {
+    console.error('Failed to fetch related products:', err);
+    related = [];
+  }
+
+  let reviews: WooReview[] = [];
+  try {
+    reviews = await getProductReviews(product.id);
+  } catch (err) {
+    console.error('Failed to fetch product reviews:', err);
+    reviews = [];
+  }
+
+  const reviewsList = Array.isArray(reviews) ? reviews : [];
+  const reviewsCount = reviewsList.length;
   const avgRatingNum =
     reviewsCount > 0
-      ? reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviewsCount
-      : parseFloat(product.average_rating) || 0;
+      ? reviewsList.reduce((acc, r) => acc + (r.rating || 0), 0) / reviewsCount
+      : parseFloat(product.average_rating || '0') || 0;
 
-  const description = stripHtml(product.description);
+  const description = stripHtml(product.description || '');
   const isOutOfStock = product.stock_status === 'outofstock';
+
+  const regularPriceNum = parseFloat(product.regular_price || '0');
+  const salePriceNum = parseFloat(product.sale_price || '0');
+  const hasDiscount = product.on_sale && regularPriceNum > 0 && salePriceNum > 0 && salePriceNum < regularPriceNum;
+  const discountPercent = hasDiscount
+    ? Math.max(1, Math.round((1 - salePriceNum / regularPriceNum) * 100))
+    : 0;
 
   return (
     <div className={styles.page}>
@@ -65,8 +104,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <div className={styles.product}>
           {/* Flipkart / Amazon Style 3-Image Interactive Gallery */}
           <ProductGallery
-            images={product.images}
-            productName={product.name}
+            images={images}
+            productName={product.name || 'Product'}
             onSale={product.on_sale}
             featured={product.featured}
           />
@@ -74,8 +113,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Info */}
           <div className={styles.info}>
             <div className={styles.infoTop}>
-              {product.categories[0] && (
-                <p className={styles.category}>{product.categories[0].name}</p>
+              {categories[0]?.name && (
+                <p className={styles.category}>{categories[0].name}</p>
               )}
               <h1 className={styles.name}>{product.name}</h1>
 
@@ -101,12 +140,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
               )}
 
               <div className={styles.priceRow}>
-                <span className={styles.price}>{formatPrice(product.price)}</span>
-                {product.on_sale && product.regular_price && (
+                <span className={styles.price}>{formatPrice(product.price || '0')}</span>
+                {hasDiscount && (
                   <>
                     <span className={styles.regularPrice}>{formatPrice(product.regular_price)}</span>
                     <Badge variant="danger">
-                      {Math.round((1 - parseFloat(product.sale_price) / parseFloat(product.regular_price)) * 100)}% OFF
+                      {discountPercent}% OFF
                     </Badge>
                   </>
                 )}
@@ -142,12 +181,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
 
             {/* Attributes */}
-            {product.attributes.length > 0 && (
+            {attributes.length > 0 && (
               <div className={styles.attrs}>
-                {product.attributes.map((attr) => (
-                  <div key={attr.id} className={styles.attr}>
+                {attributes.map((attr: WooAttribute) => (
+                  <div key={attr.id || attr.name} className={styles.attr}>
                     <span className={styles.attrName}>{attr.name}:</span>
-                    <span className={styles.attrValue}>{attr.options.join(', ')}</span>
+                    <span className={styles.attrValue}>
+                      {Array.isArray(attr.options) ? attr.options.join(', ') : (attr.options || '')}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -158,8 +199,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Customer Reviews */}
         <ProductReviews
           productId={product.id}
-          productName={product.name}
-          initialReviews={reviews}
+          productName={product.name || 'Product'}
+          initialReviews={reviewsList}
         />
 
         {/* Related products */}

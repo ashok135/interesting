@@ -29,7 +29,7 @@ export function AddToCartSection({ product }: AddToCartSectionProps) {
         name: product.name,
         slug: product.slug,
         price: product.price,
-        image: product.images[0]?.src ?? '',
+        image: product.images?.[0]?.src ?? '',
         stockStatus: product.stock_status,
       });
     }
