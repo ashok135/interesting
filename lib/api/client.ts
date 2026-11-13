@@ -6,10 +6,10 @@
  */
 
 const WC_BASE_URL = (process.env.WC_URL || process.env.NEXT_PUBLIC_WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
-const CONSUMER_KEY = process.env.WC_CONSUMER_KEY || '';
-const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET || '';
-const APP_USER = process.env.WC_APP_USER || '';
-const APP_PASSWORD = process.env.WC_APP_PASSWORD || '';
+const CONSUMER_KEY = process.env.WC_CONSUMER_KEY || 'ck_ebe58708556ea6a443245d2ce77108a07f9f4f55';
+const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET || 'cs_575816f2bb8ec5f850bcffe01cb02381c6cb43cb';
+const APP_USER = process.env.WC_APP_USER || 'ashok';
+const APP_PASSWORD = process.env.WC_APP_PASSWORD || 'G4J1 hiEc rSBt ALs7 Ftyh 6mBf';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 

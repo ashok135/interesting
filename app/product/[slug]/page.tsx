@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { getProductBySlug, getAllProductSlugs, getRelatedProducts } from '@/lib/api/products';
+import { getProductBySlug, getProductById, getAllProductSlugs, getRelatedProducts } from '@/lib/api/products';
 import { getProductReviews, type WooReview } from '@/lib/api/reviews';
 import type { WooProduct, WooAttribute } from '@/types';
 import { ProductGrid, ProductReviews } from '@/components/product';
@@ -25,11 +25,19 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
   let product: WooProduct | null = null;
   try {
-    product = await getProductBySlug(slug);
+    product = await getProductBySlug(decodedSlug);
   } catch (err) {
     console.error('generateMetadata error:', err);
+  }
+  if (!product && /^\d+$/.test(decodedSlug)) {
+    try {
+      product = await getProductById(parseInt(decodedSlug, 10));
+    } catch {
+      product = null;
+    }
   }
   if (!product) return { title: 'Product Not Found' };
 
@@ -46,11 +54,22 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
   let product: WooProduct | null = null;
   try {
-    product = await getProductBySlug(slug);
+    product = await getProductBySlug(decodedSlug);
   } catch (err) {
-    console.error(`Failed to fetch product for slug "${slug}":`, err);
+    console.error(`Failed to fetch product for slug "${decodedSlug}":`, err);
+  }
+
+  // Fallback: if slug is a numeric ID, fetch by ID directly
+  if (!product && /^\d+$/.test(decodedSlug)) {
+    try {
+      product = await getProductById(parseInt(decodedSlug, 10));
+    } catch (err) {
+      console.error(`Failed to fetch product by ID "${decodedSlug}":`, err);
+      product = null;
+    }
   }
 
   if (!product) notFound();
