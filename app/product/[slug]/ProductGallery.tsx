@@ -50,15 +50,15 @@ export function ProductGallery({
     if (cleanImages.length >= 3) return cleanImages;
     if (cleanImages.length > 0) {
       const fallbackAngles = [
-        { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/11/packaging-tin-seal.jpg`, alt: `${productName} Airtight Vacuum Tin Packaging` },
-        { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/11/purity-quality-seal.jpg`, alt: `${productName} 100% Farm-Fresh Purity Harvest` },
+        { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/11/packaging-tin-seal-1.jpg`, alt: `${productName} Airtight Vacuum Tin Packaging` },
+        { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/11/purity-quality-seal-1.jpg`, alt: `${productName} 100% Farm-Fresh Purity Harvest` },
       ];
       return [...cleanImages, ...fallbackAngles].slice(0, 3);
     }
     return [
       { id: 1000, src: `${prodWcUrl}/wp-content/uploads/2026/11/nuts-cashews-1.jpg`, alt: productName },
-      { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/11/packaging-tin-seal.jpg`, alt: `${productName} Airtight Vacuum Tin Packaging` },
-      { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/11/purity-quality-seal.jpg`, alt: `${productName} 100% Farm-Fresh Purity Harvest` },
+      { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/11/packaging-tin-seal-1.jpg`, alt: `${productName} Airtight Vacuum Tin Packaging` },
+      { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/11/purity-quality-seal-1.jpg`, alt: `${productName} 100% Farm-Fresh Purity Harvest` },
     ];
   }, [images, productName]);
 
