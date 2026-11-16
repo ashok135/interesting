@@ -149,7 +149,7 @@ export default function FrequentlyBoughtTogether({
                       src={getProductThumb(item)}
                       alt={item.name}
                       fill
-                      sizes="80px"
+                      sizes="(max-width: 639px) 68px, 80px"
                       className={styles.thumbImg}
                       unoptimized
                     />
