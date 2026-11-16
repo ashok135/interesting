@@ -118,11 +118,161 @@ export default function AiAssistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [addedIds, setAddedIds] = useState<number[]>([]);
 
+  // Draggable Mascot State & Physics
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dockedSide, setDockedSide] = useState<'left' | 'right'>('right');
+  const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    elemX: number;
+    elemY: number;
+    hasMoved: boolean;
+    pointerId: number | null;
+  }>({
+    startX: 0,
+    startY: 0,
+    elemX: 0,
+    elemY: 0,
+    hasMoved: false,
+    pointerId: null,
+  });
+
+  const justDraggedRef = useRef(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { addItem, openDrawer } = useCartContext();
   const { showSuccess } = useToast();
+
+  // Keep docked position aligned if user rotates mobile or resizes window
+  useEffect(() => {
+    const handleResize = () => {
+      if (!coords) return;
+      const container = containerRef.current;
+      const width = container ? container.offsetWidth : 96;
+      const height = container ? container.offsetHeight : 120;
+      const isMobile = window.innerWidth <= 640;
+      const margin = isMobile ? 12 : 24;
+
+      const snapX = dockedSide === 'left' ? margin : window.innerWidth - width - margin;
+      const minY = 60;
+      const maxY = window.innerHeight - height - (isMobile ? 85 : 24);
+      const clampedY = Math.max(minY, Math.min(maxY, coords.y));
+
+      setCoords({ x: snapX, y: clampedY });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [coords, dockedSide]);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      elemX: rect.left,
+      elemY: rect.top,
+      hasMoved: false,
+      pointerId: e.pointerId,
+    };
+
+    try {
+      container.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore fallback
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    if (d.pointerId === null || d.pointerId !== e.pointerId) return;
+
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+
+    if (!d.hasMoved) {
+      if (Math.hypot(dx, dy) > 6) {
+        d.hasMoved = true;
+        setIsDragging(true);
+      } else {
+        return;
+      }
+    }
+
+    const container = containerRef.current;
+    const width = container ? container.offsetWidth : 96;
+    const height = container ? container.offsetHeight : 120;
+
+    const newX = d.elemX + dx;
+    const newY = d.elemY + dy;
+
+    const isMobile = window.innerWidth <= 640;
+    const minX = isMobile ? 8 : 16;
+    const maxX = window.innerWidth - width - minX;
+    const minY = 60;
+    const maxY = window.innerHeight - height - (isMobile ? 85 : 24);
+
+    const clampedX = Math.max(minX, Math.min(maxX, newX));
+    const clampedY = Math.max(minY, Math.min(maxY, newY));
+
+    setCoords({ x: clampedX, y: clampedY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    if (d.pointerId === null || d.pointerId !== e.pointerId) return;
+
+    const container = containerRef.current;
+    try {
+      container?.releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore
+    }
+
+    const wasMoved = d.hasMoved;
+    d.pointerId = null;
+    setIsDragging(false);
+
+    if (wasMoved) {
+      justDraggedRef.current = true;
+      setTimeout(() => {
+        justDraggedRef.current = false;
+      }, 150);
+
+      const width = container ? container.offsetWidth : 96;
+      const height = container ? container.offsetHeight : 120;
+      const isMobile = window.innerWidth <= 640;
+      const margin = isMobile ? 12 : 24;
+
+      setCoords((cur) => {
+        const curX = cur?.x ?? d.elemX;
+        const curY = cur?.y ?? d.elemY;
+
+        const centerX = curX + width / 2;
+        const snapLeft = centerX < window.innerWidth / 2;
+
+        const targetX = snapLeft ? margin : window.innerWidth - width - margin;
+        const minY = 60;
+        const maxY = window.innerHeight - height - (isMobile ? 85 : 24);
+        const targetY = Math.max(minY, Math.min(maxY, curY));
+
+        setDockedSide(snapLeft ? 'left' : 'right');
+        return { x: targetX, y: targetY };
+      });
+    } else {
+      setTimeout(() => setIsOpen(true), 350);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -213,31 +363,53 @@ export default function AiAssistant() {
     <>
       {/* 1. Interactive Cursor-Tracking Mascot Trigger */}
       {!isOpen && (
-        <div className={styles.mascotTriggerContainer}>
+        <div
+          ref={containerRef}
+          className={`${styles.mascotTriggerContainer} ${dockedSide === 'left' ? styles.dockedLeft : styles.dockedRight}`}
+          style={
+            coords
+              ? {
+                  left: `${coords.x}px`,
+                  top: `${coords.y}px`,
+                  right: 'auto',
+                  bottom: 'auto',
+                  transition: isDragging
+                    ? 'none'
+                    : 'left 0.38s cubic-bezier(0.2, 0.9, 0.32, 1.2), top 0.38s cubic-bezier(0.2, 0.9, 0.32, 1.2)',
+                  cursor: isDragging ? 'grabbing' : 'grab',
+                }
+              : {
+                  cursor: isDragging ? 'grabbing' : 'grab',
+                }
+          }
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onClickCapture={(e) => {
+            if (justDraggedRef.current) {
+              e.stopPropagation();
+              e.preventDefault();
+            }
+          }}
+        >
           {/* Floating Speech Pill Badge */}
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
+          <div
             className={styles.speechPill}
             aria-label="Ask Chappie AI"
           >
             <span className={styles.onlinePulseDot} />
             <span className={styles.speechText}>Ask Chappie AI</span>
             <Sparkles size={13} className={styles.sparkleIcon} />
-          </button>
+          </div>
 
           {/* Interactive Mascot that follows cursor and reacts */}
-          <div
-            className={styles.mascotFloatWrap}
-            onClick={() => {
-              setTimeout(() => setIsOpen(true), 350);
-            }}
-          >
+          <div className={styles.mascotFloatWrap}>
             <div className={styles.mascotScale}>
               <Mascot
                 directions="/mascots/toaster-directions.webp"
                 reactions="/mascots/toaster-reactions.webp"
-                size={74}
+                size={82}
                 label="Chappie AI Mascot"
               />
             </div>
@@ -248,7 +420,11 @@ export default function AiAssistant() {
 
       {/* 2. Interactive Chat Window */}
       {isOpen && (
-        <div className={styles.chatWindow} role="dialog" aria-modal="true">
+        <div
+          className={`${styles.chatWindow} ${dockedSide === 'left' ? styles.chatWindowLeft : ''}`}
+          role="dialog"
+          aria-modal="true"
+        >
           {/* Header */}
           <div className={styles.chatHeader}>
             <div className={styles.headerInfo}>
