@@ -1,8 +1,58 @@
 {
   "slug": "shipping",
   "url": "/shipping",
+  "heroTag": "FAST & RELIABLE LOGISTICS",
   "title": "Shipping & Delivery Policy",
-  "tagline": "All India Express Air Logistics",
+  "heroDesc": "Every pack of dry fruits, cashews, and walnuts is hermetically sealed to preserve farm-fresh crispness and dispatched via express air/surface couriers.",
+  "cards": [
+    {
+      "icon": "truck",
+      "title": "Shipping Coverage & Free Delivery",
+      "subtitle": "All India Delivery",
+      "paragraphs": [
+        "We deliver to over 19,000+ PIN codes across all 28 Indian states and union territories using verified express logistics partners (Delhivery, Blue Dart, DTDC, India Post Speed Post)."
+      ],
+      "bullets": [
+        "Free Express Shipping: Available on all orders with a cart subtotal of ₹499 or more.",
+        "Standard Delivery Fee: A nominal flat fee of ₹49 applies to smaller orders below ₹499."
+      ]
+    },
+    {
+      "icon": "clock",
+      "title": "Dispatch & Delivery Timelines",
+      "subtitle": "Estimated Delivery Days",
+      "paragraphs": [],
+      "bullets": [
+        "Order Processing Time: All orders are freshly packed and dispatched from our origin warehouse within 24 to 48 business hours of order confirmation.",
+        "Metro & Tier 1 Cities: Typically delivered within 2 to 4 business days post-dispatch.",
+        "Rest of India (Tier 2/3 & Remote): Typically delivered within 3 to 6 business days.",
+        "Orders placed on Sundays or National Holidays will be processed on the next immediate working day."
+      ],
+      "highlight": "Live SMS Tracking: You will receive real-time SMS updates with a direct tracking link as soon as your parcel is packed and handed over to the courier partner."
+    },
+    {
+      "icon": "package",
+      "title": "Tamper-Proof Freshness Packaging",
+      "subtitle": "Vacuum Sealed & Moisture Proof",
+      "paragraphs": [
+        "To ensure zero breakage and maximum freshness, all whole kernel cashews, roasted nuts, and saffron honey jars are packed in food-grade multi-layer nitrogen-flushed pouches and rigid corrugated outer boxes."
+      ],
+      "bullets": []
+    },
+    {
+      "icon": "shield",
+      "title": "Damaged or Tampered Shipments",
+      "subtitle": "Instant Replacement Guarantee",
+      "paragraphs": [
+        "If the outer box or courier seal appears tampered, cut, or damaged at the time of delivery:"
+      ],
+      "bullets": [
+        "Please mention 'Damaged / Tampered Condition' on the courier proof-of-delivery (POD) sheet.",
+        "Take 2–3 clear photos/videos of the package and reach out to our support within 48 hours.",
+        "We will dispatch a free express replacement immediately with zero hassle."
+      ]
+    }
+  ],
   "sections": [
     {
       "id": 90201,

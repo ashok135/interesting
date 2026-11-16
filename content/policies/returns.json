@@ -1,8 +1,61 @@
 {
   "slug": "returns",
   "url": "/returns",
+  "heroTag": "100% QUALITY ASSURANCE",
   "title": "Easy Returns & Replacement Policy",
-  "tagline": "100% Quality Assurance & Freshness Guarantee",
+  "heroDesc": "Your complete satisfaction is our highest priority. If your harvest fails our freshness standard or arrives damaged, we resolve it within 24 hours.",
+  "pillars": [
+    {
+      "icon": "rotate",
+      "title": "7-Day Guarantee",
+      "text": "Report any damage, leakage, or quality issue within 7 days of delivery for an instant replacement or refund."
+    },
+    {
+      "icon": "clock",
+      "title": "24-48 Hr Fast Refunds",
+      "text": "Approved refunds are credited directly to your UPI ID, original debit/credit card, or bank account within 24 to 48 business hours."
+    },
+    {
+      "icon": "check",
+      "title": "Hassle-Free Process",
+      "text": "No physical parcel return is required for food safety in most cases. Simply share a photo on WhatsApp or email!"
+    }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "title": "Take a Quick Photo",
+      "desc": "Snap a clear photo or short video of the damaged tin, seal, or outer carton packaging along with your invoice or shipping label."
+    },
+    {
+      "step": 2,
+      "title": "Message Our Support",
+      "desc": "Send your Order ID and photos to our WhatsApp concierge at +91 99948 47167 or email support@intersting.duckdns.org."
+    },
+    {
+      "step": 3,
+      "title": "Instant Resolution",
+      "desc": "Our concierge verifies your request within 2 hours. We either dispatch a fresh replacement batch immediately or process a 100% refund."
+    }
+  ],
+  "eligible": [
+    "Package arrived damaged, crushed, or tampered during transit",
+    "Inner aroma-lock seal or vacuum tin was compromised upon arrival",
+    "Incorrect item or weight variant delivered vs what was ordered",
+    "Any unexpected off-flavor or moisture defect reported within 7 days"
+  ],
+  "nonEligible": [
+    "Return requests submitted after the 7-day delivery window has expired",
+    "Items damaged due to improper customer storage (e.g. kept open in humid air)",
+    "Partially consumed items returned purely due to personal taste preference",
+    "Products purchased during special clearance flash sales marked final sale"
+  ],
+  "support": {
+    "phone": "+91 99948 47167",
+    "waLink": "https://wa.me/919994847167",
+    "email": "support@intersting.duckdns.org",
+    "hours": "Monday through Saturday, 9:00 AM to 8:00 PM IST"
+  },
   "sections": [
     {
       "id": 90101,
