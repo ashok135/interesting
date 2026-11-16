@@ -9,7 +9,7 @@ const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_BASE_URL =
   process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
 const NVIDIA_MODEL =
-  process.env.NVIDIA_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
+  process.env.NVIDIA_MODEL || 'nvidia/nemotron-3.5-bolt-e4b';
 
 const nvidiaClient = new OpenAI({
   apiKey: NVIDIA_API_KEY,
