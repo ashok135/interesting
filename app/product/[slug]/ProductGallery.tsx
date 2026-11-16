@@ -50,15 +50,15 @@ export function ProductGallery({
     if (cleanImages.length >= 3) return cleanImages;
     if (cleanImages.length > 0) {
       const fallbackAngles = [
-        { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/09/gourmet-tin-4.jpg`, alt: `${productName} Tin View` },
-        { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/09/gourmet-spice-6.jpg`, alt: `${productName} Serving Bowl` },
+        { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/11/packaging-tin-seal.jpg`, alt: `${productName} Airtight Vacuum Tin Packaging` },
+        { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/11/purity-quality-seal.jpg`, alt: `${productName} 100% Farm-Fresh Purity Harvest` },
       ];
       return [...cleanImages, ...fallbackAngles].slice(0, 3);
     }
     return [
-      { id: 1000, src: `${prodWcUrl}/wp-content/uploads/2026/09/nuts-cashews.jpg`, alt: productName },
-      { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/09/gourmet-tin-4.jpg`, alt: `${productName} Tin View` },
-      { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/09/gourmet-spice-6.jpg`, alt: `${productName} Serving Bowl` },
+      { id: 1000, src: `${prodWcUrl}/wp-content/uploads/2026/11/nuts-cashews-1.jpg`, alt: productName },
+      { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/11/packaging-tin-seal.jpg`, alt: `${productName} Airtight Vacuum Tin Packaging` },
+      { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/11/purity-quality-seal.jpg`, alt: `${productName} 100% Farm-Fresh Purity Harvest` },
     ];
   }, [images, productName]);
 
@@ -109,7 +109,7 @@ export function ProductGallery({
                   fill
                   sizes="80px"
                   className={styles.thumbImg}
-                  unoptimized
+                  loading="eager"
                 />
               </button>
             );
@@ -133,7 +133,6 @@ export function ProductGallery({
             sizes="(max-width: 768px) 100vw, 50vw"
             className={`${styles.mainImg} ${isMainLoaded ? styles.mainImgLoaded : styles.mainImgLoading}`}
             onLoad={() => setIsMainLoaded(true)}
-            unoptimized
           />
         ) : (
           <div className={styles.imagePlaceholder} />
