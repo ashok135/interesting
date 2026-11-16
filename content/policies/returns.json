@@ -1,0 +1,32 @@
+{
+  "slug": "returns",
+  "url": "/returns",
+  "title": "Easy Returns & Replacement Policy",
+  "tagline": "100% Quality Assurance & Freshness Guarantee",
+  "sections": [
+    {
+      "id": 90101,
+      "topic": "7-Day Quality Guarantee",
+      "summary": "7-Day replacement or full refund window for broken, damaged, or unsealed harvest packages.",
+      "content": "Interesting provides a 7-day hassle-free replacement or full refund guarantee if any product arrives damaged, unsealed, or fails our freshness standard. Report any issue within 7 days of delivery for instant resolution."
+    },
+    {
+      "id": 90102,
+      "topic": "Refund Processing & Timelines",
+      "summary": "24 to 48 business hours refund turnaround to UPI, Card, or Bank.",
+      "content": "Approved refunds are credited directly to your UPI ID (Google Pay, PhonePe, Paytm), original debit/credit card, or bank account within 24 to 48 business hours. Zero hidden deduction fees."
+    },
+    {
+      "id": 90103,
+      "topic": "Doorstep Reverse Pickup & Food Safety",
+      "summary": "Free reverse pickup across 19,000+ PIN codes; no physical return needed for food safety in most cases.",
+      "content": "We arrange a 100% free doorstep reverse pickup from your home across 19,000+ PIN codes in India. In many food safety scenarios, physical parcel return is not even required—simply sharing clear photos of the damaged container on WhatsApp or email is sufficient."
+    },
+    {
+      "id": 90104,
+      "topic": "Replacement Request Steps",
+      "summary": "3-step replacement process: take photos, WhatsApp order ID to support, receive replacement in 24 hours.",
+      "content": "To request a replacement: 1. Take clear photos of the damaged canister seal or outer box with invoice. 2. WhatsApp our support concierge at +91 99948 47167 or email support@intersting.duckdns.org with your Order ID. 3. Fresh replacement canister is dispatched within 24 hours."
+    }
+  ]
+}

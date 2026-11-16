@@ -1,0 +1,20 @@
+{
+  "slug": "terms-privacy",
+  "url": "/terms",
+  "title": "Legal, Privacy & Purity Assurances",
+  "tagline": "Data Privacy, FSSAI Lab Testing & Tax Compliances",
+  "sections": [
+    {
+      "id": 90501,
+      "topic": "Customer Data Privacy Guarantee",
+      "summary": "Customer phone numbers and shipping addresses are encrypted and never shared or sold.",
+      "content": "Privacy Guarantee: We never sell, rent, or share customer contact details, phone numbers, or addresses with third-party advertisers. All checkout transactions use 256-bit SSL encryption."
+    },
+    {
+      "id": 90502,
+      "topic": "100% Zero Adulteration Guarantee",
+      "summary": "Origin-certified harvests, zero chemical bleaching, lab-tested batches.",
+      "content": "Purity Guarantee: All cashews, walnuts, and trail mixes are 100% natural, origin-certified harvests without artificial chemical bleaching, synthetic food colouring, or preservatives."
+    }
+  ]
+}

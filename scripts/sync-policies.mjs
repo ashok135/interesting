@@ -1,12 +1,14 @@
 /**
- * Automatic Policy & Return Sync Script
- * Runs during Next.js production build to ensure Qdrant always has the latest store policies.
+ * Single Source of Truth Policy & Knowledge Sync Script
+ *
+ * Reads directly from content/policies/*.json, extracts focused semantic chunks,
+ * embeds them via NVIDIA NIM, and stores them in Qdrant on GCP VM.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Load .env.local if present locally
+// 1. Load .env.local if present
 try {
   const envPath = path.resolve(process.cwd(), '.env.local');
   if (fs.existsSync(envPath)) {
@@ -38,116 +40,128 @@ const NVIDIA_EMBED_MODEL = process.env.NVIDIA_EMBED_MODEL || 'nvidia/nemotron-3.
 const QDRANT_URL = process.env.QDRANT_URL || 'https://intersting.duckdns.org/qdrant';
 const COLLECTION_NAME = process.env.QDRANT_COLLECTION || 'products_rag';
 
-const POLICIES = [
-  {
-    id: 90001,
-    title: 'Shipping & Delivery Policy',
-    topic: 'shipping',
-    url: '/shipping',
-    passage:
-      'Shipping and Delivery Policy: Free Express Delivery across India on all prepaid orders and all orders above ₹499. Orders dispatch within 24 hours of confirmation in tamper-evident, nitrogen-flushed airtight containers. Delivery takes 2 to 4 business days for metro cities (Bengaluru, Mumbai, Delhi, Chennai, Hyderabad) and 3 to 6 days for the rest of India. Real-time SMS and WhatsApp tracking updates are sent at every shipping milestone across 19,000+ PIN codes.',
-  },
-  {
-    id: 90002,
-    title: 'Cancellation & Returns Policy',
-    topic: 'returns',
-    url: '/returns',
-    passage:
-      'Easy Returns and Cancellation Policy: Interesting provides a 7-day hassle-free replacement or full refund guarantee if any product arrives damaged, unsealed, or fails our freshness standard. Customers can report issues within 7 days with photos for instant replacement dispatch. Approved refunds are credited directly to your UPI ID, original debit/credit card, or bank account within 24 to 48 business hours. We arrange a 100% free doorstep reverse pickup.',
-  },
-  {
-    id: 90003,
-    title: 'FAQs & Payment Methods',
-    topic: 'faq',
-    url: '/faq',
-    passage:
-      'Frequently Asked Questions & Payment Methods: We support Pay on Delivery (Cash on Delivery / UPI QR on Delivery) and 100% secure Direct Instant UPI (Google Pay, PhonePe, Paytm, BHIM) as well as all major Debit/Credit Cards and Net Banking with zero extra transaction fees. All products are 100% natural, farm-sourced, zero artificial preservatives, zero chemical bleaching, vacuum sealed in airtight canisters.',
-  },
-  {
-    id: 90004,
-    title: 'Privacy Policy',
-    topic: 'privacy',
-    url: '/privacy',
-    passage:
-      'Privacy Policy: Interesting adheres to strict data privacy and Indian consumer protection guidelines. Customer phone numbers, addresses, and order histories are encrypted and never sold, shared, or rented to third-party marketing companies. SMS and communications are strictly restricted to order tracking and customer support.',
-  },
-  {
-    id: 90005,
-    title: 'Terms of Service & Purity Guarantee',
-    topic: 'terms',
-    url: '/terms',
-    passage:
-      'Terms of Service and Quality Commitment: By shopping on Interesting Gourmet Pantry, customers are assured 100% authentic, origin-certified whole kernel dry fruits, Kashmiri walnuts, and premium nuts. Lab-tested quality, accurate weight assurances, and fair transparent pricing with all GST taxes clearly itemized on tax invoices.',
-  },
-  {
-    id: 90006,
-    title: 'Customer Support & Contact Us',
-    topic: 'contact',
-    url: '/contact',
-    passage:
-      'Contact Us and Customer Support: Our dedicated customer advisory team is available Monday to Saturday, 9:00 AM to 8:00 PM IST. Phone & WhatsApp helpline: +91 99948 47167. Email support: support@intersting.duckdns.org. We serve 19,000+ PIN codes across India from our central gourmet fulfillment hub.',
-  },
-];
+const POLICIES_DIR = path.resolve(process.cwd(), 'content/policies');
 
-async function sync() {
+async function syncPolicies() {
+  console.log('\n======================================================');
+  console.log('🚀 [KNOWLEDGE SYNC] Reading Single Source of Truth Files');
+  console.log(`📁 Directory: ${POLICIES_DIR}`);
+  console.log('======================================================\n');
+
+  if (!fs.existsSync(POLICIES_DIR)) {
+    console.error(`❌ Policies directory not found: ${POLICIES_DIR}`);
+    return;
+  }
+
+  // 1. Read all JSON policy files
+  const policyFiles = fs.readdirSync(POLICIES_DIR).filter((f) => f.endsWith('.json'));
+  console.log(`✓ Found ${policyFiles.length} policy files: ${policyFiles.join(', ')}\n`);
+
+  const allChunks = [];
+
+  for (const file of policyFiles) {
+    const filePath = path.join(POLICIES_DIR, file);
+    const rawData = fs.readFileSync(filePath, 'utf8');
+    const doc = JSON.parse(rawData);
+
+    console.log(`📖 [Reading File] ${file} -> "${doc.title}" (Page: ${doc.url})`);
+
+    for (const section of doc.sections || []) {
+      const chunkText = `Store Page: ${doc.title} | Section: ${section.topic} | Summary: ${section.summary} | Full Details: ${section.content}`;
+
+      console.log(`   ➤ [Chunk #${section.id}] Topic: "${section.topic}" (${chunkText.length} chars)`);
+
+      allChunks.push({
+        id: section.id,
+        passage: chunkText,
+        payload: {
+          id: section.id,
+          name: `${doc.title} - ${section.topic}`,
+          slug: section.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          type: 'policy',
+          category: 'Store Knowledge & Policies',
+          url: doc.url,
+          passage: chunkText,
+          updated_at: new Date().toISOString(),
+        },
+      });
+    }
+    console.log('');
+  }
+
+  console.log(`📊 Total Chunks Extracted: ${allChunks.length} chunks across ${policyFiles.length} pages.`);
+
   if (!NVIDIA_API_KEY) {
-    console.warn('[Policy Sync] Skipping: NVIDIA_API_KEY not configured in environment.');
+    console.warn('\n⚠️  NVIDIA_API_KEY is not set in environment. Skipping vector generation.');
     return;
   }
 
-  console.log('[Policy Sync] Generating embeddings for 6 store policies...');
-  const res = await fetch(NVIDIA_EMBED_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${NVIDIA_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      input: POLICIES.map((p) => p.passage),
-      model: NVIDIA_EMBED_MODEL,
-      input_type: 'passage',
-    }),
-  });
+  // 2. Batch embed with NVIDIA NIM
+  console.log('\n--- [Step 2: Generating Vectors with NVIDIA NIM] ---');
+  console.log(`Calling model: ${NVIDIA_EMBED_MODEL} (2,048 dimensions)...`);
 
-  if (!res.ok) {
-    const err = await res.text();
-    console.warn('[Policy Sync] Embedding call failed:', err);
-    return;
+  const BATCH_SIZE = 8;
+  const qdrantPoints = [];
+
+  for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
+    const batch = allChunks.slice(i, i + BATCH_SIZE);
+    process.stdout.write(`   Embedding chunks ${i + 1} to ${Math.min(i + BATCH_SIZE, allChunks.length)}... `);
+
+    const res = await fetch(NVIDIA_EMBED_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${NVIDIA_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        input: batch.map((c) => c.passage),
+        model: NVIDIA_EMBED_MODEL,
+        input_type: 'passage',
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.log('FAILED!');
+      throw new Error(`NVIDIA API error: ${err}`);
+    }
+
+    const data = await res.json();
+    for (let j = 0; j < batch.length; j++) {
+      qdrantPoints.push({
+        id: batch[j].id,
+        vector: data.data[j].embedding,
+        payload: batch[j].payload,
+      });
+    }
+    console.log('✓ (2048 dims)');
   }
 
-  const data = await res.json();
-  const embeddings = data.data.map((item) => item.embedding);
+  // 3. Upsert into Qdrant
+  console.log('\n--- [Step 3: Storing in Qdrant on GCP VM] ---');
+  console.log(`Target: ${QDRANT_URL}/collections/${COLLECTION_NAME}`);
 
-  const points = POLICIES.map((p, idx) => ({
-    id: p.id,
-    vector: embeddings[idx],
-    payload: {
-      id: p.id,
-      name: p.title,
-      slug: p.topic,
-      type: 'policy',
-      category: 'Store Policy & Help',
-      url: p.url,
-      passage: p.passage,
-      updated_at: new Date().toISOString(),
-    },
-  }));
-
-  console.log(`[Policy Sync] Upserting ${points.length} policies to Qdrant...`);
   const qdrantRes = await fetch(`${QDRANT_URL}/collections/${COLLECTION_NAME}/points?wait=true`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ points }),
+    body: JSON.stringify({ points: qdrantPoints }),
   });
 
-  if (qdrantRes.ok) {
-    console.log('✓ [Policy Sync] Successfully synced all 6 store policies to Qdrant!');
-  } else {
+  if (!qdrantRes.ok) {
     const err = await qdrantRes.text();
-    console.warn('[Policy Sync] Qdrant upsert returned:', err);
+    throw new Error(`Qdrant upsert failed: ${err}`);
   }
+
+  // Verify total points count
+  const verifyRes = await fetch(`${QDRANT_URL}/collections/${COLLECTION_NAME}`);
+  const verifyData = await verifyRes.json();
+  const totalCount = verifyData?.result?.points_count ?? 'unknown';
+
+  console.log(`🎉 SUCCESS! All ${allChunks.length} policy chunks are permanently stored in Qdrant.`);
+  console.log(`📈 Total Points in Database: ${totalCount}`);
+  console.log('======================================================\n');
 }
 
-sync().catch((e) => {
-  console.warn('[Policy Sync] Non-blocking warning:', e.message);
+syncPolicies().catch((err) => {
+  console.error('\n❌ Policy sync failed:', err.message);
 });

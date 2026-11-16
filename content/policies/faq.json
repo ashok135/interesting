@@ -1,0 +1,32 @@
+{
+  "slug": "faq",
+  "url": "/faq",
+  "title": "Frequently Asked Questions & Payments",
+  "tagline": "Answers to Common Questions on Quality, Payments & Origins",
+  "sections": [
+    {
+      "id": 90301,
+      "topic": "Accepted Payment Methods & COD",
+      "summary": "Instant UPI, Cards, Net Banking, and Pay on Delivery supported.",
+      "content": "Interesting supports 100% secure payments via Instant UPI (Google Pay, PhonePe, Paytm, BHIM), all major Credit/Debit Cards, Net Banking, and Pay on Delivery (Cash on Delivery / UPI QR on Delivery) with zero convenience charges."
+    },
+    {
+      "id": 90302,
+      "topic": "W180 King Cashew Grading Standard",
+      "summary": "White Whole 180 grade: largest jumbo cashews with under 180 kernels per pound.",
+      "content": "W180 stands for 'White Whole 180'—internationally certified as the King of Cashews. There are less than 180 whole kernels per pound (~453g). These are the largest, plumpest, and naturally creamiest cashews harvested in India."
+    },
+    {
+      "id": 90303,
+      "topic": "Purity, Roasting & Zero Preservatives",
+      "summary": "Slow wood-fired dry roasted without commercial palm oil or deep-frying.",
+      "content": "We avoid commercial deep-frying or palm oil. All our flavoured nuts are slow wood-fired and dry roasted in artisanal batches with Himalayan rock salt and real saffron, preserving natural unsaturated fats and vitamins."
+    },
+    {
+      "id": 90304,
+      "topic": "Storage & Freshness Tips",
+      "summary": "Keep in airtight canisters; store in refrigerator during humid summer for up to 9 months freshness.",
+      "content": "Our tins feature airtight inner pull-rings and reusable lid caps. Keep tins in a cool, dry place. In humid weather or summer months, storing them in the refrigerator preserves peak crunch and aroma for up to 9 months."
+    }
+  ]
+}

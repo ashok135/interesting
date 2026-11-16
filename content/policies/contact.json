@@ -1,0 +1,20 @@
+{
+  "slug": "contact",
+  "url": "/contact",
+  "title": "Customer Advisory & Support",
+  "tagline": "Helpline, WhatsApp Concierge & Support Hours",
+  "sections": [
+    {
+      "id": 90401,
+      "topic": "Customer Support Helpline & WhatsApp",
+      "summary": "Helpline +91 99948 47167; email support@intersting.duckdns.org; Mon-Sat 9AM-8PM IST.",
+      "content": "Our gourmet customer care team is available Monday through Saturday from 9:00 AM to 8:00 PM IST. Phone & WhatsApp helpline: +91 99948 47167. Email: support@intersting.duckdns.org. Inquiries receive responses within 2 to 4 business hours."
+    },
+    {
+      "id": 90402,
+      "topic": "Corporate Gifting & Custom Hampers",
+      "summary": "Custom luxury wooden hampers, laser-engraved plaques, and bulk festive discounts.",
+      "content": "For corporate gifting, wedding hampers, or custom curated dry fruit chests, contact our gifting concierge directly via WhatsApp (+91 99948 47167). We provide custom branded laser-engraved sleeves and special tiered pricing for bulk orders."
+    }
+  ]
+}

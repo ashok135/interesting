@@ -1,0 +1,32 @@
+{
+  "slug": "shipping",
+  "url": "/shipping",
+  "title": "Shipping & Delivery Policy",
+  "tagline": "All India Express Air Logistics",
+  "sections": [
+    {
+      "id": 90201,
+      "topic": "Shipping Charges & Free Delivery Threshold",
+      "summary": "Free Express Delivery on orders above ₹499; flat ₹49 on smaller orders.",
+      "content": "Free Express Shipping is available on all orders with a cart subtotal of ₹499 or more. For smaller orders below ₹499, a nominal standard packaging and transit fee of ₹49 applies at checkout."
+    },
+    {
+      "id": 90202,
+      "topic": "Dispatch & Delivery Timelines",
+      "summary": "24-48 hours dispatch; 2-4 days metro delivery; 3-6 days rest of India.",
+      "content": "All orders are freshly packed and dispatched from our origin fulfillment hub within 24 to 48 hours of confirmation. Metro cities (Bengaluru, Mumbai, Delhi, Chennai, Hyderabad) typically arrive within 2 to 4 business days. Regional and tier 2/3 locations take 3 to 6 business days."
+    },
+    {
+      "id": 90203,
+      "topic": "All-India PIN Code Coverage",
+      "summary": "Serving 19,000+ PIN codes across all 28 states via express air courier partners.",
+      "content": "We deliver to over 19,000+ PIN codes across all 28 Indian states and Union Territories via tier-1 express air partners including Delhivery, Blue Dart, DTDC, and India Post Speed Post."
+    },
+    {
+      "id": 90204,
+      "topic": "Tamper-Proof Freshness Packaging",
+      "summary": "Nitrogen-flushed, multi-layer airtight canisters retaining peak crunch.",
+      "content": "To guarantee zero transit breakage and maximum crunch, all whole cashews, roasted snacks, and seeds are packed in food-grade multi-layer nitrogen-flushed airtight tins and rigid outer corrugated boxes."
+    }
+  ]
+}
