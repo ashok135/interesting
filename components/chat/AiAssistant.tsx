@@ -219,10 +219,10 @@ export default function AiAssistant() {
             type="button"
             onClick={() => setIsOpen(true)}
             className={styles.speechPill}
-            aria-label="Ask Nutritionist AI"
+            aria-label="Ask Chappie AI"
           >
             <span className={styles.onlinePulseDot} />
-            <span className={styles.speechText}>Ask Nutritionist AI</span>
+            <span className={styles.speechText}>Ask Chappie AI</span>
             <Sparkles size={13} className={styles.sparkleIcon} />
           </button>
 
@@ -233,12 +233,14 @@ export default function AiAssistant() {
               setTimeout(() => setIsOpen(true), 350);
             }}
           >
-            <Mascot
-              directions="/mascots/toaster-directions.webp"
-              reactions="/mascots/toaster-reactions.webp"
-              size={86}
-              label="Interesting AI Mascot"
-            />
+            <div className={styles.mascotScale}>
+              <Mascot
+                directions="/mascots/toaster-directions.webp"
+                reactions="/mascots/toaster-reactions.webp"
+                size={74}
+                label="Chappie AI Mascot"
+              />
+            </div>
             <div className={styles.groundShadow} />
           </div>
         </div>
@@ -255,12 +257,12 @@ export default function AiAssistant() {
                   directions="/mascots/toaster-directions.webp"
                   reactions="/mascots/toaster-reactions.webp"
                   size={36}
-                  label="Interesting AI Mascot"
+                  label="Chappie AI Mascot"
                 />
                 <span className={styles.onlineDot} />
               </div>
               <div>
-                <h3 className={styles.headerTitle}>Tara • AI Nutritionist</h3>
+                <h3 className={styles.headerTitle}>Chappie • AI Nutritionist</h3>
                 <p className={styles.headerSub}>Farm-Fresh Wellness Concierge • Interesting Pantry</p>
               </div>
             </div>
@@ -280,7 +282,7 @@ export default function AiAssistant() {
             {/* Welcome Greeting */}
             <div className={styles.welcomeCard}>
               <p style={{ margin: '0 0 0.5rem' }}>
-                Hello! I&apos;m <strong>Tara</strong>, your AI concierge for Interesting. Ask me anything about our nuts, super-seeds, dietary advice, or gift hampers!
+                Hello! I&apos;m <strong>Chappie</strong>, your AI concierge for Interesting. Ask me anything about our nuts, super-seeds, dietary advice, or gift hampers!
               </p>
               <div className={styles.chipsContainer}>
                 {STARTER_PROMPTS.map((prompt) => (

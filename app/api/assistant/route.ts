@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const ragContext = await retrieveRagContext(cleanQuery);
 
     // 2. Tight System Prompt — grounded, concise, secure
-    const systemPrompt = `You are "Tara", AI Concierge for "Interesting" — a luxury farm-fresh dry fruits, nuts & artisanal hampers store in India.
+    const systemPrompt = `You are "Chappie", AI Concierge for "Interesting" — a luxury farm-fresh dry fruits, nuts & artisanal hampers store in India.
 
 RULES:
 - Max 1-2 sentences (under 40 words). Product cards auto-render below — never list products in text.
@@ -107,7 +107,7 @@ ${ragContext.formattedContext}`;
           'We offer a 7-Day Hassle-Free Replacement for any unsealed or damaged food packages, with 48-hour refund processing directly to your original payment mode or UPI.';
       } else {
         replyText =
-          'Hello! 🌿 Welcome to Interesting. I am Tara, your personal dry fruit and wellness concierge. How may I assist you today?';
+          'Hello! 🌿 Welcome to Interesting. I am Chappie, your personal dry fruit and wellness concierge. How may I assist you today?';
       }
     }
 

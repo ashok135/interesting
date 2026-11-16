@@ -11,7 +11,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0;
   background: none;
   border: none;
   padding: 0;
@@ -25,7 +25,7 @@
 .speechPill {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   background: #14532d;
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -39,6 +39,7 @@
   animation: speechPillFloat 3.5s ease-in-out infinite;
   transition: all 0.25s ease;
   cursor: pointer;
+  z-index: 2;
 }
 
 .speechPill:hover {
@@ -67,10 +68,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-top: -10px; /* Pulls mascot close under speech pill to eliminate empty headroom */
   animation: avatarZeroGravity 4.5s ease-in-out infinite;
   filter: drop-shadow(0 6px 16px rgba(20, 83, 45, 0.22));
   transition: transform 0.25s ease;
   cursor: pointer;
+}
+
+.mascotScale {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s ease;
 }
 
 .mascotFloatWrap:hover {
@@ -143,16 +152,43 @@
   .mascotTriggerContainer {
     bottom: 5.5rem; /* Safely above the mobile bottom floating cart bar */
     right: 0.75rem;
+    gap: 0;
   }
 
   .speechPill {
-    font-size: 0.72rem;
-    padding: 0.28rem 0.6rem;
+    font-size: 0.68rem;
+    padding: 0.24rem 0.55rem;
+    gap: 0.28rem;
+    box-shadow: 0 3px 10px rgba(20, 83, 45, 0.3);
+  }
+
+  .speechText {
+    font-size: 0.68rem;
+  }
+
+  .sparkleIcon {
+    width: 11px;
+    height: 11px;
+  }
+
+  .onlinePulseDot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .mascotFloatWrap {
+    margin-top: -14px; /* Pulls mascot close under speech pill to eliminate gap */
+  }
+
+  .mascotScale {
+    transform: scale(0.82);
+    transform-origin: top center;
   }
 
   .groundShadow {
-    width: 38px;
-    height: 6px;
+    width: 32px;
+    height: 5px;
+    margin-top: -8px;
   }
 }
 
