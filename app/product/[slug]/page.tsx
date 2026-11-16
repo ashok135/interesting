@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { getProductBySlug, getProductById, getAllProductSlugs, getRelatedProducts } from '@/lib/api/products';
+import { getProductBySlug, getProductById, getAllProductSlugs, getRelatedProducts, getProducts } from '@/lib/api/products';
 import { getProductReviews, type WooReview } from '@/lib/api/reviews';
 import type { WooProduct, WooAttribute } from '@/types';
-import { ProductGrid, ProductReviews } from '@/components/product';
+import { ProductGrid, ProductReviews, FrequentlyBoughtTogether } from '@/components/product';
 import { AddToCartSection } from './AddToCartSection';
 import { ProductGallery } from './ProductGallery';
 import { formatPrice, stripHtml } from '@/lib/utils/formatters';
@@ -90,6 +90,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
     console.error('Failed to fetch related products:', err);
     related = [];
   }
+
+  let upsellProducts: WooProduct[] = [];
+  const rawUpsells = Array.isArray(product.upsell_ids) ? product.upsell_ids : [];
+  if (rawUpsells.length > 0) {
+    try {
+      upsellProducts = await getProducts({ include: rawUpsells, perPage: 4 });
+    } catch (err) {
+      console.error('Failed to fetch upsell products:', err);
+      upsellProducts = [];
+    }
+  }
+
+  // Smart combo items: pair current product with up to 2 complementary products
+  const comboPool = upsellProducts.length > 0 ? upsellProducts : related;
+  const comboProducts = comboPool.filter((p) => p.id !== product.id).slice(0, 2);
 
   let reviews: WooReview[] = [];
   try {
@@ -214,6 +229,24 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
           </div>
         </div>
+
+        {/* Frequently Bought Together Combo Pack */}
+        {comboProducts.length > 0 && (
+          <FrequentlyBoughtTogether
+            mainProduct={product}
+            comboProducts={comboProducts}
+          />
+        )}
+
+        {/* Curated Upsell Recommendations */}
+        {upsellProducts.length > 0 && (
+          <div className={styles.upsellSection}>
+            <ProductGrid
+              products={upsellProducts}
+              title="Upgrade Your Pantry"
+            />
+          </div>
+        )}
 
         {/* Customer Reviews */}
         <ProductReviews

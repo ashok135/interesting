@@ -30,6 +30,7 @@ import {
   XCircle,
   AlertCircle,
   AlertTriangle,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '@/store/AuthContext';
 import { useToast } from '@/store/ToastContext';
@@ -107,6 +108,18 @@ function AccountContent() {
   const [cancelComments, setCancelComments] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // Amazon/Flipkart Verified Review Modal State
+  const [reviewModalItem, setReviewModalItem] = useState<{
+    item: { id: number; product_id?: number; name: string; quantity: number; total: string; image?: { src?: string } };
+    orderId: number;
+  } | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewHoverRating, setReviewHoverRating] = useState(0);
+  const [reviewHeadline, setReviewHeadline] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewedKeys, setReviewedKeys] = useState<string[]>([]);
+
   // Auto-detect ?order=ID from SMS tracking link and open modal immediately
   useEffect(() => {
     if (!orderQueryId) return;
@@ -154,6 +167,53 @@ function AccountContent() {
       showError(msg);
     } finally {
       setIsCancelling(false);
+    }
+  }
+
+  async function handleSubmitReview(e: React.FormEvent) {
+    e.preventDefault();
+    if (!reviewModalItem) return;
+    if (!reviewComment.trim()) {
+      showError('Please write your review feedback.');
+      return;
+    }
+    setIsSubmittingReview(true);
+    try {
+      const fullReview = reviewHeadline.trim()
+        ? `${reviewHeadline.trim()} — ${reviewComment.trim()}`
+        : reviewComment.trim();
+
+      const targetProdId = reviewModalItem.item.product_id || reviewModalItem.item.id;
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: targetProdId,
+          orderId: reviewModalItem.orderId,
+          rating: reviewRating,
+          review: fullReview,
+          reviewer: user?.name || customer?.first_name || 'Verified Buyer',
+          reviewerEmail: user?.email || customer?.email || '',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to submit review');
+      }
+
+      showSuccess('⭐ Thank you! Your verified purchase review has been submitted.');
+      const key = `${reviewModalItem.orderId}-${targetProdId}`;
+      setReviewedKeys((prev) => [...prev, key]);
+      setReviewModalItem(null);
+      setReviewHeadline('');
+      setReviewComment('');
+      setReviewRating(5);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error submitting review';
+      showError(msg);
+    } finally {
+      setIsSubmittingReview(false);
     }
   }
 
@@ -765,6 +825,22 @@ function AccountContent() {
                       <div className={styles.orderItemDetails}>
                         <span className={styles.orderItemName}>{item.name}</span>
                         <span className={styles.orderItemQty}>Qty: {item.quantity}</span>
+                        {(selectedOrder.status || '').toLowerCase() === 'completed' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReviewModalItem({ item, orderId: selectedOrder.id });
+                              setReviewRating(5);
+                              setReviewHeadline('');
+                              setReviewComment('');
+                            }}
+                            className={reviewedKeys.includes(`${selectedOrder.id}-${item.product_id || item.id}`) ? styles.modalReviewedPill : styles.modalWriteReviewPill}
+                            disabled={reviewedKeys.includes(`${selectedOrder.id}-${item.product_id || item.id}`)}
+                          >
+                            <Star size={11} fill={reviewedKeys.includes(`${selectedOrder.id}-${item.product_id || item.id}`) ? '#10b981' : '#f59e0b'} color={reviewedKeys.includes(`${selectedOrder.id}-${item.product_id || item.id}`) ? '#10b981' : '#f59e0b'} />
+                            {reviewedKeys.includes(`${selectedOrder.id}-${item.product_id || item.id}`) ? 'Review Submitted' : 'Write a Review'}
+                          </button>
+                        )}
                       </div>
                     </div>
                     <span className={styles.orderItemPrice}>{formatPrice(item.total)}</span>
@@ -1252,6 +1328,23 @@ function AccountContent() {
                                 >
                                   <ShoppingBag size={14} /> Buy Again
                                 </button>
+                                {isCompleted && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setReviewModalItem({ item, orderId: order.id });
+                                      setReviewRating(5);
+                                      setReviewHeadline('');
+                                      setReviewComment('');
+                                    }}
+                                    className={reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`) ? styles.reviewSubmittedBtn : styles.writeReviewOrderBtn}
+                                    disabled={reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`)}
+                                    title="Write a verified customer review"
+                                  >
+                                    <Star size={13} fill={reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`) ? '#10b981' : '#f59e0b'} color={reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`) ? '#10b981' : '#f59e0b'} />
+                                    {reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`) ? 'Reviewed' : 'Write a Review'}
+                                  </button>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -1846,6 +1939,146 @@ function AccountContent() {
                 {isCancelling ? 'Cancelling Order...' : 'Yes, Cancel Order'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Amazon / Flipkart Verified Purchase Review Modal ── */}
+      {reviewModalItem && (
+        <div
+          className={styles.reviewModalOverlay}
+          onClick={() => !isSubmittingReview && setReviewModalItem(null)}
+        >
+          <div className={styles.reviewModalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.reviewModalHeader}>
+              <h3 className={styles.reviewModalTitle}>
+                <Star size={20} fill="#f59e0b" color="#f59e0b" /> Rate & Review Product
+              </h3>
+              <button
+                type="button"
+                onClick={() => setReviewModalItem(null)}
+                disabled={isSubmittingReview}
+                className={styles.closeBtn}
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReview}>
+              <div className={styles.reviewModalBody}>
+                {/* Product Preview Card */}
+                <div className={styles.reviewProductPreview}>
+                  <div className={styles.reviewProductThumb}>
+                    <Image
+                      src={getItemImageUrl(reviewModalItem.item)}
+                      alt={reviewModalItem.item.name}
+                      fill
+                      sizes="54px"
+                      style={{ objectFit: 'cover' }}
+                      unoptimized
+                    />
+                  </div>
+                  <div className={styles.reviewProductInfo}>
+                    <h4 className={styles.reviewProductName}>{reviewModalItem.item.name}</h4>
+                    <span className={styles.reviewVerifiedBadge}>
+                      <CheckCircle2 size={12} /> Verified Purchase • Order #{reviewModalItem.orderId}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Star Rating Section */}
+                <div className={styles.ratingSection}>
+                  <label className={styles.ratingSectionLabel}>Overall Rating *</label>
+                  <div className={styles.starRow}>
+                    {[1, 2, 3, 4, 5].map((s) => {
+                      const isActive = (reviewHoverRating || reviewRating) >= s;
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          className={styles.starBtn}
+                          onMouseEnter={() => setReviewHoverRating(s)}
+                          onMouseLeave={() => setReviewHoverRating(0)}
+                          onClick={() => setReviewRating(s)}
+                          aria-label={`${s} Stars`}
+                        >
+                          <Star
+                            size={26}
+                            fill={isActive ? '#f59e0b' : 'none'}
+                            color={isActive ? '#f59e0b' : '#cbd5e1'}
+                          />
+                        </button>
+                      );
+                    })}
+                    <span className={styles.ratingWordLabel}>
+                      {reviewRating === 5 && 'Excellent'}
+                      {reviewRating === 4 && 'Good'}
+                      {reviewRating === 3 && 'Average'}
+                      {reviewRating === 2 && 'Fair'}
+                      {reviewRating === 1 && 'Poor'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Review Title / Headline */}
+                <div className={styles.reviewFieldGroup}>
+                  <label htmlFor="review-headline" className={styles.reviewInputLabel}>
+                    Add a headline (optional)
+                  </label>
+                  <input
+                    id="review-headline"
+                    type="text"
+                    value={reviewHeadline}
+                    onChange={(e) => setReviewHeadline(e.target.value)}
+                    placeholder="e.g. Crisp, fresh, and unmatched quality!"
+                    className={styles.reviewTextInput}
+                    disabled={isSubmittingReview}
+                  />
+                </div>
+
+                {/* Review Body */}
+                <div className={styles.reviewFieldGroup}>
+                  <label htmlFor="review-comment" className={styles.reviewInputLabel}>
+                    Write your review *
+                  </label>
+                  <textarea
+                    id="review-comment"
+                    rows={4}
+                    required
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="What did you like or dislike? How was the freshness, crunch, and packaging?"
+                    className={styles.reviewTextarea}
+                    disabled={isSubmittingReview}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.reviewModalFooter}>
+                <button
+                  type="button"
+                  onClick={() => setReviewModalItem(null)}
+                  disabled={isSubmittingReview}
+                  className={styles.cancelKeepBtn}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className={styles.reviewSubmitBtn}
+                >
+                  {isSubmittingReview ? (
+                    'Submitting...'
+                  ) : (
+                    <>
+                      <Star size={14} fill="#ffffff" color="#ffffff" /> Submit Verified Review
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

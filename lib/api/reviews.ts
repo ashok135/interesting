@@ -18,6 +18,7 @@ export interface CreateReviewData {
   reviewer: string;
   reviewer_email: string;
   rating: number;
+  verified?: boolean;
 }
 
 /**
@@ -52,6 +53,7 @@ export async function createProductReview(data: CreateReviewData): Promise<WooRe
       reviewer_email: data.reviewer_email,
       rating: data.rating,
       status: 'approved', // Auto-approve so user immediately sees their review
+      verified: data.verified ?? true,
     },
     cache: 'no-store',
   });

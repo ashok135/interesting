@@ -51,6 +51,8 @@ export interface WooProduct {
   rating_count: number;
   featured: boolean;
   date_created: string;
+  upsell_ids?: number[];
+  cross_sell_ids?: number[];
 }
 
 export interface WooProductCategory {

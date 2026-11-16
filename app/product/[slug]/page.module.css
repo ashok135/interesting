@@ -207,6 +207,10 @@
   font-weight: 500;
 }
 
+.upsellSection {
+  padding-top: 1rem;
+}
+
 .related {
   padding-top: 2rem;
   border-top: 1px solid var(--color-border);

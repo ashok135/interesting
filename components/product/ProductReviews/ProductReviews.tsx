@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Star, MessageSquare, PenLine, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { Star, MessageSquare, PenLine, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
 import type { WooReview } from '@/lib/api/reviews';
 import { useAuth } from '@/store/AuthContext';
 import { useToast } from '@/store/ToastContext';
@@ -39,6 +40,7 @@ export default function ProductReviews({
   const [reviewerEmail, setReviewerEmail] = useState('');
   const [reviewText, setReviewText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verifiedError, setVerifiedError] = useState<string | null>(null);
 
   // Pre-fill user details if logged in
   useEffect(() => {
@@ -80,6 +82,7 @@ export default function ProductReviews({
 
     try {
       setIsSubmitting(true);
+      setVerifiedError(null);
       const res = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,10 +98,17 @@ export default function ProductReviews({
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 403 || data.code === 'VERIFIED_PURCHASE_REQUIRED') {
+          setVerifiedError(
+            data.error ||
+              'Verified Purchase Required: Only customers who have ordered and received delivery of this product can write a review. Please check your Delivered Orders in your Account.'
+          );
+          return;
+        }
         throw new Error(data.error || 'Failed to submit review');
       }
 
-      showSuccess('Thank you! Your review has been submitted.');
+      showSuccess('Thank you! Your verified review has been submitted.');
 
       // Instantly add to state
       if (data.review) {
@@ -160,7 +170,10 @@ export default function ProductReviews({
         </div>
         <button
           type="button"
-          onClick={() => setShowForm((prev) => !prev)}
+          onClick={() => {
+            setShowForm((prev) => !prev);
+            setVerifiedError(null);
+          }}
           className={styles.writeBtn}
         >
           {showForm ? 'Cancel Review' : (
@@ -171,6 +184,15 @@ export default function ProductReviews({
         </button>
       </div>
 
+      {/* Amazon-style Verified Purchase Trust Banner */}
+      <div className={styles.trustBanner}>
+        <ShieldCheck size={20} className={styles.trustIcon} />
+        <div>
+          <strong>Verified Purchases Only:</strong>
+          <span>To guarantee authentic feedback, only customers with confirmed delivery of this harvest can write a review. Ratings are verified against completed orders.</span>
+        </div>
+      </div>
+
       {/* Write Review Form */}
       {showForm && (
         <div className={styles.formCard}>
@@ -178,6 +200,18 @@ export default function ProductReviews({
           <p className={styles.formSubtitle}>
             Your honest feedback helps fellow customers choose the best farm-fresh harvest.
           </p>
+
+          {verifiedError && (
+            <div className={styles.errorNoticeBox}>
+              <AlertCircle size={20} className={styles.errorNoticeIcon} />
+              <div className={styles.errorNoticeContent}>
+                <p>{verifiedError}</p>
+                <Link href="/account" className={styles.goToOrdersBtn}>
+                  Go to Delivered Orders in My Account →
+                </Link>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className={styles.form}>
             {/* Rating Selector */}
