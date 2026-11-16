@@ -225,16 +225,17 @@ export default function AiAssistant() {
             <Sparkles size={13} className={styles.sparkleIcon} />
           </div>
 
-          {/* 3D Character Avatar with Levitation Physics & Ground Shadow */}
+          {/* 3D Animated Avatar Video with Levitation Physics & Ground Shadow */}
           <div className={styles.avatarFloatWrap}>
-            <div className={styles.avatarImgWrap}>
-              <Image
-                src="/images/ai/tara-avatar.webp"
-                alt="Tara AI 3D Concierge"
-                width={72}
-                height={72}
-                priority
-                className={styles.avatarImg}
+            <div className={styles.avatarVideoWrap}>
+              <video
+                src="/videos/tara-avatar.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                aria-hidden="true"
+                className={styles.avatarVideo}
               />
             </div>
             <div className={styles.groundShadow} />
@@ -249,12 +250,14 @@ export default function AiAssistant() {
           <div className={styles.chatHeader}>
             <div className={styles.headerInfo}>
               <div className={styles.avatarWrap}>
-                <Image
-                  src="/images/ai/tara-avatar.webp"
-                  alt="Tara 3D Avatar"
-                  width={36}
-                  height={36}
-                  className={styles.headerAvatarImg}
+                <video
+                  src="/videos/tara-avatar.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  aria-hidden="true"
+                  className={styles.headerAvatarVideo}
                 />
                 <span className={styles.onlineDot} />
               </div>
