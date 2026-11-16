@@ -70,14 +70,14 @@
   perspective: 600px;
 }
 
-.avatarVideoWrap {
+.avatarImgWrap {
   position: relative;
-  width: 78px;
-  height: 78px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: #3979ad;
+  background: radial-gradient(circle at 35% 30%, #fef3c7 0%, #fef9c3 40%, #fde047 90%);
   border: 2.5px solid #ffffff;
-  box-shadow: 0 8px 24px rgba(20, 83, 45, 0.28), 0 0 16px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 8px 24px rgba(20, 83, 45, 0.28), 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -87,25 +87,22 @@
   transform-style: preserve-3d;
 }
 
-.avatarVideo {
-  width: 100%;
-  height: 100%;
+.avatarImg {
   object-fit: cover;
-  object-position: center 25%;
-  transform: scale(1.18);
-  pointer-events: none;
-  border-radius: 50%;
+  object-position: top center;
+  transform: translateY(2px) scale(1.12);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
 }
 
 /* Interactive 3D tilt on hover */
-.avatarTriggerContainer:hover .avatarVideoWrap {
+.avatarTriggerContainer:hover .avatarImgWrap {
   transform: perspective(600px) rotateY(-8deg) rotateX(6deg) scale(1.08);
-  box-shadow: 0 14px 32px rgba(20, 83, 45, 0.38), 0 0 24px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 14px 32px rgba(20, 83, 45, 0.38), 0 0 20px rgba(245, 158, 11, 0.3);
 }
 
-.avatarTriggerContainer:hover .avatarVideo {
-  transform: scale(1.24);
+.avatarTriggerContainer:hover .avatarImg {
+  transform: translateY(0px) scale(1.18);
 }
 
 /* Breathing ground shadow beneath the floating avatar */
@@ -176,9 +173,9 @@
     right: 0.85rem;
   }
 
-  .avatarVideoWrap {
-    width: 66px;
-    height: 66px;
+  .avatarImgWrap {
+    width: 60px;
+    height: 60px;
   }
 
   .speechPill {
@@ -257,10 +254,10 @@
 
 .avatarWrap {
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: #3979ad;
+  background: radial-gradient(circle at 35% 30%, #fef3c7 0%, #fde047 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,14 +267,10 @@
   flex-shrink: 0;
 }
 
-.headerAvatarVideo {
-  width: 100%;
-  height: 100%;
+.headerAvatarImg {
   object-fit: cover;
-  object-position: center 25%;
-  transform: scale(1.22);
-  border-radius: 50%;
-  pointer-events: none;
+  object-position: top center;
+  transform: translateY(2px) scale(1.15);
 }
 
 .onlineDot {
