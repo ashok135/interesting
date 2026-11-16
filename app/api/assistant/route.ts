@@ -28,9 +28,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!NVIDIA_API_KEY) {
+      return NextResponse.json(
+        {
+          error: 'NVIDIA_API_KEY is not configured in server environment.',
+          reply:
+            'I am currently undergoing routine maintenance. In the meantime, please feel free to explore our farm-fresh cashews, almonds, and super-seeds in our catalog!',
+          products: [],
+        },
+        { status: 503 }
+      );
+    }
+
     const cleanQuery = message.trim();
 
-    // 1. RAG Retrieval Step: Fetch real-time products & policies from WooCommerce
+    // 1. RAG Retrieval Step: Vector search in Qdrant + live inventory grounding (RIG)
     const ragContext = await retrieveRagContext(cleanQuery);
 
     // 2. Strict Grounding System Prompt

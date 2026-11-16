@@ -1,6 +1,10 @@
 /**
- * RAG Knowledge Base & Semantic Product Retriever
- * Fetches live catalog from WooCommerce, scores query relevance, and builds prompt context.
+ * RAG & RIG Knowledge Base & Semantic Product Retriever
+ *
+ * 1. True Vector RAG: Vectorizes user query with NVIDIA Nemotron (2048 dims)
+ *    and searches Qdrant for semantic policy chunks and product matches.
+ * 2. Real-Time Information Grounding (RIG): Merges live WooCommerce inventory,
+ *    live prices in ₹, and stock status so the AI never hallucinates or quotes stale data.
  */
 
 import { getProducts } from '@/lib/api/products';
@@ -24,33 +28,12 @@ export interface RagContext {
   formattedContext: string;
 }
 
-const STORE_POLICIES = [
-  'Shipping: Free Express Delivery across India on all prepaid orders and orders above ₹499. Orders dispatch within 24 hours in airtight packaging.',
-  'Returns: 7-Day Hassle-Free Replacement/Return for damaged or unsealed packages. Freshness and vacuum seal guaranteed.',
-  'Payments: Supports Pay on Delivery (Cash on Delivery / UPI on Delivery) and Direct Instant UPI (Google Pay, PhonePe, Paytm).',
-  'Purity Guarantee: 100% natural, farm-sourced, lab-tested, zero artificial preservatives, nitrogen-flushed gold airtight containers.',
-];
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
+const NVIDIA_EMBED_URL = process.env.NVIDIA_EMBED_URL || 'https://integrate.api.nvidia.com/v1/embeddings';
+const NVIDIA_EMBED_MODEL = process.env.NVIDIA_EMBED_MODEL || 'nvidia/nemotron-3.5-embed-1b';
 
-// Semantic keyword dictionary for health goals and user intents
-const INTENT_KEYWORD_MAP: Record<string, string[]> = {
-  protein: ['almond', 'chia', 'pumpkin', 'chana', 'trail', 'walnut'],
-  workout: ['trail', 'almond', 'pumpkin', 'chia', 'chana'],
-  gym: ['trail', 'almond', 'pumpkin', 'chia', 'chana'],
-  diabetes: ['chia', 'pumpkin', 'walnut', 'almond'],
-  sugar: ['chia', 'pumpkin', 'walnut', 'almond'],
-  heart: ['walnut', 'almond', 'chia', 'pistachio'],
-  bp: ['walnut', 'almond', 'chia', 'pumpkin'],
-  brain: ['walnut', 'almond', 'chia'],
-  weight: ['chia', 'pumpkin', 'trail', 'millet'],
-  diet: ['chia', 'pumpkin', 'trail', 'millet'],
-  gift: ['hamper', 'box', 'casket', 'celebration', 'keepsake'],
-  hampers: ['hamper', 'box', 'casket', 'celebration', 'keepsake'],
-  diwali: ['hamper', 'box', 'casket', 'celebration', 'katli'],
-  sweet: ['katli', 'laddu', 'chikki', 'dates', 'raisins'],
-  dessert: ['katli', 'laddu', 'chikki', 'dates'],
-  snack: ['chana', 'crisp', 'roasted', 'trail', 'millet', 'pistachio'],
-  roasted: ['chana', 'crisp', 'pistachio', 'almond'],
-};
+const QDRANT_URL = process.env.QDRANT_URL || 'https://intersting.duckdns.org/qdrant';
+const COLLECTION_NAME = process.env.QDRANT_COLLECTION || 'products_rag';
 
 function stripHtml(html?: string): string {
   if (!html) return '';
@@ -66,143 +49,187 @@ function stripHtml(html?: string): string {
     .trim();
 }
 
-function parsePrice(p: string | number | undefined): number {
-  if (typeof p === 'number') return p;
-  if (!p) return 0;
-  const num = parseFloat(String(p).replace(/[^0-9.]/g, ''));
-  return isNaN(num) ? 0 : num;
+/**
+ * Generates 2,048-dim embedding vector for the search query via NVIDIA NIM
+ */
+async function generateQueryVector(query: string): Promise<number[] | null> {
+  if (!NVIDIA_API_KEY) return null;
+
+  try {
+    const res = await fetch(NVIDIA_EMBED_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${NVIDIA_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        input: [query],
+        model: NVIDIA_EMBED_MODEL,
+        input_type: 'query',
+      }),
+      signal: AbortSignal.timeout(4000),
+    });
+
+    if (!res.ok) {
+      console.warn(`[RAG Embedding] Query vector generation failed (${res.status})`);
+      return null;
+    }
+
+    const data = await res.json();
+    return data?.data?.[0]?.embedding || null;
+  } catch (err) {
+    console.warn('[RAG Embedding] Embedding fetch error:', err);
+    return null;
+  }
+}
+
+interface QdrantSearchHit {
+  id: number | string;
+  score: number;
+  payload?: {
+    id?: number | string;
+    name?: string;
+    slug?: string;
+    type?: 'policy' | 'product';
+    category?: string;
+    url?: string;
+    price?: string;
+    passage?: string;
+    image?: string;
+  };
+}
+
+/**
+ * Searches Qdrant collection for semantic policy & product matches
+ */
+async function searchQdrant(vector: number[]): Promise<QdrantSearchHit[]> {
+  try {
+    const res = await fetch(`${QDRANT_URL}/collections/${COLLECTION_NAME}/points/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        vector,
+        limit: 6,
+        with_payload: true,
+      }),
+      signal: AbortSignal.timeout(4000),
+    });
+
+    if (!res.ok) {
+      console.warn(`[Qdrant Search] HTTP error (${res.status})`);
+      return [];
+    }
+
+    const data = await res.json();
+    return Array.isArray(data?.result) ? data.result : [];
+  } catch (err) {
+    console.warn('[Qdrant Search] Search fetch error:', err);
+    return [];
+  }
 }
 
 export async function retrieveRagContext(userQuery: string): Promise<RagContext> {
-  const queryLower = userQuery.toLowerCase();
-  const queryTokens = queryLower
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter((t) => t.length > 2);
+  const queryLower = userQuery.toLowerCase().trim();
 
-  // Check budget constraints in query (e.g., "under 500", "under 1000", "below 1500")
-  let maxBudget: number | null = null;
-  const budgetMatch = queryLower.match(/(?:under|below|less than|within)\s*(?:rs\.?|inr|₹)?\s*(\d+)/i);
-  if (budgetMatch && budgetMatch[1]) {
-    maxBudget = parseInt(budgetMatch[1], 10);
-  }
+  // 1. Vectorize query & search Qdrant
+  const queryVector = await generateQueryVector(userQuery);
+  const hits: QdrantSearchHit[] = queryVector ? await searchQdrant(queryVector) : [];
 
-  // 1. Fetch live products from WooCommerce
-  let allProducts: WooProduct[] = [];
+  const policyHits = hits.filter((h) => h.payload?.type === 'policy');
+  const productHits = hits.filter((h) => h.payload?.type === 'product');
+
+  // 2. Fetch live products from WooCommerce to ground with real-time price & stock (RIG)
+  let liveProducts: WooProduct[] = [];
   try {
-    allProducts = await getProducts({ perPage: 100 });
+    const matchedIds = productHits
+      .map((h) => Number(h.payload?.id || h.id))
+      .filter((id) => !isNaN(id) && id > 0);
+
+    if (matchedIds.length > 0) {
+      liveProducts = await getProducts({ include: matchedIds, perPage: 6 });
+    }
+
+    // If Qdrant didn't match products but query seems product/nutrition related, get popular products
+    const isPolicyQuery =
+      queryLower.includes('return') ||
+      queryLower.includes('refund') ||
+      queryLower.includes('replace') ||
+      queryLower.includes('ship') ||
+      queryLower.includes('deliver') ||
+      queryLower.includes('track') ||
+      queryLower.includes('pay') ||
+      queryLower.includes('cod') ||
+      queryLower.includes('contact');
+
+    if (liveProducts.length === 0 && !isPolicyQuery) {
+      liveProducts = await getProducts({ perPage: 4, orderby: 'popularity' });
+    }
   } catch (err) {
-    console.error('RAG product fetch error:', err);
-    allProducts = [];
+    console.warn('[RAG/RIG] Live product fetch error:', err);
   }
 
-  // 2. Score each product based on query tokens & semantic intents
-  const scoredProducts = allProducts.map((p) => {
-    let score = 0;
-    const nameLower = (p.name || '').toLowerCase();
-    const descLower = stripHtml(p.short_description || p.description || '').toLowerCase();
-    const catLower = (Array.isArray(p.categories) ? p.categories.map((c) => c.name).join(' ') : '').toLowerCase();
-    const combined = `${nameLower} ${catLower} ${descLower}`;
-    const priceNum = parsePrice(p.price);
-
-    // Direct token matches
-    for (const token of queryTokens) {
-      if (nameLower.includes(token)) score += 10;
-      if (catLower.includes(token)) score += 6;
-      if (descLower.includes(token)) score += 3;
-    }
-
-    // Semantic intent expansions
-    for (const [intent, keywords] of Object.entries(INTENT_KEYWORD_MAP)) {
-      if (queryTokens.includes(intent) || queryLower.includes(intent)) {
-        for (const kw of keywords) {
-          if (combined.includes(kw)) {
-            score += 8;
-          }
-        }
-      }
-    }
-
-    // Budget filtering / weighting
-    if (maxBudget !== null) {
-      if (priceNum > 0 && priceNum <= maxBudget) {
-        score += 15; // prioritize products within budget
-      } else if (priceNum > maxBudget) {
-        score -= 20; // penalize products over budget
-      }
-    }
-
-    // In-stock preference
-    if (p.stock_status === 'instock') {
-      score += 2;
-    } else {
-      score -= 5;
-    }
-
-    return { product: p, score };
-  });
-
-  // Sort descending by relevance score
-  scoredProducts.sort((a, b) => b.score - a.score);
-
-  // Take top 4 relevant items (if scores > 0, else top featured/best sellers)
-  let topMatches = scoredProducts.filter((item) => item.score > 0).slice(0, 4);
-  if (topMatches.length === 0) {
-    topMatches = scoredProducts.slice(0, 3);
-  }
-
-  const retrievedProducts: RetrievedProduct[] = topMatches.map(({ product: p }) => ({
+  // 3. Format retrieved live products
+  const retrievedProducts: RetrievedProduct[] = liveProducts.map((p) => ({
     id: p.id,
     name: p.name,
     slug: p.slug,
     price: p.price,
     regular_price: p.regular_price || p.price,
     image: Array.isArray(p.images) && p.images[0]?.src ? p.images[0].src : '/images/categories/nuts.jpg',
-    category: Array.isArray(p.categories) && p.categories[0]?.name ? p.categories[0].name : 'Dry Fruits & Seeds',
+    category: Array.isArray(p.categories) && p.categories[0]?.name ? p.categories[0].name : 'Farm-Fresh Dry Fruits',
     description: stripHtml(p.short_description || p.description || '').slice(0, 180),
     stock_status: p.stock_status,
   }));
 
-  // Match relevant store policies if mentioned
-  const relevantPolicies = STORE_POLICIES.filter((policy) => {
-    if (queryLower.includes('return') || queryLower.includes('refund') || queryLower.includes('replace')) {
-      return policy.includes('Returns');
+  // 4. Format policy knowledge
+  const retrievedPolicies: string[] = [];
+  for (const hit of policyHits) {
+    const payload = hit.payload;
+    if (payload?.passage) {
+      retrievedPolicies.push(payload.passage);
+    } else if (payload?.name) {
+      retrievedPolicies.push(`${payload.name}: Verified store policy.`);
     }
-    if (queryLower.includes('ship') || queryLower.includes('deliver') || queryLower.includes('track') || queryLower.includes('when')) {
-      return policy.includes('Shipping');
-    }
-    if (queryLower.includes('cod') || queryLower.includes('pay') || queryLower.includes('upi') || queryLower.includes('cash')) {
-      return policy.includes('Payments');
-    }
-    if (queryLower.includes('purity') || queryLower.includes('quality') || queryLower.includes('organic') || queryLower.includes('fresh')) {
-      return policy.includes('Purity');
-    }
-    return false;
-  });
+  }
 
-  // Build clean text knowledge context for LLM prompt
-  const productContextText = retrievedProducts
-    .map(
-      (p, i) =>
-        `${i + 1}. **${p.name}**\n` +
-        `   - Price: ₹${p.price} (Regular: ₹${p.regular_price})\n` +
-        `   - Category: ${p.category}\n` +
-        `   - Status: ${p.stock_status === 'instock' ? 'In Stock' : 'Out of Stock'}\n` +
-        `   - Highlights: ${p.description}\n` +
-        `   - URL: /product/${p.slug}`
-    )
-    .join('\n\n');
+  // Fallback policies if none matched
+  if (retrievedPolicies.length === 0) {
+    retrievedPolicies.push(
+      'Free Express Delivery across India on prepaid orders and orders above ₹499.',
+      '7-Day Hassle-Free Replacement for damaged or unsealed food packages.',
+      'Supports Cash on Delivery / UPI on Delivery & Direct Instant UPI.'
+    );
+  }
 
-  const policyContextText =
-    relevantPolicies.length > 0
-      ? `\n\n### Store Policies & Delivery Info:\n${relevantPolicies.join('\n')}`
-      : `\n\n### Store Guarantee:\nFree Express Shipping on orders over ₹499. Vacuum-sealed farm-fresh guarantee.`;
+  // 5. Construct unified LLM prompt context
+  const productContextText =
+    retrievedProducts.length > 0
+      ? retrievedProducts
+          .map(
+            (p, i) =>
+              `${i + 1}. **${p.name}**\n` +
+              `   - Current Live Price: ₹${p.price} (Regular: ₹${p.regular_price})\n` +
+              `   - Category: ${p.category}\n` +
+              `   - Availability: ${p.stock_status === 'instock' ? 'In Stock' : 'Out of Stock'}\n` +
+              `   - Key Benefits / Highlights: ${p.description}\n` +
+              `   - Store Link: /product/${p.slug}`
+          )
+          .join('\n\n')
+      : 'No specific products requested. Recommend customer favorites if appropriate.';
 
-  const formattedContext = `### Live Store Products from Interesting:\n${productContextText}${policyContextText}`;
+  const policyContextText = retrievedPolicies.map((p) => `• ${p}`).join('\n');
+
+  const formattedContext = [
+    '### Store Policies & Knowledge Base (Verified Ground Truth from Qdrant):',
+    policyContextText,
+    '',
+    '### Live Store Products (Real-Time Pricing & Stock from WooCommerce):',
+    productContextText,
+  ].join('\n');
 
   return {
     products: retrievedProducts,
-    policies: relevantPolicies,
+    policies: retrievedPolicies,
     formattedContext,
   };
 }
