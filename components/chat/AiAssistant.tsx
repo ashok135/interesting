@@ -15,6 +15,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   products?: RetrievedProduct[];
+  suggestions?: string[];
 }
 
 const STARTER_PROMPTS = [
@@ -86,6 +87,7 @@ export default function AiAssistant() {
           data.reply ||
           'Here are our recommendations based on our live store inventory!',
         products: Array.isArray(data.products) ? data.products : [],
+        suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -193,6 +195,22 @@ export default function AiAssistant() {
                 ) : (
                   <div className={styles.assistantRow}>
                     <div className={styles.assistantBubble}>{msg.content}</div>
+
+                    {/* Quick Action Suggestion Cards / Pills */}
+                    {msg.suggestions && msg.suggestions.length > 0 && (
+                      <div className={styles.actionCardsGrid}>
+                        {msg.suggestions.map((actionText) => (
+                          <button
+                            key={actionText}
+                            type="button"
+                            onClick={() => handleSendMessage(actionText.replace(/^[^\w]+/, '').trim())}
+                            className={styles.actionCardBtn}
+                          >
+                            {actionText}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Rich Product Recommendation Cards */}
                     {msg.products && msg.products.length > 0 && (

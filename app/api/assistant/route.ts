@@ -97,6 +97,7 @@ ${ragContext.formattedContext}
       success: true,
       reply: replyText.trim(),
       products: ragContext.products,
+      suggestions: ragContext.suggestions || [],
     });
   } catch (error: unknown) {
     console.error('NVIDIA RAG Assistant error:', error);

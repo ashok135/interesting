@@ -77,12 +77,17 @@
 
 @media (max-width: 640px) {
   .chatWindow {
+    position: fixed;
+    top: 0;
+    left: 0;
     bottom: 0;
     right: 0;
     width: 100vw;
     height: 100dvh;
     max-height: 100dvh;
     border-radius: 0;
+    border: none;
+    z-index: 99999;
   }
 }
 
@@ -429,6 +434,47 @@
   margin-top: 0.45rem;
 }
 
+/* Quick Action Suggestion Cards */
+.actionCardsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+}
+
+.actionCardBtn {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #14532d;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  box-shadow: 0 1px 3px rgba(20, 83, 45, 0.08);
+}
+
+.actionCardBtn:hover {
+  background: #14532d;
+  color: #ffffff;
+  border-color: #14532d;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .chatFooter {
+    padding: 0.65rem 0.85rem calc(0.75rem + env(safe-area-inset-bottom, 16px));
+  }
+  .chatInput {
+    font-size: 16px; /* Prevents iOS Safari from auto-zooming! */
+  }
+}
+
 /* Dark Mode Overrides */
 [data-theme="dark"] .chatWindow {
   background: #111827;
@@ -445,10 +491,16 @@
   color: #cbd5e1;
 }
 
-[data-theme="dark"] .promptChip {
+[data-theme="dark"] .promptChip,
+[data-theme="dark"] .actionCardBtn {
   background: #1e293b;
   border-color: #334155;
   color: #86efac;
+}
+
+[data-theme="dark"] .actionCardBtn:hover {
+  background: #14532d;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .assistantBubble {

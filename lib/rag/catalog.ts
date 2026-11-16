@@ -28,6 +28,7 @@ export interface RagContext {
   products: RetrievedProduct[];
   policies: string[];
   formattedContext: string;
+  suggestions?: string[];
 }
 
 export type QueryIntent = 'order_tracking' | 'policy' | 'product_search' | 'greeting';
@@ -258,11 +259,17 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
     return {
       products: [],
       policies: [],
+      suggestions: [
+        '📦 Where is my order?',
+        '🌰 Best seeds under ₹500',
+        '🔄 Return & Refund policy',
+        '🎁 Luxury gift hampers',
+      ],
       formattedContext: [
         '### Context: Friendly Greeting / Concierge Small Talk',
-        '• Role: Welcome the customer warmly as Tara, the AI Wellness & Nutrition Concierge for "Interesting".',
-        '• Pantry Highlights: Luxury farm-fresh dry fruits (W180 Jumbo Cashews, Kashmiri Walnuts), super-seeds (Chia, Pumpkin, 5-in-1 Omega Mix), and artisanal hampers.',
-        '• Instruction: Greet concisely (1-2 sentences), ask what health goals or snacks they are seeking today. DO NOT list or recommend product cards yet.',
+        '• Role: Tara, AI Concierge for Interesting pantry.',
+        '• CRITICAL INSTRUCTION: Reply in ONLY 1 or 2 crisp, warm sentences (MAX 25 words!). Example: "Hello! 🌿 Welcome to Interesting. I am Tara, your wellness concierge. How may I assist you today?"',
+        '• Do NOT write long paragraphs. Quick action cards are already provided below for the customer to tap.',
       ].join('\n'),
     };
   }
@@ -280,12 +287,16 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
         'Customers can view real-time order history, invoices, and tracking anytime under [My Account > Orders](/account).',
         'Concierge Helpline & WhatsApp: +91 91763 67777 (Mon-Sat, 10 AM - 7 PM) or hello@interesting.co.in.',
       ],
+      suggestions: [
+        '🌰 Best seeds under ₹500',
+        '🔄 Return & Refund policy',
+        '📞 Helpline: +91 91763 67777',
+      ],
       formattedContext: [
         '### Customer Intent: Order Status & Live Tracking Inquiry',
-        '1. Explain that customers can view real-time order status, invoice, and tracking history anytime in their [My Account > Orders](/account) section.',
-        '2. Mention that all orders dispatch within 24 hours via Express Courier with automated SMS & WhatsApp tracking links.',
-        '3. If they need instant assistance, invite them to share their Order ID or call/WhatsApp our concierge helpline at +91 91763 67777 (hello@interesting.co.in).',
-        '4. DO NOT recommend any food products or attach product cards.',
+        '1. In 2 concise sentences, tell the customer they can view live order status and invoices anytime in their [My Account > Orders](/account) page.',
+        '2. Mention orders dispatch within 24 hours with SMS/WhatsApp tracking, or call our concierge helpline at +91 91763 67777 for instant help.',
+        '3. DO NOT recommend any products.',
       ].join('\n'),
     };
   }
@@ -317,12 +328,17 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
     return {
       products: [], // Zero product cards for policy queries!
       policies: retrievedPolicies,
+      suggestions: [
+        '📦 Where is my order?',
+        '🌰 Best seeds under ₹500',
+        '📞 Contact Customer Support',
+      ],
       formattedContext: [
         '### Customer Intent: Store Policy / Delivery / Payment / Return Inquiry',
         '### Store Policies & Knowledge (Verified Direct Ground Truth from Qdrant):',
         ...retrievedPolicies.map((p) => `• ${p}`),
         '',
-        'Instruction: Answer the customer accurately and politely based strictly on the policies above. DO NOT recommend products or attach product cards.',
+        'Instruction: Answer concisely in 2-3 short bullet points based on the policies above. Keep words brief and neat. DO NOT recommend products.',
       ].join('\n'),
     };
   }
