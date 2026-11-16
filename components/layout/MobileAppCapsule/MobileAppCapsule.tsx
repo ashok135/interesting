@@ -121,6 +121,7 @@ export function MobileAppCapsule() {
         </Link>
 
         <button
+          id="mobile-capsule-bag"
           type="button"
           className={`${styles.tab} ${styles.cartTab}`}
           onClick={openDrawer}

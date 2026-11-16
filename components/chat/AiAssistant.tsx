@@ -8,6 +8,7 @@ import { Mascot } from 'page-mascot';
 import { useCartContext } from '@/store/CartContext';
 import { useToast } from '@/store/ToastContext';
 import { formatPrice } from '@/lib/utils/formatters';
+import { flyToCart } from '@/lib/utils/flyToCart';
 import type { RetrievedProduct } from '@/lib/rag/catalog';
 import styles from './AiAssistant.module.css';
 
@@ -289,7 +290,10 @@ export default function AiAssistant() {
     }
   };
 
-  const handleAddToCart = (product: RetrievedProduct) => {
+  const handleAddToCart = (product: RetrievedProduct, e?: React.MouseEvent) => {
+    if (e) {
+      flyToCart(e, product.image);
+    }
     addItem({
       id: product.id,
       productId: product.id,
@@ -499,7 +503,7 @@ export default function AiAssistant() {
 
                               <button
                                 type="button"
-                                onClick={() => handleAddToCart(p)}
+                                onClick={(e) => handleAddToCart(p, e)}
                                 className={styles.chatAddBtn}
                               >
                                 {isAdded ? (

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCartContext } from '@/store/CartContext';
 import { useWishlist } from '@/store/WishlistContext';
 import { QuantitySelector } from '@/components/ui';
+import { flyToCart } from '@/lib/utils/flyToCart';
 import type { WooProduct } from '@/types';
 import { ShoppingBag, Zap, Heart } from 'lucide-react';
 import styles from './AddToCartSection.module.css';
@@ -35,8 +36,11 @@ export function AddToCartSection({ product }: AddToCartSectionProps) {
     }
   }
 
-  function handleAddToCart() {
+  function handleAddToCart(e?: React.MouseEvent) {
     if (isOutOfStock) return;
+    if (e) {
+      flyToCart(e, product.images?.[0]?.src);
+    }
     addCurrentItems();
     openDrawer();
   }

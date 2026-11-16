@@ -7,6 +7,7 @@ import { Heart, Star, Plus, Minus } from 'lucide-react';
 import { useCartContext } from '@/store/CartContext';
 import { useWishlist } from '@/store/WishlistContext';
 import { formatPrice, getProductImageUrl } from '@/lib/utils/formatters';
+import { flyToCart } from '@/lib/utils/flyToCart';
 import type { WooProduct } from '@/types';
 import styles from './ProductCard.module.css';
 
@@ -68,6 +69,8 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
     if (isOutOfStock) return;
+
+    flyToCart(e, imageUrl);
 
     addItem({
       id: product.id,

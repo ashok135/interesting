@@ -61,7 +61,7 @@ export function FloatingCartBar() {
     <div
       className={`${styles.container} ${isCapsuleVisible ? styles.withCapsule : styles.withoutCapsule}`}
     >
-      <button className={styles.capsule} onClick={openDrawer} aria-label="View shopping cart">
+      <button id="floating-cart-bar" className={styles.capsule} onClick={openDrawer} aria-label="View shopping cart">
         <div className={styles.left}>
           <div className={styles.bagIconWrap}>
             <ShoppingBag size={20} strokeWidth={2.2} />

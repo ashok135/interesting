@@ -7,6 +7,7 @@ import { ShoppingBag, Zap, ShieldCheck, Sparkles } from 'lucide-react';
 import { useCartContext } from '@/store/CartContext';
 import { useToast } from '@/store/ToastContext';
 import { formatPrice } from '@/lib/utils/formatters';
+import { flyToCart } from '@/lib/utils/flyToCart';
 import type { WooProduct } from '@/types';
 import styles from './FrequentlyBoughtTogether.module.css';
 
@@ -81,8 +82,11 @@ export default function FrequentlyBoughtTogether({
   const finalBundlePrice = Math.round(totalCurrent * comboDiscountMultiplier);
   const totalSavings = Math.max(0, totalRegular - finalBundlePrice);
 
-  const handleAddComboToCart = () => {
+  const handleAddComboToCart = (e?: React.MouseEvent) => {
     if (selectedProducts.length === 0) return;
+    if (e) {
+      flyToCart(e, getProductThumb(mainProduct));
+    }
 
     selectedProducts.forEach((product, idx) => {
       addItem({

@@ -107,6 +107,7 @@ export function Header() {
 
             {/* Desktop Cart Button (Hidden on mobile because mobile has bottom dock) */}
             <button
+              id="header-cart-btn"
               type="button"
               className={styles.desktopCartCapsule}
               onClick={openDrawer}
