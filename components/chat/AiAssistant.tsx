@@ -25,15 +25,39 @@ const STARTER_PROMPTS = [
   '🎁 Luxury gift hampers',
 ];
 
+function preprocessText(raw: string): string {
+  let s = raw;
+  // Auto-link "My Account > Orders"
+  if (!s.includes('](/account)')) {
+    s = s.replace(/My Account\s*>\s*Orders(?:\s*page)?/gi, '[My Account > Orders](/account)');
+  }
+  // Auto-link phone number
+  if (!s.includes('](tel:')) {
+    s = s.replace(/\+91\s*99948\s*47167/g, '[+91 99948 47167](tel:+919994847167)');
+    s = s.replace(/\+91\s*91763\s*67777/g, '[+91 99948 47167](tel:+919994847167)');
+  }
+  // Auto-link email
+  if (!s.includes('](mailto:')) {
+    s = s.replace(/support@intersting\.duckdns\.org/g, '[support@intersting.duckdns.org](mailto:support@intersting.duckdns.org)');
+    s = s.replace(/hello@interesting\.co\.in/g, '[hello@interesting.co.in](mailto:hello@interesting.co.in)');
+  }
+  // Auto-link Return Policy
+  if (!s.includes('](/returns)')) {
+    s = s.replace(/(?:7-Day\s+)?Return\s+(?:&\s+Refund\s+)?Policy/gi, '[Return & Refund Policy](/returns)');
+  }
+  return s;
+}
+
 function renderFormattedText(text: string, onLinkClick: () => void) {
+  const processed = preprocessText(text);
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = linkRegex.exec(text)) !== null) {
+  while ((match = linkRegex.exec(processed)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
+      parts.push(processed.slice(lastIndex, match.index));
     }
 
     const label = match[1];
@@ -67,11 +91,11 @@ function renderFormattedText(text: string, onLinkClick: () => void) {
     lastIndex = linkRegex.lastIndex;
   }
 
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
+  if (lastIndex < processed.length) {
+    parts.push(processed.slice(lastIndex));
   }
 
-  return parts.length > 0 ? parts : text;
+  return parts.length > 0 ? parts : processed;
 }
 
 export default function AiAssistant() {
@@ -246,47 +270,6 @@ export default function AiAssistant() {
                     <div className={styles.assistantBubble}>
                       {renderFormattedText(msg.content, () => setIsOpen(false))}
                     </div>
-
-                    {/* Direct Navigation Action Button for Orders / Returns / Shipping */}
-                    {msg.content.includes('/account') && (
-                      <Link
-                        href="/account"
-                        onClick={() => setIsOpen(false)}
-                        className={styles.directRedirectBtn}
-                      >
-                        <Package size={15} />
-                        <span>View My Orders & Track Delivery &rarr;</span>
-                      </Link>
-                    )}
-                    {msg.content.includes('/returns') && (
-                      <Link
-                        href="/returns"
-                        onClick={() => setIsOpen(false)}
-                        className={styles.directRedirectBtn}
-                      >
-                        <RotateCcw size={15} />
-                        <span>View Return & Refund Policy &rarr;</span>
-                      </Link>
-                    )}
-                    {msg.content.includes('/shipping') && (
-                      <Link
-                        href="/shipping"
-                        onClick={() => setIsOpen(false)}
-                        className={styles.directRedirectBtn}
-                      >
-                        <Truck size={15} />
-                        <span>View Shipping & Delivery Policy &rarr;</span>
-                      </Link>
-                    )}
-                    {(msg.content.includes('+91 99948 47167') || msg.content.includes('/contact')) && (
-                      <a
-                        href="tel:+919994847167"
-                        className={styles.directRedirectBtn}
-                      >
-                        <PhoneCall size={15} />
-                        <span>Call Helpline: +91 99948 47167 &rarr;</span>
-                      </a>
-                    )}
 
                     {/* Quick Action Suggestion Cards / Pills */}
                     {msg.suggestions && msg.suggestions.length > 0 && (
