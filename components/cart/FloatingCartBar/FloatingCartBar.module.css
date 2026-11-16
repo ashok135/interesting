@@ -3,7 +3,7 @@
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 99;
+  z-index: 1000;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   transition: bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -127,6 +127,7 @@
     right: 0.75rem;
     left: 0.75rem;
     transform: none;
+    z-index: 1000;
   }
 
   .withCapsule {

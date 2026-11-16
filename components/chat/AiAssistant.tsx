@@ -118,160 +118,67 @@ export default function AiAssistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [addedIds, setAddedIds] = useState<number[]>([]);
 
-  // Draggable Mascot State & Physics
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [dockedSide, setDockedSide] = useState<'left' | 'right'>('right');
-  const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const dragRef = useRef<{
-    startX: number;
-    startY: number;
-    elemX: number;
-    elemY: number;
-    hasMoved: boolean;
-    pointerId: number | null;
-  }>({
-    startX: 0,
-    startY: 0,
-    elemX: 0,
-    elemY: 0,
-    hasMoved: false,
-    pointerId: null,
-  });
-
-  const justDraggedRef = useRef(false);
+  // Hold-to-Dismiss Session State
+  const [isDismissed, setIsDismissed] = useState(false);
+  const [showRemoveZone, setShowRemoveZone] = useState(false);
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoHideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isHoldingRef = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { addItem, openDrawer } = useCartContext();
+  const { addItem, openDrawer, itemCount } = useCartContext();
   const { showSuccess } = useToast();
 
-  // Keep docked position aligned if user rotates mobile or resizes window
+  // Restore dismissal preference for current session
   useEffect(() => {
-    const handleResize = () => {
-      if (!coords) return;
-      const container = containerRef.current;
-      const width = container ? container.offsetWidth : 96;
-      const height = container ? container.offsetHeight : 120;
-      const isMobile = window.innerWidth <= 640;
-      const margin = isMobile ? 12 : 24;
-
-      const snapX = dockedSide === 'left' ? margin : window.innerWidth - width - margin;
-      const minY = 60;
-      const maxY = window.innerHeight - height - (isMobile ? 85 : 24);
-      const clampedY = Math.max(minY, Math.min(maxY, coords.y));
-
-      setCoords({ x: snapX, y: clampedY });
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [coords, dockedSide]);
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0 && e.pointerType === 'mouse') return;
-
-    const container = containerRef.current;
-    if (!container) return;
-
-    const rect = container.getBoundingClientRect();
-    dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      elemX: rect.left,
-      elemY: rect.top,
-      hasMoved: false,
-      pointerId: e.pointerId,
-    };
-
     try {
-      container.setPointerCapture(e.pointerId);
-    } catch {
-      // Ignore fallback
-    }
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = dragRef.current;
-    if (d.pointerId === null || d.pointerId !== e.pointerId) return;
-
-    const dx = e.clientX - d.startX;
-    const dy = e.clientY - d.startY;
-
-    if (!d.hasMoved) {
-      if (Math.hypot(dx, dy) > 6) {
-        d.hasMoved = true;
-        setIsDragging(true);
-      } else {
-        return;
+      if (sessionStorage.getItem('chappie_dismissed') === 'true') {
+        setIsDismissed(true);
       }
+    } catch {
+      // Storage access check
     }
+  }, []);
 
-    const container = containerRef.current;
-    const width = container ? container.offsetWidth : 96;
-    const height = container ? container.offsetHeight : 120;
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    isHoldingRef.current = false;
 
-    const newX = d.elemX + dx;
-    const newY = d.elemY + dy;
+    // Trigger bottom "X" dismiss target when held for 400ms
+    holdTimerRef.current = setTimeout(() => {
+      isHoldingRef.current = true;
+      setShowRemoveZone(true);
 
-    const isMobile = window.innerWidth <= 640;
-    const minX = isMobile ? 8 : 16;
-    const maxX = window.innerWidth - width - minX;
-    const minY = 60;
-    const maxY = window.innerHeight - height - (isMobile ? 85 : 24);
-
-    const clampedX = Math.max(minX, Math.min(maxX, newX));
-    const clampedY = Math.max(minY, Math.min(maxY, newY));
-
-    setCoords({ x: clampedX, y: clampedY });
+      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
+      autoHideTimerRef.current = setTimeout(() => {
+        setShowRemoveZone(false);
+      }, 5000);
+    }, 400);
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = dragRef.current;
-    if (d.pointerId === null || d.pointerId !== e.pointerId) return;
-
-    const container = containerRef.current;
-    try {
-      container?.releasePointerCapture(e.pointerId);
-    } catch {
-      // Ignore
+  const handlePointerUp = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
     }
 
-    const wasMoved = d.hasMoved;
-    d.pointerId = null;
-    setIsDragging(false);
-
-    if (wasMoved) {
-      justDraggedRef.current = true;
-      setTimeout(() => {
-        justDraggedRef.current = false;
-      }, 150);
-
-      const width = container ? container.offsetWidth : 96;
-      const height = container ? container.offsetHeight : 120;
-      const isMobile = window.innerWidth <= 640;
-      const margin = isMobile ? 12 : 24;
-
-      setCoords((cur) => {
-        const curX = cur?.x ?? d.elemX;
-        const curY = cur?.y ?? d.elemY;
-
-        const centerX = curX + width / 2;
-        const snapLeft = centerX < window.innerWidth / 2;
-
-        const targetX = snapLeft ? margin : window.innerWidth - width - margin;
-        const minY = 60;
-        const maxY = window.innerHeight - height - (isMobile ? 85 : 24);
-        const targetY = Math.max(minY, Math.min(maxY, curY));
-
-        setDockedSide(snapLeft ? 'left' : 'right');
-        return { x: targetX, y: targetY };
-      });
-    } else {
+    // Quick tap/click: play boop reaction then open chat
+    if (!isHoldingRef.current) {
       setTimeout(() => setIsOpen(true), 350);
     }
+  };
+
+  const handleDismissSession = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      sessionStorage.setItem('chappie_dismissed', 'true');
+    } catch {
+      // Storage access check
+    }
+    setIsDismissed(true);
+    setShowRemoveZone(false);
   };
 
   const scrollToBottom = () => {
@@ -362,46 +269,26 @@ export default function AiAssistant() {
   return (
     <>
       {/* 1. Interactive Cursor-Tracking Mascot Trigger */}
-      {!isOpen && (
+      {!isOpen && !isDismissed && (
         <div
-          ref={containerRef}
-          className={`${styles.mascotTriggerContainer} ${dockedSide === 'left' ? styles.dockedLeft : styles.dockedRight}`}
-          style={
-            coords
-              ? {
-                  left: `${coords.x}px`,
-                  top: `${coords.y}px`,
-                  right: 'auto',
-                  bottom: 'auto',
-                  transition: isDragging
-                    ? 'none'
-                    : 'left 0.38s cubic-bezier(0.2, 0.9, 0.32, 1.2), top 0.38s cubic-bezier(0.2, 0.9, 0.32, 1.2)',
-                  cursor: isDragging ? 'grabbing' : 'grab',
-                }
-              : {
-                  cursor: isDragging ? 'grabbing' : 'grab',
-                }
-          }
+          className={`${styles.mascotTriggerContainer} ${itemCount > 0 ? styles.withFloatingCart : ''}`}
           onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onClickCapture={(e) => {
-            if (justDraggedRef.current) {
-              e.stopPropagation();
-              e.preventDefault();
-            }
+          onPointerCancel={() => {
+            if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
           }}
+          title="Click to chat • Hold to remove for this session"
         >
           {/* Floating Speech Pill Badge */}
-          <div
+          <button
+            type="button"
             className={styles.speechPill}
             aria-label="Ask Chappie AI"
           >
             <span className={styles.onlinePulseDot} />
             <span className={styles.speechText}>Ask Chappie AI</span>
             <Sparkles size={13} className={styles.sparkleIcon} />
-          </div>
+          </button>
 
           {/* Interactive Mascot that follows cursor and reacts */}
           <div className={styles.mascotFloatWrap}>
@@ -418,10 +305,37 @@ export default function AiAssistant() {
         </div>
       )}
 
+      {/* Bottom Session Dismiss Target (Revealed when user holds Chappie) */}
+      {showRemoveZone && !isDismissed && !isOpen && (
+        <div className={styles.bottomDismissOverlay}>
+          <button
+            type="button"
+            className={styles.bottomDismissBtn}
+            onClick={handleDismissSession}
+            aria-label="Remove Chappie for this session"
+          >
+            <div className={styles.dismissCircle}>
+              <X size={18} strokeWidth={2.5} />
+            </div>
+            <span className={styles.dismissLabel}>Remove Chappie for this session</span>
+          </button>
+          <button
+            type="button"
+            className={styles.dismissCancelBtn}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowRemoveZone(false);
+            }}
+          >
+            Keep
+          </button>
+        </div>
+      )}
+
       {/* 2. Interactive Chat Window */}
       {isOpen && (
         <div
-          className={`${styles.chatWindow} ${dockedSide === 'left' ? styles.chatWindowLeft : ''}`}
+          className={styles.chatWindow}
           role="dialog"
           aria-modal="true"
         >
