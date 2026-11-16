@@ -152,14 +152,30 @@
 
 @media (max-width: 640px) {
   .mascotTriggerContainer {
-    bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px));
     right: 0.85rem;
     gap: 0.4rem;
   }
 
-  /* When FloatingCartBar is active, lift Chappie above it so the cart bar is 100% visible */
-  .mascotTriggerContainer.withFloatingCart {
+  /* 1. When cart is EMPTY (itemCount === 0) */
+  /* Docked right above the bottom nav capsule */
+  .posEmptyWithCapsule {
+    bottom: calc(4.65rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* When bottom nav capsule hides on scroll down -> glide down to screen bottom */
+  .posEmptyWithoutCapsule {
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* 2. When cart HAS ITEMS (itemCount > 0) */
+  /* Docked safely above the FloatingCartBar (cart is at 4.65rem) */
+  .posCartWithCapsule {
     bottom: calc(8.6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* When bottom nav capsule hides on scroll down (cart glides to 0.75rem) -> glide down right above cart */
+  .posCartWithoutCapsule {
+    bottom: calc(4.65rem + env(safe-area-inset-bottom, 0px));
   }
 
   .speechPill {

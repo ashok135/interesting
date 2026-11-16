@@ -125,6 +125,45 @@ export default function AiAssistant() {
   const autoHideTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isHoldingRef = useRef(false);
 
+  // Sync with mobile bottom navigation capsule & floating cart bar
+  const [isCapsuleVisible, setIsCapsuleVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const diff = currentScrollY - lastScrollY.current;
+
+      if (currentScrollY < 40) {
+        setIsCapsuleVisible(true);
+        lastScrollY.current = currentScrollY;
+        return;
+      }
+
+      if (diff > 8) {
+        setIsCapsuleVisible(false);
+      } else if (diff < -8) {
+        setIsCapsuleVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    const handleCapsuleEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ visible: boolean }>;
+      if (customEvent.detail !== undefined) {
+        setIsCapsuleVisible(customEvent.detail.visible);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('capsule-visibility', handleCapsuleEvent);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('capsule-visibility', handleCapsuleEvent);
+    };
+  }, []);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -266,12 +305,21 @@ export default function AiAssistant() {
     openDrawer();
   };
 
+  const hasCart = itemCount > 0;
+  const positionClass = hasCart
+    ? isCapsuleVisible
+      ? styles.posCartWithCapsule
+      : styles.posCartWithoutCapsule
+    : isCapsuleVisible
+    ? styles.posEmptyWithCapsule
+    : styles.posEmptyWithoutCapsule;
+
   return (
     <>
       {/* 1. Interactive Cursor-Tracking Mascot Trigger */}
       {!isOpen && !isDismissed && (
         <div
-          className={`${styles.mascotTriggerContainer} ${itemCount > 0 ? styles.withFloatingCart : ''}`}
+          className={`${styles.mascotTriggerContainer} ${positionClass}`}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerCancel={() => {
