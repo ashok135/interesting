@@ -6,6 +6,7 @@ import { AuthProvider } from '@/store/AuthContext';
 import { AnnouncementBar, Header, Footer, MobileAppCapsule } from '@/components/layout';
 import { CartDrawer, FloatingCartBar } from '@/components/cart';
 import { PwaInstallPrompt } from '@/components/pwa';
+import AiAssistant from '@/components/chat/AiAssistant';
 
 export const viewport: Viewport = {
   themeColor: '#0d3821',
@@ -73,6 +74,7 @@ export default function RootLayout({
                     <FloatingCartBar />
                     <MobileAppCapsule />
                     <PwaInstallPrompt />
+                    <AiAssistant />
                   </WishlistProvider>
                 </ToastProvider>
               </CartProvider>
