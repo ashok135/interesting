@@ -3,14 +3,12 @@ import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-const NVIDIA_API_KEY =
-  process.env.NVIDIA_API_KEY ||
-  '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';
-const NVIDIA_EMBED_URL = 'https://integrate.api.nvidia.com/v1/embeddings';
-const NVIDIA_EMBED_MODEL = 'nvidia/nemotron-3.5-embed-1b';
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
+const NVIDIA_EMBED_URL = process.env.NVIDIA_EMBED_URL || 'https://integrate.api.nvidia.com/v1/embeddings';
+const NVIDIA_EMBED_MODEL = process.env.NVIDIA_EMBED_MODEL || 'nvidia/nemotron-3.5-embed-1b';
 
 const QDRANT_URL = process.env.QDRANT_URL || 'https://intersting.duckdns.org/qdrant';
-const COLLECTION_NAME = 'products_rag';
+const COLLECTION_NAME = process.env.QDRANT_COLLECTION || 'products_rag';
 
 function stripHtml(html?: string): string {
   if (!html) return '';
@@ -131,6 +129,11 @@ export async function POST(req: NextRequest) {
       .join(' | ');
 
     // 4. Generate 2,048-dim embedding via NVIDIA NIM
+    if (!NVIDIA_API_KEY) {
+      console.error('[WooCommerce Product Webhook] Missing NVIDIA_API_KEY in environment.');
+      return NextResponse.json({ error: 'NVIDIA_API_KEY is not configured in server environment' }, { status: 500 });
+    }
+
     const embedRes = await fetch(NVIDIA_EMBED_URL, {
       method: 'POST',
       headers: {

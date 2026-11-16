@@ -5,9 +5,7 @@ import { retrieveRagContext } from '@/lib/rag/catalog';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const NVIDIA_API_KEY =
-  process.env.NVIDIA_API_KEY ||
-  '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';
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_BASE_URL =
   process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
 const NVIDIA_MODEL =
