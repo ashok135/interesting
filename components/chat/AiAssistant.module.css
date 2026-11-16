@@ -2,50 +2,190 @@
    AI Nutritionist & Concierge Floating Chat Widget
    ========================================================================== */
 
-/* 1. Floating Pill Button */
-.triggerBtn {
+/* 1. 3D Floating Avatar Concierge Trigger Button */
+.avatarTriggerContainer {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
   z-index: 999;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Floating Speech Pill Badge */
+.speechPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   background: #14532d;
   color: #ffffff;
-  border: 1px solid #166534;
-  padding: 0.75rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.35rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.88rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(20, 83, 45, 0.35);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: inherit;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px rgba(20, 83, 45, 0.35), 0 2px 6px rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
+  animation: speechPillFloat 3.5s ease-in-out infinite;
+  transition: all 0.25s ease;
 }
 
-.triggerBtn:hover {
+.avatarTriggerContainer:hover .speechPill {
   background: #166534;
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 10px 25px rgba(20, 83, 45, 0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(20, 83, 45, 0.45);
 }
 
-.triggerSparkle {
+.onlinePulseDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: dotGlow 2s ease-in-out infinite;
+}
+
+.sparkleIcon {
   color: #f59e0b;
-  animation: pulseSparkle 2s infinite ease-in-out;
+  animation: pulseSparkle 2.5s infinite ease-in-out;
+}
+
+/* 3D Character Avatar Wrapper */
+.avatarFloatWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  perspective: 600px;
+}
+
+.avatarImgWrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fef3c7 0%, #fef9c3 40%, #fde047 90%);
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 8px 24px rgba(20, 83, 45, 0.28), 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: avatarZeroGravity 4s ease-in-out infinite;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+  transform-style: preserve-3d;
+}
+
+.avatarImg {
+  object-fit: cover;
+  object-position: top center;
+  transform: translateY(2px) scale(1.12);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+}
+
+/* Interactive 3D tilt on hover */
+.avatarTriggerContainer:hover .avatarImgWrap {
+  transform: perspective(600px) rotateY(-8deg) rotateX(6deg) scale(1.08);
+  box-shadow: 0 14px 32px rgba(20, 83, 45, 0.38), 0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+.avatarTriggerContainer:hover .avatarImg {
+  transform: translateY(0px) scale(1.18);
+}
+
+/* Breathing ground shadow beneath the floating avatar */
+.groundShadow {
+  width: 44px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(20, 83, 45, 0.35) 0%, rgba(20, 83, 45, 0) 75%);
+  margin-top: 2px;
+  animation: shadowBreathe 4s ease-in-out infinite;
+}
+
+/* Level 1 Zero-Gravity Keyframes */
+@keyframes avatarZeroGravity {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(0.8deg);
+  }
+  75% {
+    transform: translateY(-4px) rotate(1.2deg);
+  }
+}
+
+@keyframes shadowBreathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(0.72);
+    opacity: 0.16;
+  }
+}
+
+@keyframes speechPillFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes dotGlow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 6px #22c55e;
+  }
+  50% {
+    transform: scale(1.3);
+    box-shadow: 0 0 12px #22c55e;
+  }
 }
 
 @keyframes pulseSparkle {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.85; }
+  50% { transform: scale(1.25); opacity: 0.85; }
 }
 
 @media (max-width: 640px) {
-  .triggerBtn {
-    bottom: 5rem; /* above mobile navigation bar */
-    right: 1rem;
-    padding: 0.65rem 1rem;
-    font-size: 0.82rem;
+  .avatarTriggerContainer {
+    bottom: 5.5rem; /* Safely above the mobile bottom floating cart bar */
+    right: 0.85rem;
+  }
+
+  .avatarImgWrap {
+    width: 60px;
+    height: 60px;
+  }
+
+  .speechPill {
+    font-size: 0.72rem;
+    padding: 0.28rem 0.6rem;
+  }
+
+  .groundShadow {
+    width: 36px;
+    height: 6px;
   }
 }
 
@@ -114,25 +254,35 @@
 
 .avatarWrap {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
+  background: radial-gradient(circle at 35% 30%, #fef3c7 0%, #fde047 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid rgba(245, 158, 11, 0.6);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.headerAvatarImg {
+  object-fit: cover;
+  object-position: top center;
+  transform: translateY(2px) scale(1.15);
 }
 
 .onlineDot {
   position: absolute;
-  bottom: -1px;
-  right: -1px;
+  bottom: 0px;
+  right: 0px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: #22c55e;
   border: 2px solid #14532d;
+  z-index: 2;
 }
 
 .headerTitle {

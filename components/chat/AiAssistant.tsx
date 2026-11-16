@@ -210,16 +210,35 @@ export default function AiAssistant() {
 
   return (
     <>
-      {/* 1. Floating Pill Trigger Button */}
+      {/* 1. 3D Floating Avatar Concierge Trigger Button */}
       {!isOpen && (
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className={styles.triggerBtn}
-          aria-label="Ask AI Nutritionist Concierge"
+          className={styles.avatarTriggerContainer}
+          aria-label="Ask Tara, AI Wellness Concierge"
         >
-          <Sparkles size={17} className={styles.triggerSparkle} />
-          <span>Ask Nutritionist AI</span>
+          {/* Floating Speech Pill Badge */}
+          <div className={styles.speechPill}>
+            <span className={styles.onlinePulseDot} />
+            <span className={styles.speechText}>Ask Tara</span>
+            <Sparkles size={13} className={styles.sparkleIcon} />
+          </div>
+
+          {/* 3D Character Avatar with Levitation Physics & Ground Shadow */}
+          <div className={styles.avatarFloatWrap}>
+            <div className={styles.avatarImgWrap}>
+              <Image
+                src="/images/ai/tara-avatar.webp"
+                alt="Tara AI 3D Concierge"
+                width={72}
+                height={72}
+                priority
+                className={styles.avatarImg}
+              />
+            </div>
+            <div className={styles.groundShadow} />
+          </div>
         </button>
       )}
 
@@ -230,7 +249,13 @@ export default function AiAssistant() {
           <div className={styles.chatHeader}>
             <div className={styles.headerInfo}>
               <div className={styles.avatarWrap}>
-                <Sparkles size={18} color="#f59e0b" />
+                <Image
+                  src="/images/ai/tara-avatar.webp"
+                  alt="Tara 3D Avatar"
+                  width={36}
+                  height={36}
+                  className={styles.headerAvatarImg}
+                />
                 <span className={styles.onlineDot} />
               </div>
               <div>
