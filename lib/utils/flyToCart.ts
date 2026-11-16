@@ -30,25 +30,20 @@ export function flyToCart(
     startY = window.innerHeight / 2 - startSize / 2;
   }
 
-  // 2. Find destination target (Prioritizes bottom floating cart, then mobile capsule bag, then desktop header)
+  // 2. Find destination target (Floating Cart Bar at the bottom center)
   const isMobile = window.innerWidth <= 768;
   const bottomCartBar = document.getElementById('floating-cart-bar');
-  const bottomCapsuleBag = document.getElementById('mobile-capsule-bag');
-  const headerCartBtn = document.getElementById('header-cart-btn');
 
-  const destElement = bottomCartBar || bottomCapsuleBag || (!isMobile ? headerCartBtn : null);
-
+  // Always target bottom center where the FloatingCartBar docks
   let targetX = window.innerWidth / 2;
-  let targetY = window.innerHeight - 45;
+  let targetY = isMobile ? window.innerHeight - 95 : window.innerHeight - 45;
 
-  if (destElement) {
-    const rect = destElement.getBoundingClientRect();
-    targetX = rect.left + rect.width / 2;
-    targetY = rect.top + rect.height / 2;
-  } else if (headerCartBtn && !isMobile) {
-    const rect = headerCartBtn.getBoundingClientRect();
-    targetX = rect.left + rect.width / 2;
-    targetY = rect.top + rect.height / 2;
+  if (bottomCartBar) {
+    const rect = bottomCartBar.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      targetX = rect.left + rect.width / 2;
+      targetY = rect.top + rect.height / 2;
+    }
   }
 
   // 3. Create the floating thumbnail orb
@@ -85,21 +80,21 @@ export function flyToCart(
   const deltaX = targetX - (startX + startSize / 2);
   const deltaY = targetY - (startY + startSize / 2);
 
-  // Parabolic upward toss apex
-  const arcPeak = Math.max(28, Math.min(65, Math.abs(deltaY) * 0.18));
+  // Parabolic upward toss apex (creates the genie minimize arc)
+  const arcPeak = Math.max(32, Math.min(75, Math.abs(deltaY) * 0.2));
 
-  // 5. Generate continuous mathematical trajectory (8 fine steps)
+  // 5. Generate continuous mathematical trajectory (10 fine steps)
   const keyframes: Keyframe[] = [];
-  const steps = 8;
+  const steps = 10;
 
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
-    // Natural ease: begins smooth, accelerates into the bag
+    // Fluid ease: begins smooth, arcs upward, accelerates into the bottom cart
     const easeT = Math.pow(t, 1.25);
-    const curX = deltaX * Math.pow(t, 1.35);
-    const curY = deltaY * easeT - Math.sin(Math.PI * Math.pow(t, 0.75)) * arcPeak;
-    const curScale = 1 - 0.88 * Math.pow(t, 1.3);
-    const curOpacity = t > 0.85 ? Math.max(0, 1 - (t - 0.85) / 0.15) : 1;
+    const curX = deltaX * Math.pow(t, 1.3);
+    const curY = deltaY * easeT - Math.sin(Math.PI * Math.pow(t, 0.72)) * arcPeak;
+    const curScale = 1 - 0.88 * Math.pow(t, 1.25);
+    const curOpacity = t > 0.88 ? Math.max(0, 1 - (t - 0.88) / 0.12) : 1;
 
     keyframes.push({
       transform: `translate3d(${curX.toFixed(1)}px, ${curY.toFixed(1)}px, 0) scale(${curScale.toFixed(3)})`,
@@ -107,10 +102,10 @@ export function flyToCart(
     });
   }
 
-  // 6. Fast, snappy, professional execution: 460ms
+  // 6. Smooth, comfortable, professional duration: 560ms (user requested a little slower)
   const animation = flyer.animate(keyframes, {
-    duration: 460,
-    easing: 'cubic-bezier(0.22, 0.85, 0.36, 1)',
+    duration: 560,
+    easing: 'cubic-bezier(0.25, 0.85, 0.35, 1)',
     fill: 'forwards',
   });
 
@@ -118,9 +113,8 @@ export function flyToCart(
   animation.onfinish = () => {
     flyer.remove();
 
-    const targetToBounce = destElement || bottomCartBar || bottomCapsuleBag || headerCartBtn;
-    if (targetToBounce) {
-      targetToBounce.animate(
+    if (bottomCartBar) {
+      bottomCartBar.animate(
         [
           { transform: 'scale(1)' },
           { transform: 'scale(1.15)', offset: 0.35 },
@@ -128,7 +122,7 @@ export function flyToCart(
           { transform: 'scale(1)' },
         ],
         {
-          duration: 260,
+          duration: 280,
           easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.25)',
         }
       );
