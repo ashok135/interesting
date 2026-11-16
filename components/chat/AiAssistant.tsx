@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Sparkles, MessageCircle, X, Send, ShoppingBag, Check } from 'lucide-react';
+import { Sparkles, MessageCircle, X, Send, ShoppingBag, Check, Package, RotateCcw, Truck } from 'lucide-react';
 import { useCartContext } from '@/store/CartContext';
 import { useToast } from '@/store/ToastContext';
 import { formatPrice } from '@/lib/utils/formatters';
@@ -19,11 +19,60 @@ interface ChatMessage {
 }
 
 const STARTER_PROMPTS = [
-  '🌰 High protein seeds & nuts',
-  '🩺 Best for diabetes & heart health',
-  '🎁 Luxury gift hampers under ₹1500',
-  '📦 What is your return & shipping policy?',
+  '📦 Where is my order?',
+  '🌰 Best seeds under ₹500',
+  '🔄 Return & Refund policy',
+  '🎁 Luxury gift hampers',
 ];
+
+function renderFormattedText(text: string, onLinkClick: () => void) {
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    const label = match[1];
+    const url = match[2];
+
+    if (url.startsWith('/')) {
+      parts.push(
+        <Link
+          key={`link-${match.index}`}
+          href={url}
+          onClick={onLinkClick}
+          className={styles.bubbleLink}
+        >
+          {label}
+        </Link>
+      );
+    } else {
+      parts.push(
+        <a
+          key={`link-${match.index}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.bubbleLink}
+        >
+          {label}
+        </a>
+      );
+    }
+
+    lastIndex = linkRegex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+}
 
 export default function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -194,7 +243,41 @@ export default function AiAssistant() {
                   </div>
                 ) : (
                   <div className={styles.assistantRow}>
-                    <div className={styles.assistantBubble}>{msg.content}</div>
+                    <div className={styles.assistantBubble}>
+                      {renderFormattedText(msg.content, () => setIsOpen(false))}
+                    </div>
+
+                    {/* Direct Navigation Action Button for Orders / Returns / Shipping */}
+                    {msg.content.includes('/account') && (
+                      <Link
+                        href="/account"
+                        onClick={() => setIsOpen(false)}
+                        className={styles.directRedirectBtn}
+                      >
+                        <Package size={15} />
+                        <span>View My Orders & Track Delivery &rarr;</span>
+                      </Link>
+                    )}
+                    {msg.content.includes('/returns') && (
+                      <Link
+                        href="/returns"
+                        onClick={() => setIsOpen(false)}
+                        className={styles.directRedirectBtn}
+                      >
+                        <RotateCcw size={15} />
+                        <span>View Return & Refund Policy &rarr;</span>
+                      </Link>
+                    )}
+                    {msg.content.includes('/shipping') && (
+                      <Link
+                        href="/shipping"
+                        onClick={() => setIsOpen(false)}
+                        className={styles.directRedirectBtn}
+                      >
+                        <Truck size={15} />
+                        <span>View Shipping & Delivery Policy &rarr;</span>
+                      </Link>
+                    )}
 
                     {/* Quick Action Suggestion Cards / Pills */}
                     {msg.suggestions && msg.suggestions.length > 0 && (
