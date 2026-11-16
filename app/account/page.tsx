@@ -230,7 +230,6 @@ function AccountContent() {
       stockStatus: 'instock',
     });
     showSuccess(`Added "${item.name}" to your bag!`);
-    openDrawer();
   }
 
   // Address state (Zepto / Swiggy style)

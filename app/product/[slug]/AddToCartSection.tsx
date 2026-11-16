@@ -42,7 +42,6 @@ export function AddToCartSection({ product }: AddToCartSectionProps) {
       flyToCart(e, product.images?.[0]?.src);
     }
     addCurrentItems();
-    openDrawer();
   }
 
   function handleBuyNow() {

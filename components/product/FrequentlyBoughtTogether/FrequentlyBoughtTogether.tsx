@@ -109,8 +109,6 @@ export default function FrequentlyBoughtTogether({
     } else {
       showSuccess(`Added selected item to cart!`);
     }
-
-    openDrawer();
   };
 
   return (

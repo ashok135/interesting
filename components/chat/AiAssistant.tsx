@@ -306,7 +306,6 @@ export default function AiAssistant() {
 
     setAddedIds((prev) => [...prev, product.id]);
     showSuccess(`Added "${product.name}" to your bag!`);
-    openDrawer();
   };
 
   const hasCart = itemCount > 0;
