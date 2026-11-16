@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Sparkles, MessageCircle, X, Send, ShoppingBag, Check, Package, RotateCcw, Truck } from 'lucide-react';
+import { Sparkles, MessageCircle, X, Send, ShoppingBag, Check, Package, RotateCcw, Truck, PhoneCall } from 'lucide-react';
 import { useCartContext } from '@/store/CartContext';
 import { useToast } from '@/store/ToastContext';
 import { formatPrice } from '@/lib/utils/formatters';
@@ -199,7 +199,7 @@ export default function AiAssistant() {
               </div>
               <div>
                 <h3 className={styles.headerTitle}>Tara • AI Nutritionist</h3>
-                <p className={styles.headerSub}>Live Store Concierge (NVIDIA NIM)</p>
+                <p className={styles.headerSub}>Farm-Fresh Wellness Concierge • Interesting Pantry</p>
               </div>
             </div>
 
@@ -277,6 +277,15 @@ export default function AiAssistant() {
                         <Truck size={15} />
                         <span>View Shipping & Delivery Policy &rarr;</span>
                       </Link>
+                    )}
+                    {(msg.content.includes('+91 99948 47167') || msg.content.includes('/contact')) && (
+                      <a
+                        href="tel:+919994847167"
+                        className={styles.directRedirectBtn}
+                      >
+                        <PhoneCall size={15} />
+                        <span>Call Helpline: +91 99948 47167 &rarr;</span>
+                      </a>
                     )}
 
                     {/* Quick Action Suggestion Cards / Pills */}
@@ -392,7 +401,7 @@ export default function AiAssistant() {
               </button>
             </form>
             <div className={styles.poweredNote}>
-              Grounding via Live WooCommerce • NVIDIA Nemotron
+              100% Farm-Fresh • Certified Purity • Express All-India Delivery
             </div>
           </div>
         </div>

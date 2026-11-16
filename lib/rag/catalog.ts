@@ -31,7 +31,7 @@ export interface RagContext {
   suggestions?: string[];
 }
 
-export type QueryIntent = 'order_tracking' | 'policy' | 'product_search' | 'greeting';
+export type QueryIntent = 'contact' | 'order_tracking' | 'policy' | 'product_search' | 'greeting';
 
 interface QueryClassification {
   intent: QueryIntent;
@@ -72,7 +72,24 @@ function classifyQuery(userQuery: string): QueryClassification {
     maxBudget = parseInt(budgetMatch[1], 10);
   }
 
-  // 2. Priority 1: Order tracking / account status
+  // 2. Priority 1: Customer Care / Helpline / Contact
+  const isContactQuery =
+    q.includes('contact') ||
+    q.includes('support') ||
+    q.includes('helpline') ||
+    q.includes('customer care') ||
+    q.includes('customer support') ||
+    q.includes('phone') ||
+    q.includes('call') ||
+    q.includes('whatsapp') ||
+    q.includes('email') ||
+    q.includes('reach');
+
+  if (isContactQuery) {
+    return { intent: 'contact', maxBudget };
+  }
+
+  // 3. Priority 2: Order tracking / account status
   const isOrderQuery =
     q.includes('order') ||
     q.includes('track') ||
@@ -85,7 +102,7 @@ function classifyQuery(userQuery: string): QueryClassification {
     return { intent: 'order_tracking', maxBudget };
   }
 
-  // 3. Priority 2: Store Policies / Contact / Logistics
+  // 4. Priority 3: Store Policies (Returns, Shipping, Payment, PIN code)
   const isPolicyQuery =
     q.includes('return') ||
     q.includes('refund') ||
@@ -103,13 +120,7 @@ function classifyQuery(userQuery: string): QueryClassification {
     q.includes('upi') ||
     q.includes('cash on delivery') ||
     q.includes('cancel') ||
-    q.includes('cancellation') ||
-    q.includes('contact') ||
-    q.includes('support') ||
-    q.includes('helpline') ||
-    q.includes('phone') ||
-    q.includes('whatsapp') ||
-    q.includes('email');
+    q.includes('cancellation');
 
   if (isPolicyQuery) {
     return { intent: 'policy', maxBudget };
@@ -252,7 +263,35 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
   const { intent, maxBudget } = classifyQuery(userQuery);
 
   // =========================================================================
-  // 1. FAST PATH: GREETINGS & SMALL TALK
+  // 1. FAST PATH: CONTACT & CUSTOMER SUPPORT HELPLINE
+  // Direct verified phone, WhatsApp, email, hours. Instant reply in ~1s. 0 cards.
+  // =========================================================================
+  if (intent === 'contact') {
+    return {
+      products: [],
+      policies: [
+        'Phone & WhatsApp Helpline: +91 99948 47167 (Mon-Sat, 9:00 AM - 8:00 PM IST)',
+        'Customer Care Email: support@intersting.duckdns.org (or hello@interesting.co.in)',
+        'Online Advisory & Contact Page: /contact',
+      ],
+      suggestions: [
+        '📦 Where is my order?',
+        '🌰 Best seeds under ₹500',
+        '🔄 Return & Refund policy',
+      ],
+      formattedContext: [
+        '### Customer Intent: Contact Customer Care & Support Helpline',
+        'CRITICAL INSTRUCTION: Provide the official store helpline and email clearly in 2 concise sentences:',
+        '• Phone & WhatsApp Helpline: +91 99948 47167 (Available Mon-Sat, 9 AM - 8 PM IST)',
+        '• Support Email: support@intersting.duckdns.org (or hello@interesting.co.in)',
+        '• Online Contact Form: Visit [Contact Us](/contact)',
+        'DO NOT recommend any products.',
+      ].join('\n'),
+    };
+  }
+
+  // =========================================================================
+  // 2. FAST PATH: GREETINGS & SMALL TALK
   // Bypasses Vector DB & WooCommerce completely. Instant reply in ~1s. 0 cards.
   // =========================================================================
   if (intent === 'greeting') {

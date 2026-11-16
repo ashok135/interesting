@@ -87,10 +87,30 @@ ${ragContext.formattedContext}
     const choice = completion.choices[0];
     let replyText = choice?.message?.content || '';
 
-    // If content was empty due to reasoning buffer, fallback cleanly
-    if (!replyText.trim() && (choice?.message as { reasoning_content?: string })?.reasoning_content) {
-      replyText =
-        'Here are our recommended farm-fresh selections tailored to your health goals. You can add them directly to your bag below!';
+    // Intent-aware fallback if content was empty or contained only reasoning
+    if (!replyText.trim()) {
+      const qLower = cleanQuery.toLowerCase();
+      if (
+        qLower.includes('contact') ||
+        qLower.includes('support') ||
+        qLower.includes('helpline') ||
+        qLower.includes('phone') ||
+        qLower.includes('call') ||
+        qLower.includes('whatsapp') ||
+        qLower.includes('email')
+      ) {
+        replyText =
+          'You can reach our gourmet customer support team directly via Phone & WhatsApp at **+91 99948 47167** or email us at **support@intersting.duckdns.org** (Mon–Sat, 9:00 AM – 8:00 PM IST).';
+      } else if (qLower.includes('order') || qLower.includes('track')) {
+        replyText =
+          'You can track your live order and view invoices anytime in your [My Account > Orders](/account) page, or reach our concierge at **+91 99948 47167**.';
+      } else if (qLower.includes('return') || qLower.includes('refund')) {
+        replyText =
+          'We offer a 7-Day Hassle-Free Replacement for any unsealed or damaged food packages, with 48-hour refund processing directly to your original payment mode or UPI.';
+      } else {
+        replyText =
+          'Hello! 🌿 Welcome to Interesting. I am Tara, your personal dry fruit and wellness concierge. How may I assist you today?';
+      }
     }
 
     return NextResponse.json({
