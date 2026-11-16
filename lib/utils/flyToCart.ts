@@ -1,6 +1,6 @@
 /**
- * macOS Genie Effect / Fly-to-Cart Animation
- * Curves and shrinks the added product thumbnail into the bottom floating cart / bag icon.
+ * Ultra-Smooth macOS Genie / Parabolic Fly-to-Cart Animation
+ * Generates an Apple-grade fluid arc minimizing the product into the bottom cart dock.
  */
 export function flyToCart(
   source: HTMLElement | React.MouseEvent | { x: number; y: number },
@@ -11,7 +11,7 @@ export function flyToCart(
   // 1. Determine origin coordinates
   let startX = 0;
   let startY = 0;
-  const startSize = 54;
+  const startSize = 48;
 
   if (source && 'currentTarget' in source) {
     const el = source.currentTarget as HTMLElement;
@@ -30,7 +30,7 @@ export function flyToCart(
     startY = window.innerHeight / 2 - startSize / 2;
   }
 
-  // 2. Find destination target (Prioritizes bottom cart bar / mobile capsule bag, then desktop header)
+  // 2. Find destination target (Prioritizes bottom floating cart, then mobile capsule bag, then desktop header)
   const isMobile = window.innerWidth <= 768;
   const bottomCartBar = document.getElementById('floating-cart-bar');
   const bottomCapsuleBag = document.getElementById('mobile-capsule-bag');
@@ -39,7 +39,7 @@ export function flyToCart(
   const destElement = bottomCartBar || bottomCapsuleBag || (!isMobile ? headerCartBtn : null);
 
   let targetX = window.innerWidth / 2;
-  let targetY = window.innerHeight - 50;
+  let targetY = window.innerHeight - 45;
 
   if (destElement) {
     const rect = destElement.getBoundingClientRect();
@@ -51,9 +51,8 @@ export function flyToCart(
     targetY = rect.top + rect.height / 2;
   }
 
-  // 3. Create the floating thumbnail element
+  // 3. Create the floating thumbnail orb
   const flyer = document.createElement('div');
-  flyer.className = 'genie-fly-particle';
   flyer.style.cssText = `
     position: fixed;
     left: ${startX}px;
@@ -63,55 +62,59 @@ export function flyToCart(
     border-radius: 50%;
     z-index: 999999;
     pointer-events: none;
-    box-shadow: 0 10px 28px rgba(20, 83, 45, 0.45), 0 0 16px rgba(245, 158, 11, 0.4);
-    border: 2.5px solid #22c55e;
+    overflow: hidden;
     background-color: #ffffff;
-    ${imageSrc ? `background-image: url("${imageSrc}");` : 'background-color: #14532d;'}
-    background-size: cover;
-    background-position: center;
+    border: 2px solid #ffffff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25), 0 0 12px rgba(34, 197, 94, 0.4);
     will-change: transform, opacity;
   `;
 
+  if (imageSrc) {
+    const img = document.createElement('img');
+    img.src = imageSrc;
+    img.alt = 'Added product';
+    img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%;';
+    flyer.appendChild(img);
+  } else {
+    flyer.style.backgroundColor = '#14532d';
+  }
+
   document.body.appendChild(flyer);
 
-  // 4. Calculate 2D delta & macOS Genie curved trajectory
+  // 4. Calculate relative deltas
   const deltaX = targetX - (startX + startSize / 2);
   const deltaY = targetY - (startY + startSize / 2);
 
-  // An upward arc peak to mimic the genie lamp / dock minimization curve
-  const arcHeight = Math.min(-45, deltaY * 0.18);
+  // Parabolic upward toss apex
+  const arcPeak = Math.max(28, Math.min(65, Math.abs(deltaY) * 0.18));
 
-  const animation = flyer.animate(
-    [
-      {
-        transform: 'translate(0px, 0px) scale(1) rotate(0deg)',
-        opacity: 1,
-        filter: 'brightness(1)',
-      },
-      {
-        transform: `translate(${deltaX * 0.3}px, ${deltaY * 0.2 + arcHeight}px) scale(0.92) rotate(-10deg)`,
-        opacity: 0.98,
-        offset: 0.3,
-      },
-      {
-        transform: `translate(${deltaX * 0.72}px, ${deltaY * 0.65}px) scale(0.58) rotate(14deg)`,
-        opacity: 0.9,
-        offset: 0.72,
-      },
-      {
-        transform: `translate(${deltaX}px, ${deltaY}px) scale(0.12) rotate(0deg)`,
-        opacity: 0,
-        filter: 'brightness(1.6)',
-      },
-    ],
-    {
-      duration: 650,
-      easing: 'cubic-bezier(0.2, 0.85, 0.3, 1.15)',
-      fill: 'forwards',
-    }
-  );
+  // 5. Generate continuous mathematical trajectory (8 fine steps)
+  const keyframes: Keyframe[] = [];
+  const steps = 8;
 
-  // 5. Trigger spring impact bounce on the destination cart button
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    // Natural ease: begins smooth, accelerates into the bag
+    const easeT = Math.pow(t, 1.25);
+    const curX = deltaX * Math.pow(t, 1.35);
+    const curY = deltaY * easeT - Math.sin(Math.PI * Math.pow(t, 0.75)) * arcPeak;
+    const curScale = 1 - 0.88 * Math.pow(t, 1.3);
+    const curOpacity = t > 0.85 ? Math.max(0, 1 - (t - 0.85) / 0.15) : 1;
+
+    keyframes.push({
+      transform: `translate3d(${curX.toFixed(1)}px, ${curY.toFixed(1)}px, 0) scale(${curScale.toFixed(3)})`,
+      opacity: Number(curOpacity.toFixed(2)),
+    });
+  }
+
+  // 6. Fast, snappy, professional execution: 460ms
+  const animation = flyer.animate(keyframes, {
+    duration: 460,
+    easing: 'cubic-bezier(0.22, 0.85, 0.36, 1)',
+    fill: 'forwards',
+  });
+
+  // 7. On impact: cleanup & play snappy spring dock bounce
   animation.onfinish = () => {
     flyer.remove();
 
@@ -120,13 +123,13 @@ export function flyToCart(
       targetToBounce.animate(
         [
           { transform: 'scale(1)' },
-          { transform: 'scale(1.22)', offset: 0.35 },
-          { transform: 'scale(0.92)', offset: 0.7 },
+          { transform: 'scale(1.15)', offset: 0.35 },
+          { transform: 'scale(0.96)', offset: 0.7 },
           { transform: 'scale(1)' },
         ],
         {
-          duration: 380,
-          easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          duration: 260,
+          easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.25)',
         }
       );
     }
