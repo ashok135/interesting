@@ -329,12 +329,12 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
       suggestions: [
         '🌰 Best seeds under ₹500',
         '🔄 Return & Refund policy',
-        '📞 Helpline: +91 91763 67777',
+        '📞 Helpline: +91 99948 47167',
       ],
       formattedContext: [
         '### Customer Intent: Order Status & Live Tracking Inquiry',
         '1. In 2 concise sentences, tell the customer they can view live order status and invoices anytime in their [My Account > Orders](/account) page.',
-        '2. Mention orders dispatch within 24 hours with SMS/WhatsApp tracking, or call our concierge helpline at +91 91763 67777 for instant help.',
+        '2. Mention orders dispatch within 24 hours with SMS/WhatsApp tracking, or call our concierge helpline at +91 99948 47167 for instant help.',
         '3. DO NOT recommend any products.',
       ].join('\n'),
     };
