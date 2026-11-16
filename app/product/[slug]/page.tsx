@@ -91,20 +91,27 @@ export default async function ProductPage({ params }: ProductPageProps) {
     related = [];
   }
 
-  let upsellProducts: WooProduct[] = [];
-  const rawUpsells = Array.isArray(product.upsell_ids) ? product.upsell_ids : [];
-  if (rawUpsells.length > 0) {
+  // Fetch linked products (both Upsells & Cross-sells configured in WooCommerce WP-Admin)
+  let linkedProducts: WooProduct[] = [];
+  const linkedIds = [
+    ...(Array.isArray(product.upsell_ids) ? product.upsell_ids : []),
+    ...(Array.isArray(product.cross_sell_ids) ? product.cross_sell_ids : []),
+  ];
+  const uniqueLinkedIds = Array.from(new Set(linkedIds)).filter((id) => id !== product.id);
+
+  if (uniqueLinkedIds.length > 0) {
     try {
-      upsellProducts = await getProducts({ include: rawUpsells, perPage: 4 });
+      linkedProducts = await getProducts({ include: uniqueLinkedIds, perPage: 6 });
     } catch (err) {
-      console.error('Failed to fetch upsell products:', err);
-      upsellProducts = [];
+      console.error('Failed to fetch linked products:', err);
+      linkedProducts = [];
     }
   }
 
   // Smart combo items: pair current product with up to 2 complementary products
-  const comboPool = upsellProducts.length > 0 ? upsellProducts : related;
+  const comboPool = linkedProducts.length > 0 ? linkedProducts : related;
   const comboProducts = comboPool.filter((p) => p.id !== product.id).slice(0, 2);
+  const upsellProducts = linkedProducts.length > 0 ? linkedProducts.slice(0, 4) : [];
 
   let reviews: WooReview[] = [];
   try {

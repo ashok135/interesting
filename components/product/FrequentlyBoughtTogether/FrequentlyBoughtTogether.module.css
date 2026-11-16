@@ -1,215 +1,242 @@
+/* ==========================================================================
+   Frequently Bought Together - Organic Gourmet Brand Design System
+   ========================================================================== */
+
 .comboSection {
-  margin-top: 3.5rem;
-  padding: 2rem 0;
-  border-top: 1px solid var(--border-color, #e2e8f0);
+  margin-top: 3rem;
+  padding: 2.25rem 0;
+  border-top: 1px solid var(--color-border, #e2e8f0);
 }
 
 .header {
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
 }
 
-.badge {
+.headerBadge {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
-  padding: 0.25rem 0.65rem;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 0.2rem 0.65rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 800;
-  color: var(--foreground, #0f172a);
-  margin: 0 0 0.35rem;
+  color: var(--color-text, #1e293b);
+  margin: 0 0 0.3rem;
   letter-spacing: -0.02em;
 }
 
 .subtitle {
-  font-size: 0.9rem;
-  color: var(--muted-foreground, #64748b);
+  font-size: 0.88rem;
+  color: var(--color-text-muted, #64748b);
   margin: 0;
+  line-height: 1.45;
 }
 
-.comboContainer {
+/* Main Box Container */
+.comboCard {
+  background: var(--color-surface-1, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 16px;
+  padding: 1.5rem;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem;
-  background: var(--bg-surface, #ffffff);
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 16px;
-  padding: 1.75rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  gap: 1.75rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
-@media (min-width: 1024px) {
-  .comboContainer {
-    grid-template-columns: 1fr 300px;
+@media (min-width: 960px) {
+  .comboCard {
+    grid-template-columns: 1fr 280px;
     align-items: center;
+    padding: 1.75rem 2rem;
+    gap: 2rem;
   }
 }
 
-.visualChain {
+/* Visual items strip */
+.itemsStrip {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 @media (min-width: 640px) {
-  .visualChain {
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
+  .itemsStrip {
+    flex-wrap: nowrap;
+    gap: 1rem;
   }
 }
 
+/* Individual Product Mini-Card */
 .itemCard {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 1rem;
+  background: var(--color-surface-2, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 0.85rem;
   position: relative;
   transition: all 0.2s ease;
   width: 100%;
-  max-width: 180px;
+  max-width: 165px;
+  flex: 1 1 140px;
 }
 
-.itemCardActive {
-  border-color: #0284c7;
+.itemCardSelected {
+  border-color: #14532d;
   background: #ffffff;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+  box-shadow: 0 2px 8px rgba(20, 83, 45, 0.06);
 }
 
-.itemCardDisabled {
-  opacity: 0.5;
-  filter: grayscale(0.5);
+.itemCardUnselected {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+  border-style: dashed;
 }
 
+/* Custom Styled Checkbox */
 .checkboxWrap {
   position: absolute;
-  top: 0.65rem;
-  left: 0.65rem;
+  top: 0.5rem;
+  left: 0.5rem;
   z-index: 2;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.checkbox {
-  width: 18px;
-  height: 18px;
+.checkboxInput {
+  width: 17px;
+  height: 17px;
   border-radius: 4px;
   cursor: pointer;
-  accent-color: #0284c7;
+  accent-color: #14532d;
 }
 
+/* Thumbnail */
 .thumbWrap {
   position: relative;
-  width: 90px;
-  height: 90px;
-  margin-bottom: 0.75rem;
-  border-radius: 10px;
+  width: 80px;
+  height: 80px;
+  margin: 0.25rem 0 0.65rem;
+  border-radius: 8px;
   overflow: hidden;
   background: #ffffff;
+  border: 1px solid #f1f5f9;
 }
 
 .thumbImg {
   object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.itemCard:hover .thumbImg {
+  transform: scale(1.05);
 }
 
 .itemTitle {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 0.35rem;
-  line-height: 1.25;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+  margin: 0 0 0.25rem;
+  line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   height: 2.1rem;
+  text-decoration: none;
+}
+
+.itemTitle:hover {
+  color: #14532d;
 }
 
 .itemPrice {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 800;
-  color: #0f172a;
+  color: #14532d;
   margin: 0;
 }
 
-.thisItemBadge {
-  font-size: 0.68rem;
+.currentBadge {
+  font-size: 0.65rem;
   font-weight: 700;
-  color: #0284c7;
-  background: #e0f2fe;
-  padding: 0.15rem 0.45rem;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 0.12rem 0.45rem;
   border-radius: 4px;
   margin-top: 0.35rem;
 }
 
-.chainPlus {
+/* Subtle separator between items */
+.plusDivider {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  color: #64748b;
-  font-weight: 800;
-  font-size: 1.1rem;
+  color: #94a3b8;
+  font-size: 1.3rem;
+  font-weight: 400;
+  user-select: none;
   flex-shrink: 0;
-  margin: 0 auto;
 }
 
-/* Bundle Action Box */
+/* Right-side Bundle Summary Action Box */
 .actionBox {
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 1.5rem;
+  background: var(--color-surface-2, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
-.priceBreakdown {
+.priceGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
-.priceLabel {
-  font-size: 0.85rem;
-  color: #64748b;
+.itemsCountLabel {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #64748b);
   font-weight: 600;
 }
 
-.totalPriceRow {
+.priceRow {
   display: flex;
   align-items: baseline;
-  gap: 0.65rem;
+  gap: 0.6rem;
 }
 
-.bundlePrice {
+.finalPrice {
   font-size: 1.6rem;
   font-weight: 900;
-  color: #0f172a;
+  color: #14532d;
   letter-spacing: -0.02em;
 }
 
 .strikePrice {
-  font-size: 1rem;
-  text-decoration: line-through;
+  font-size: 0.95rem;
   color: #94a3b8;
+  text-decoration: line-through;
   font-weight: 600;
 }
 
@@ -217,88 +244,117 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: #dcfce7;
-  color: #15803d;
-  font-size: 0.8rem;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 0.25rem 0.65rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 6px;
   width: fit-content;
 }
 
+/* Primary Brand Green Button */
 .addComboBtn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.85rem 1.25rem;
-  background: #f59e0b;
-  color: #000000;
-  font-size: 0.95rem;
-  font-weight: 800;
+  height: 46px;
+  padding: 0 1.25rem;
+  background: #14532d;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 3px 10px rgba(20, 83, 45, 0.22);
 }
 
 .addComboBtn:hover:not(:disabled) {
-  background: #d97706;
-  color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.35);
+  background: #166534;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(20, 83, 45, 0.32);
 }
 
 .addComboBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-.comboGuarantee {
+.trustNote {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  color: #64748b;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--color-text-muted, #64748b);
   justify-content: center;
+  font-weight: 500;
 }
 
-/* Dark Mode */
-[data-theme="dark"] .comboContainer {
+/* Dark Mode Support */
+[data-theme="dark"] .comboCard {
   background: #111827;
   border-color: #243048;
 }
+
+[data-theme="dark"] .headerBadge {
+  background: rgba(20, 83, 45, 0.25);
+  border-color: #22c55e;
+  color: #86efac;
+}
+
+[data-theme="dark"] .title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .subtitle {
+  color: #94a3b8;
+}
+
 [data-theme="dark"] .itemCard {
-  background: #1e293b;
-  border-color: #334155;
+  background: #1a2438;
+  border-color: #28354e;
 }
-[data-theme="dark"] .itemCardActive {
-  border-color: #38bdf8;
+
+[data-theme="dark"] .itemCardSelected {
+  border-color: #22c55e;
   background: #1e293b;
 }
+
 [data-theme="dark"] .itemTitle {
   color: #f8fafc;
 }
+
 [data-theme="dark"] .itemPrice {
-  color: #f8fafc;
-}
-[data-theme="dark"] .chainPlus {
-  background: #1e293b;
-  color: #94a3b8;
-}
-[data-theme="dark"] .actionBox {
-  background: #0f172a;
-  border-color: #1e293b;
-}
-[data-theme="dark"] .bundlePrice {
-  color: #f8fafc;
-}
-[data-theme="dark"] .savingsPill {
-  background: rgba(34, 197, 94, 0.15);
   color: #4ade80;
 }
-[data-theme="dark"] .comboGuarantee {
-  color: #94a3b8;
+
+[data-theme="dark"] .actionBox {
+  background: #1a2438;
+  border-color: #28354e;
+}
+
+[data-theme="dark"] .finalPrice {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .savingsPill {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+}
+
+[data-theme="dark"] .addComboBtn {
+  background: #22c55e;
+  color: #052e16;
+}
+
+[data-theme="dark"] .addComboBtn:hover:not(:disabled) {
+  background: #16a34a;
 }
