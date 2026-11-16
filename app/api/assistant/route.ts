@@ -49,11 +49,11 @@ export async function POST(req: NextRequest) {
     const systemPrompt = `You are "Tara", the AI Nutritionist & Concierge for "Interesting" — a luxury farm-fresh dry fruits, nuts, super-seeds, and artisanal hampers store in India.
 
 ROLE & GUIDELINES:
-1. Recommend ONLY products from the provided "Live Store Products" catalog. NEVER suggest brands or items not listed.
-2. Always mention the exact product name and price in ₹ (INR) as provided in the catalog.
-3. Keep answers concise (2-4 clear paragraphs or bullet points), polite, encouraging, and focused on health benefits (e.g. fiber, healthy fats, antioxidants, omega-3, protein).
-4. If the customer asks about shipping, returns, or payment, reference the provided Store Policies.
-5. If no exact match exists, guide the customer to the closest wholesome pairing in the catalog.
+1. If the customer is greeting or asking general questions, welcome them warmly in 1-2 concise sentences.
+2. If the customer asks about orders or tracking, guide them to [My Account > Orders](/account) and provide our helpline. Do NOT recommend products.
+3. If the customer asks about shipping, returns, or payment, reference the provided Store Policies accurately.
+4. If the customer asks for food, nuts, seeds, or gift recommendations, recommend ONLY from the provided "Live Store Products" catalog with exact price in ₹ (INR) and health benefits (protein, fiber, healthy fats, omega-3).
+5. Keep answers concise, polite, encouraging, and natural.
 
 ${ragContext.formattedContext}
 `;
@@ -80,8 +80,8 @@ ${ragContext.formattedContext}
         ...formattedHistory,
         { role: 'user', content: cleanQuery },
       ],
-      max_tokens: 1024,
-      temperature: 0.6,
+      max_tokens: 800,
+      temperature: 0.5,
     });
 
     const choice = completion.choices[0];

@@ -1,10 +1,12 @@
 /**
- * RAG & RIG Knowledge Base & Semantic Product Retriever
+ * Smart RAG & RIG Engine with Intent-Based Query Routing
  *
- * 1. True Vector RAG: Vectorizes user query with NVIDIA Nemotron (2048 dims)
- *    and searches Qdrant for semantic policy chunks and product matches.
- * 2. Real-Time Information Grounding (RIG): Merges live WooCommerce inventory,
- *    live prices in ₹, and stock status so the AI never hallucinates or quotes stale data.
+ * 1. Intent Router:
+ *    - GREETING: Bypasses Vector DB & WooCommerce completely (Instant reply in ~1s, 0 cards).
+ *    - ORDER TRACKING: Bypasses Vector DB, gives /account & helpline (Fast, 0 cards).
+ *    - STORE POLICY: Searches Qdrant for policy chunks only (0 cards).
+ *    - PRODUCT SEARCH: Searches Qdrant for products + applies budget filters (e.g. "under 500").
+ *      Returns rich product cards ONLY when the customer asks for products!
  */
 
 import { getProducts } from '@/lib/api/products';
@@ -26,6 +28,13 @@ export interface RagContext {
   products: RetrievedProduct[];
   policies: string[];
   formattedContext: string;
+}
+
+export type QueryIntent = 'order_tracking' | 'policy' | 'product_search' | 'greeting';
+
+interface QueryClassification {
+  intent: QueryIntent;
+  maxBudget: number | null;
 }
 
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
@@ -50,7 +59,117 @@ function stripHtml(html?: string): string {
 }
 
 /**
- * Generates 2,048-dim embedding vector for the search query via NVIDIA NIM
+ * Classifies customer query using priority intent hierarchy
+ */
+function classifyQuery(userQuery: string): QueryClassification {
+  const q = userQuery.toLowerCase().trim();
+
+  // 1. Extract budget filter (e.g. "under 500", "below 1000", "less than 400")
+  let maxBudget: number | null = null;
+  const budgetMatch = q.match(/(?:under|below|less than|within|around)\s*(?:rs\.?|inr|₹)?\s*(\d+)/i);
+  if (budgetMatch && budgetMatch[1]) {
+    maxBudget = parseInt(budgetMatch[1], 10);
+  }
+
+  // 2. Priority 1: Order tracking / account status
+  const isOrderQuery =
+    q.includes('order') ||
+    q.includes('track') ||
+    q.includes('tracking') ||
+    q.includes('invoice') ||
+    q.includes('my purchase') ||
+    q.includes('courier');
+
+  if (isOrderQuery) {
+    return { intent: 'order_tracking', maxBudget };
+  }
+
+  // 3. Priority 2: Store Policies / Contact / Logistics
+  const isPolicyQuery =
+    q.includes('return') ||
+    q.includes('refund') ||
+    q.includes('replace') ||
+    q.includes('replacement') ||
+    q.includes('ship') ||
+    q.includes('shipping') ||
+    q.includes('deliver') ||
+    q.includes('delivery') ||
+    q.includes('pin code') ||
+    q.includes('pincode') ||
+    q.includes('payment') ||
+    q.includes('pay ') ||
+    q.includes('cod') ||
+    q.includes('upi') ||
+    q.includes('cash on delivery') ||
+    q.includes('cancel') ||
+    q.includes('cancellation') ||
+    q.includes('contact') ||
+    q.includes('support') ||
+    q.includes('helpline') ||
+    q.includes('phone') ||
+    q.includes('whatsapp') ||
+    q.includes('email');
+
+  if (isPolicyQuery) {
+    return { intent: 'policy', maxBudget };
+  }
+
+  // 4. Priority 3: Product Search / Nutrition / Food Recommendation
+  const isProductQuery =
+    maxBudget !== null ||
+    q.includes('seed') ||
+    q.includes('nut') ||
+    q.includes('cashew') ||
+    q.includes('kaju') ||
+    q.includes('almond') ||
+    q.includes('badam') ||
+    q.includes('walnut') ||
+    q.includes('akhrot') ||
+    q.includes('raisin') ||
+    q.includes('kishmish') ||
+    q.includes('date') ||
+    q.includes('khajoor') ||
+    q.includes('pistachio') ||
+    q.includes('pista') ||
+    q.includes('chana') ||
+    q.includes('millet') ||
+    q.includes('trail') ||
+    q.includes('snack') ||
+    q.includes('laddu') ||
+    q.includes('katli') ||
+    q.includes('hamper') ||
+    q.includes('box') ||
+    q.includes('gift') ||
+    q.includes('gifting') ||
+    q.includes('protein') ||
+    q.includes('workout') ||
+    q.includes('gym') ||
+    q.includes('diet') ||
+    q.includes('weight') ||
+    q.includes('sugar') ||
+    q.includes('diabetes') ||
+    q.includes('heart') ||
+    q.includes('bp') ||
+    q.includes('energy') ||
+    q.includes('recommend') ||
+    q.includes('suggest') ||
+    q.includes('buy') ||
+    q.includes('shop') ||
+    q.includes('price') ||
+    q.includes('cost') ||
+    q.includes('cheap') ||
+    q.includes('best');
+
+  if (isProductQuery) {
+    return { intent: 'product_search', maxBudget };
+  }
+
+  // 5. Default: Pure Greeting / Small Talk
+  return { intent: 'greeting', maxBudget: null };
+}
+
+/**
+ * Generates 2,048-dim embedding vector via NVIDIA NIM
  */
 async function generateQueryVector(query: string): Promise<number[] | null> {
   if (!NVIDIA_API_KEY) return null;
@@ -67,7 +186,7 @@ async function generateQueryVector(query: string): Promise<number[] | null> {
         model: NVIDIA_EMBED_MODEL,
         input_type: 'query',
       }),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(3500),
     });
 
     if (!res.ok) {
@@ -112,7 +231,7 @@ async function searchQdrant(vector: number[]): Promise<QdrantSearchHit[]> {
         limit: 6,
         with_payload: true,
       }),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(3500),
     });
 
     if (!res.ok) {
@@ -129,47 +248,120 @@ async function searchQdrant(vector: number[]): Promise<QdrantSearchHit[]> {
 }
 
 export async function retrieveRagContext(userQuery: string): Promise<RagContext> {
-  const queryLower = userQuery.toLowerCase().trim();
+  const { intent, maxBudget } = classifyQuery(userQuery);
 
-  // 1. Vectorize query & search Qdrant
-  const queryVector = await generateQueryVector(userQuery);
-  const hits: QdrantSearchHit[] = queryVector ? await searchQdrant(queryVector) : [];
+  // =========================================================================
+  // 1. FAST PATH: GREETINGS & SMALL TALK
+  // Bypasses Vector DB & WooCommerce completely. Instant reply in ~1s. 0 cards.
+  // =========================================================================
+  if (intent === 'greeting') {
+    return {
+      products: [],
+      policies: [],
+      formattedContext: [
+        '### Context: Friendly Greeting / Concierge Small Talk',
+        '• Role: Welcome the customer warmly as Tara, the AI Wellness & Nutrition Concierge for "Interesting".',
+        '• Pantry Highlights: Luxury farm-fresh dry fruits (W180 Jumbo Cashews, Kashmiri Walnuts), super-seeds (Chia, Pumpkin, 5-in-1 Omega Mix), and artisanal hampers.',
+        '• Instruction: Greet concisely (1-2 sentences), ask what health goals or snacks they are seeking today. DO NOT list or recommend product cards yet.',
+      ].join('\n'),
+    };
+  }
 
-  const policyHits = hits.filter((h) => h.payload?.type === 'policy');
-  const productHits = hits.filter((h) => h.payload?.type === 'product');
+  // =========================================================================
+  // 2. FAST PATH: ORDER TRACKING & ACCOUNT INQUIRIES
+  // Bypasses Vector DB & WooCommerce. Direct accurate guidance. 0 cards.
+  // =========================================================================
+  if (intent === 'order_tracking') {
+    return {
+      products: [],
+      policies: [
+        'Orders dispatch within 24 hours via Express Bluedart / Delhivery in airtight tamper-proof packaging.',
+        'Live tracking links are sent automatically via SMS and WhatsApp upon courier dispatch.',
+        'Customers can view real-time order history, invoices, and tracking anytime under [My Account > Orders](/account).',
+        'Concierge Helpline & WhatsApp: +91 91763 67777 (Mon-Sat, 10 AM - 7 PM) or hello@interesting.co.in.',
+      ],
+      formattedContext: [
+        '### Customer Intent: Order Status & Live Tracking Inquiry',
+        '1. Explain that customers can view real-time order status, invoice, and tracking history anytime in their [My Account > Orders](/account) section.',
+        '2. Mention that all orders dispatch within 24 hours via Express Courier with automated SMS & WhatsApp tracking links.',
+        '3. If they need instant assistance, invite them to share their Order ID or call/WhatsApp our concierge helpline at +91 91763 67777 (hello@interesting.co.in).',
+        '4. DO NOT recommend any food products or attach product cards.',
+      ].join('\n'),
+    };
+  }
 
-  // 2. Fetch live products from WooCommerce to ground with real-time price & stock (RIG)
-  let liveProducts: WooProduct[] = [];
-  try {
-    const matchedIds = productHits
-      .map((h) => Number(h.payload?.id || h.id))
-      .filter((id) => !isNaN(id) && id > 0);
+  // =========================================================================
+  // 3. STORE POLICIES (Returns, Shipping, Payment, PIN code, Contact)
+  // Searches Qdrant for policy chunks only. ZERO product cards.
+  // =========================================================================
+  if (intent === 'policy') {
+    const queryVector = await generateQueryVector(userQuery);
+    const hits = queryVector ? await searchQdrant(queryVector) : [];
+    const policyHits = hits.filter((h) => h.payload?.type === 'policy');
 
-    if (matchedIds.length > 0) {
-      liveProducts = await getProducts({ include: matchedIds, perPage: 6 });
+    const retrievedPolicies: string[] = [];
+    for (const hit of policyHits) {
+      if (hit.payload?.passage) {
+        retrievedPolicies.push(hit.payload.passage);
+      }
     }
 
-    // If Qdrant didn't match products but query seems product/nutrition related, get popular products
-    const isPolicyQuery =
-      queryLower.includes('return') ||
-      queryLower.includes('refund') ||
-      queryLower.includes('replace') ||
-      queryLower.includes('ship') ||
-      queryLower.includes('deliver') ||
-      queryLower.includes('track') ||
-      queryLower.includes('pay') ||
-      queryLower.includes('cod') ||
-      queryLower.includes('contact');
+    if (retrievedPolicies.length === 0) {
+      retrievedPolicies.push(
+        'Shipping: Free Express Delivery across India on prepaid orders and orders above ₹499. Orders dispatch within 24 hours.',
+        'Returns: 7-Day Hassle-Free Replacement for damaged or unsealed food packages. Full refund processed within 48 hours to original payment mode or UPI.',
+        'Payments: Supports Pay on Delivery (Cash on Delivery / UPI on Delivery) and Direct Instant UPI (Google Pay, PhonePe, Paytm).'
+      );
+    }
 
-    if (liveProducts.length === 0 && !isPolicyQuery) {
-      liveProducts = await getProducts({ perPage: 4, orderby: 'popularity' });
+    return {
+      products: [], // Zero product cards for policy queries!
+      policies: retrievedPolicies,
+      formattedContext: [
+        '### Customer Intent: Store Policy / Delivery / Payment / Return Inquiry',
+        '### Store Policies & Knowledge (Verified Direct Ground Truth from Qdrant):',
+        ...retrievedPolicies.map((p) => `• ${p}`),
+        '',
+        'Instruction: Answer the customer accurately and politely based strictly on the policies above. DO NOT recommend products or attach product cards.',
+      ].join('\n'),
+    };
+  }
+
+  // =========================================================================
+  // 4. PRODUCT RECOMMENDATIONS & NUTRITION SEARCH
+  // Searches Qdrant for products, applies budget filters, attaches cards!
+  // =========================================================================
+  const queryVector = await generateQueryVector(userQuery);
+  const hits = queryVector ? await searchQdrant(queryVector) : [];
+  const productHits = hits.filter((h) => h.payload?.type === 'product');
+
+  const matchedIds = productHits
+    .map((h) => Number(h.payload?.id || h.id))
+    .filter((id) => !isNaN(id) && id > 0);
+
+  let liveProducts: WooProduct[] = [];
+  try {
+    if (matchedIds.length > 0) {
+      liveProducts = await getProducts({ include: matchedIds, perPage: 6 });
+    } else {
+      liveProducts = await getProducts({ search: userQuery, perPage: 4 });
     }
   } catch (err) {
     console.warn('[RAG/RIG] Live product fetch error:', err);
   }
 
-  // 3. Format retrieved live products
-  const retrievedProducts: RetrievedProduct[] = liveProducts.map((p) => ({
+  // Apply budget filter if customer requested (e.g. "under 500")
+  if (maxBudget !== null) {
+    const budgeted = liveProducts.filter((p) => {
+      const priceNum = parseFloat(String(p.price).replace(/[^0-9.]/g, ''));
+      return !isNaN(priceNum) && priceNum <= maxBudget;
+    });
+    if (budgeted.length > 0) {
+      liveProducts = budgeted;
+    }
+  }
+
+  const retrievedProducts: RetrievedProduct[] = liveProducts.slice(0, 4).map((p) => ({
     id: p.id,
     name: p.name,
     slug: p.slug,
@@ -181,27 +373,6 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
     stock_status: p.stock_status,
   }));
 
-  // 4. Format policy knowledge
-  const retrievedPolicies: string[] = [];
-  for (const hit of policyHits) {
-    const payload = hit.payload;
-    if (payload?.passage) {
-      retrievedPolicies.push(payload.passage);
-    } else if (payload?.name) {
-      retrievedPolicies.push(`${payload.name}: Verified store policy.`);
-    }
-  }
-
-  // Fallback policies if none matched
-  if (retrievedPolicies.length === 0) {
-    retrievedPolicies.push(
-      'Free Express Delivery across India on prepaid orders and orders above ₹499.',
-      '7-Day Hassle-Free Replacement for damaged or unsealed food packages.',
-      'Supports Cash on Delivery / UPI on Delivery & Direct Instant UPI.'
-    );
-  }
-
-  // 5. Construct unified LLM prompt context
   const productContextText =
     retrievedProducts.length > 0
       ? retrievedProducts
@@ -211,25 +382,24 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
               `   - Current Live Price: ₹${p.price} (Regular: ₹${p.regular_price})\n` +
               `   - Category: ${p.category}\n` +
               `   - Availability: ${p.stock_status === 'instock' ? 'In Stock' : 'Out of Stock'}\n` +
-              `   - Key Benefits / Highlights: ${p.description}\n` +
+              `   - Health Benefits / Highlights: ${p.description}\n` +
               `   - Store Link: /product/${p.slug}`
           )
           .join('\n\n')
-      : 'No specific products requested. Recommend customer favorites if appropriate.';
-
-  const policyContextText = retrievedPolicies.map((p) => `• ${p}`).join('\n');
-
-  const formattedContext = [
-    '### Store Policies & Knowledge Base (Verified Ground Truth from Qdrant):',
-    policyContextText,
-    '',
-    '### Live Store Products (Real-Time Pricing & Stock from WooCommerce):',
-    productContextText,
-  ].join('\n');
+      : `No items found matching the exact budget of ₹${maxBudget}. Recommend the closest wholesome alternative.`;
 
   return {
-    products: retrievedProducts,
-    policies: retrievedPolicies,
-    formattedContext,
+    products: retrievedProducts, // Product cards shown ONLY here!
+    policies: [],
+    formattedContext: [
+      '### Customer Intent: Product Recommendation & Nutrition Search',
+      maxBudget ? `### Customer Budget: Under ₹${maxBudget} (Prioritize products within this budget)` : '',
+      '### Live Store Products from Interesting (Real-Time In-Stock):',
+      productContextText,
+      '',
+      'Instruction: Recommend the best products from the live catalog above. Highlight health benefits (protein, fiber, healthy fats), quote exact price in ₹, and encourage them to click "+ Add" below.',
+    ]
+      .filter(Boolean)
+      .join('\n'),
   };
 }
