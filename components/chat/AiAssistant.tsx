@@ -41,21 +41,21 @@ function preprocessText(raw: string): string {
     s = s.replace(/support@intersting\.duckdns\.org/g, '[support@intersting.duckdns.org](mailto:support@intersting.duckdns.org)');
     s = s.replace(/hello@interesting\.co\.in/g, '[hello@interesting.co.in](mailto:hello@interesting.co.in)');
   }
-  // Auto-link Return & Refund Policy
+  // Auto-link Return & Refund Policy — ONLY matches the exact phrase "Return Policy" or "Return & Refund Policy"
   if (!s.includes('](/returns)')) {
-    s = s.replace(/(?:7-Day\s+)?Return\s*(?:&\s*Refund\s*)?Policy/gi, '[Return & Refund Policy](/returns)');
+    s = s.replace(/\bReturn\s*(?:&\s*Refund\s*)?Policy\b/gi, '[Return & Refund Policy](/returns)');
   }
-  // Auto-link Shipping Policy
+  // Auto-link Shipping Policy — ONLY matches the exact phrase "Shipping Policy"
   if (!s.includes('](/shipping)')) {
-    s = s.replace(/Shipping\s*(?:&\s*Delivery\s*)?Policy/gi, '[Shipping Policy](/shipping)');
+    s = s.replace(/\bShipping\s*(?:&\s*Delivery\s*)?Policy\b/gi, '[Shipping Policy](/shipping)');
   }
-  // Auto-link FAQ & Payments
+  // Auto-link FAQ & Payments — ONLY matches the uppercase abbreviation "FAQ" as a standalone word
   if (!s.includes('](/faq)')) {
-    s = s.replace(/FAQ\s*(?:&\s*Payments?)?/gi, '[FAQ & Payments](/faq)');
+    s = s.replace(/\bFAQ\b(?:\s*&\s*Payments?)?/g, '[FAQ & Payments](/faq)');
   }
-  // Auto-link Terms & Privacy
+  // Auto-link Terms & Privacy — ONLY matches the exact phrase "Terms & Privacy" or "Terms and Privacy"
   if (!s.includes('](/terms)')) {
-    s = s.replace(/Terms\s*(?:&\s*Privacy)?/gi, '[Terms & Privacy](/terms)');
+    s = s.replace(/\bTerms\s*(?:&|and)\s*Privacy\b/gi, '[Terms & Privacy](/terms)');
   }
   return s;
 }

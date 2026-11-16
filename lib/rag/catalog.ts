@@ -103,24 +103,35 @@ function classifyQuery(userQuery: string): QueryClassification {
   }
 
   // 4. Priority 3: Store Policies (Returns, Shipping, Payment, PIN code)
+  // Use specific multi-word phrases or standalone policy keywords to avoid false matches
   const isPolicyQuery =
-    q.includes('return') ||
+    q.includes('return policy') ||
     q.includes('refund') ||
-    q.includes('replace') ||
-    q.includes('replacement') ||
-    q.includes('ship') ||
-    q.includes('shipping') ||
-    q.includes('deliver') ||
-    q.includes('delivery') ||
+    q.includes('replacement policy') ||
+    q.includes('how to return') ||
+    q.includes('want to return') ||
+    q.includes('exchange') ||
+    q.includes('shipping policy') ||
+    q.includes('shipping charge') ||
+    q.includes('delivery charge') ||
+    q.includes('delivery time') ||
+    q.includes('how long delivery') ||
+    q.includes('when will') ||
+    q.includes('how fast') ||
+    q.includes('free delivery') ||
+    q.includes('free shipping') ||
     q.includes('pin code') ||
     q.includes('pincode') ||
+    q.includes('serviceable') ||
     q.includes('payment') ||
-    q.includes('pay ') ||
+    q.includes('pay on delivery') ||
+    q.includes('cash on delivery') ||
     q.includes('cod') ||
     q.includes('upi') ||
-    q.includes('cash on delivery') ||
-    q.includes('cancel') ||
-    q.includes('cancellation');
+    q.includes('cancel my order') ||
+    q.includes('cancellation') ||
+    q.includes('terms') ||
+    q.includes('privacy');
 
   if (isPolicyQuery) {
     return { intent: 'policy', maxBudget };
