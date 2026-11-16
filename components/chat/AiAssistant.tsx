@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Sparkles, MessageCircle, X, Send, ShoppingBag, Check, Package, RotateCcw, Truck, PhoneCall } from 'lucide-react';
+import { Mascot } from 'page-mascot';
 import { useCartContext } from '@/store/CartContext';
 import { useToast } from '@/store/ToastContext';
 import { formatPrice } from '@/lib/utils/formatters';
@@ -210,36 +211,37 @@ export default function AiAssistant() {
 
   return (
     <>
-      {/* 1. 3D Floating Avatar Concierge Trigger Button */}
+      {/* 1. Interactive Cursor-Tracking Mascot Trigger */}
       {!isOpen && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className={styles.avatarTriggerContainer}
-          aria-label="Ask Tara, AI Wellness Concierge"
-        >
+        <div className={styles.mascotTriggerContainer}>
           {/* Floating Speech Pill Badge */}
-          <div className={styles.speechPill}>
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className={styles.speechPill}
+            aria-label="Ask Nutritionist AI"
+          >
             <span className={styles.onlinePulseDot} />
-            <span className={styles.speechText}>Ask Tara</span>
+            <span className={styles.speechText}>Ask Nutritionist AI</span>
             <Sparkles size={13} className={styles.sparkleIcon} />
-          </div>
+          </button>
 
-          {/* 3D Character Avatar with Levitation Physics & Ground Shadow */}
-          <div className={styles.avatarFloatWrap}>
-            <div className={styles.avatarImgWrap}>
-              <Image
-                src="/images/ai/tara-avatar.webp"
-                alt="Tara AI 3D Concierge"
-                width={72}
-                height={72}
-                priority
-                className={styles.avatarImg}
-              />
-            </div>
+          {/* Interactive Mascot that follows cursor and reacts */}
+          <div
+            className={styles.mascotFloatWrap}
+            onClick={() => {
+              setTimeout(() => setIsOpen(true), 350);
+            }}
+          >
+            <Mascot
+              directions="/mascots/toaster-directions.webp"
+              reactions="/mascots/toaster-reactions.webp"
+              size={86}
+              label="Interesting AI Mascot"
+            />
             <div className={styles.groundShadow} />
           </div>
-        </button>
+        </div>
       )}
 
       {/* 2. Interactive Chat Window */}
@@ -249,12 +251,11 @@ export default function AiAssistant() {
           <div className={styles.chatHeader}>
             <div className={styles.headerInfo}>
               <div className={styles.avatarWrap}>
-                <Image
-                  src="/images/ai/tara-avatar.webp"
-                  alt="Tara 3D Avatar"
-                  width={36}
-                  height={36}
-                  className={styles.headerAvatarImg}
+                <Mascot
+                  directions="/mascots/toaster-directions.webp"
+                  reactions="/mascots/toaster-reactions.webp"
+                  size={36}
+                  label="Interesting AI Mascot"
                 />
                 <span className={styles.onlineDot} />
               </div>
