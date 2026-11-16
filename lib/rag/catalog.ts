@@ -374,10 +374,15 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
       ],
       formattedContext: [
         '### Customer Intent: Store Policy / Delivery / Payment / Return Inquiry',
-        '### Store Policies & Knowledge (Verified Direct Ground Truth from Qdrant):',
+        '### Verified Policy from Store Knowledge Base:',
         ...retrievedPolicies.map((p) => `• ${p}`),
         '',
-        'Instruction: Answer concisely in 2-3 short bullet points based on the policies above. Keep words brief and neat. DO NOT recommend products.',
+        'Instruction: Answer in 1-2 short bullet points. ALWAYS end your reply with the relevant clickable page link in markdown:',
+        '- For return/refund questions → include [Return & Refund Policy](/returns)',
+        '- For shipping/delivery questions → include [Shipping Policy](/shipping)',
+        '- For payment/COD questions → include [FAQ & Payments](/faq)',
+        '- For terms/privacy questions → include [Terms & Privacy](/terms)',
+        'DO NOT recommend products.',
       ].join('\n'),
     };
   }

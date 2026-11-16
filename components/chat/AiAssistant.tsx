@@ -31,19 +31,31 @@ function preprocessText(raw: string): string {
   if (!s.includes('](/account)')) {
     s = s.replace(/My Account\s*>\s*Orders(?:\s*page)?/gi, '[My Account > Orders](/account)');
   }
-  // Auto-link phone number
+  // Auto-link phone numbers
   if (!s.includes('](tel:')) {
     s = s.replace(/\+91\s*99948\s*47167/g, '[+91 99948 47167](tel:+919994847167)');
     s = s.replace(/\+91\s*91763\s*67777/g, '[+91 99948 47167](tel:+919994847167)');
   }
-  // Auto-link email
+  // Auto-link emails
   if (!s.includes('](mailto:')) {
     s = s.replace(/support@intersting\.duckdns\.org/g, '[support@intersting.duckdns.org](mailto:support@intersting.duckdns.org)');
     s = s.replace(/hello@interesting\.co\.in/g, '[hello@interesting.co.in](mailto:hello@interesting.co.in)');
   }
-  // Auto-link Return Policy
+  // Auto-link Return & Refund Policy
   if (!s.includes('](/returns)')) {
-    s = s.replace(/(?:7-Day\s+)?Return\s+(?:&\s+Refund\s+)?Policy/gi, '[Return & Refund Policy](/returns)');
+    s = s.replace(/(?:7-Day\s+)?Return\s*(?:&\s*Refund\s*)?Policy/gi, '[Return & Refund Policy](/returns)');
+  }
+  // Auto-link Shipping Policy
+  if (!s.includes('](/shipping)')) {
+    s = s.replace(/Shipping\s*(?:&\s*Delivery\s*)?Policy/gi, '[Shipping Policy](/shipping)');
+  }
+  // Auto-link FAQ & Payments
+  if (!s.includes('](/faq)')) {
+    s = s.replace(/FAQ\s*(?:&\s*Payments?)?/gi, '[FAQ & Payments](/faq)');
+  }
+  // Auto-link Terms & Privacy
+  if (!s.includes('](/terms)')) {
+    s = s.replace(/Terms\s*(?:&\s*Privacy)?/gi, '[Terms & Privacy](/terms)');
   }
   return s;
 }
