@@ -452,7 +452,7 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
       '### Live Store Products from Interesting (Real-Time In-Stock):',
       productContextText,
       '',
-      'Instruction: Recommend the best products from the live catalog above. Highlight health benefits (protein, fiber, healthy fats), quote exact price in ₹, and encourage them to click "+ Add" below.',
+      'Instruction: In ONLY 1 or 2 short sentences (under 40 words!), recommend the top matching item(s) with price in ₹ and key benefit. Visual cards appear below, so keep text response very brief and direct!',
     ]
       .filter(Boolean)
       .join('\n'),
