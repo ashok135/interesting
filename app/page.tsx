@@ -4,6 +4,9 @@ import { HomePageExplorerContainer } from '@/components/home/HomePageExplorerCon
 import type { WooProduct, WooProductCategory } from '@/types';
 import styles from './page.module.css';
 
+// Revalidate homepage every 60 seconds (Incremental Static Regeneration)
+export const revalidate = 60;
+
 async function safeFetch<T>(fn: () => Promise<T>, fallback: T): Promise<{ data: T; error: boolean }> {
   try {
     const data = await fn();
