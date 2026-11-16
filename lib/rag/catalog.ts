@@ -449,12 +449,9 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
       ? retrievedProducts
           .map(
             (p, i) =>
-              `${i + 1}. **${p.name}**\n` +
-              `   - Current Live Price: ₹${p.price} (Regular: ₹${p.regular_price})\n` +
-              `   - Category: ${p.category}\n` +
-              `   - Availability: ${p.stock_status === 'instock' ? 'In Stock' : 'Out of Stock'}\n` +
-              `   - Health Benefits / Highlights: ${p.description}\n` +
-              `   - Store Link: /product/${p.slug}`
+              `${i + 1}. **${p.name}** — ₹${p.price}` +
+              (p.stock_status === 'instock' ? ' (In Stock)' : ' (Out of Stock)') +
+              (p.description ? `\n   ${p.description.slice(0, 120)}` : '')
           )
           .join('\n\n')
       : `No items found matching the exact budget of ₹${maxBudget}. Recommend the closest wholesome alternative.`;
@@ -465,10 +462,10 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
     formattedContext: [
       '### Customer Intent: Product Recommendation & Nutrition Search',
       maxBudget ? `### Customer Budget: Under ₹${maxBudget} (Prioritize products within this budget)` : '',
-      '### Live Store Products from Interesting (Real-Time In-Stock):',
+      '### Live Store Products (Real-Time):',
       productContextText,
       '',
-      'Instruction: In ONLY 1 or 2 short sentences (under 40 words!), recommend the top matching item(s) with price in ₹ and key benefit. Visual cards appear below, so keep text response very brief and direct!',
+      'Instruction: Reply in 1-2 sentences max (under 35 words). Mention product name and price only. DO NOT include any URLs, /product/ paths, slugs, or markdown links — interactive product cards with images and links already appear below your message automatically.',
     ]
       .filter(Boolean)
       .join('\n'),
