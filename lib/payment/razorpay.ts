@@ -64,12 +64,42 @@ export function verifyRazorpaySignature({ orderId, paymentId, signature }: Verif
       .update(text)
       .digest('hex');
 
-    return crypto.timingSafeEqual(
-      Buffer.from(expectedSignature, 'utf8'),
-      Buffer.from(signature, 'utf8')
-    );
+    const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+    const sigBuf = Buffer.from(signature, 'utf8');
+
+    if (expectedBuf.length !== sigBuf.length) return false;
+    return crypto.timingSafeEqual(expectedBuf, sigBuf);
   } catch (err) {
     console.error('Error verifying Razorpay signature:', err);
+    return false;
+  }
+}
+
+export interface VerifyWebhookParams {
+  rawBody: string;
+  signature: string;
+  secret: string;
+}
+
+export function verifyRazorpayWebhookSignature({ rawBody, signature, secret }: VerifyWebhookParams): boolean {
+  if (!secret || !signature) {
+    console.error('Webhook secret or signature missing.');
+    return false;
+  }
+
+  try {
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(rawBody, 'utf8')
+      .digest('hex');
+
+    const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+    const sigBuf = Buffer.from(signature, 'utf8');
+
+    if (expectedBuf.length !== sigBuf.length) return false;
+    return crypto.timingSafeEqual(expectedBuf, sigBuf);
+  } catch (err) {
+    console.error('Error verifying Razorpay webhook signature:', err);
     return false;
   }
 }

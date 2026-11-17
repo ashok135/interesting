@@ -38,7 +38,7 @@ import {
   Copy,
   ExternalLink,
 } from 'lucide-react';
-import type { OrderBilling } from '@/types';
+import type { OrderBilling, OrderPayload } from '@/types';
 import styles from './page.module.css';
 
 type CheckoutStep = 'auth' | 'address' | 'payment' | 'success';
@@ -370,12 +370,29 @@ export default function CheckoutPage() {
           throw new Error('Razorpay SDK failed to load. Please check your internet connection.');
         }
 
-        // 1. Create order on Next.js backend
+        // 1. Prepare order payload
+        const currentOrderPayload: OrderPayload = {
+          customer_id: user?.id,
+          billing: finalBilling,
+          shipping: finalBilling,
+          line_items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+          coupon_code: appliedCoupon?.code,
+          shipping_lines: [
+            {
+              method_id: delivery === 0 ? 'free_shipping' : 'flat_rate',
+              method_title: delivery === 0 ? 'Free Express Delivery' : 'Standard Delivery',
+              total: String(delivery),
+            },
+          ],
+        };
+
+        // 2. Create order on Next.js backend & register pending checkout
         const createRes = await fetch('/api/payment/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             amount: orderGrandTotal,
+            orderData: currentOrderPayload,
             notes: {
               customer_name: `${finalBilling.first_name} ${finalBilling.last_name}`.trim(),
               customer_phone: finalBilling.phone,
@@ -422,20 +439,7 @@ export default function CheckoutPage() {
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_signature: response.razorpay_signature,
-                  orderData: {
-                    customer_id: user?.id,
-                    billing: finalBilling,
-                    shipping: finalBilling,
-                    line_items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
-                    coupon_code: appliedCoupon?.code,
-                    shipping_lines: [
-                      {
-                        method_id: delivery === 0 ? 'free_shipping' : 'flat_rate',
-                        method_title: delivery === 0 ? 'Free Express Delivery' : 'Standard Delivery',
-                        total: String(delivery),
-                      },
-                    ],
-                  },
+                  orderData: currentOrderPayload,
                 }),
               });
 

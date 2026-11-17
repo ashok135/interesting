@@ -18,9 +18,9 @@ export interface OrderBilling {
 
 export interface OrderPayload {
   customer_id?: number;
-  payment_method: string;
-  payment_method_title: string;
-  set_paid: boolean;
+  payment_method?: string;
+  payment_method_title?: string;
+  set_paid?: boolean;
   billing: OrderBilling;
   shipping: OrderBilling;
   line_items: OrderLineItem[];
@@ -42,6 +42,8 @@ export interface WooOrder {
   id: number;
   status: string;
   total: string;
+  transaction_id?: string;
+  meta_data?: Array<{ id?: number; key: string; value: string }>;
   customer_id?: number;
   customer_note?: string;
   payment_method?: string;
