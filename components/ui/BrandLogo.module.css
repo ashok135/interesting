@@ -1,0 +1,23 @@
+.logoWrap {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.logoImg {
+  display: block;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease;
+}
+
+.logoWrap:hover .logoImg {
+  transform: scale(1.03);
+}
+
+/* In dark mode, brighten the organic logo lines so they stand out cleanly against dark backgrounds */
+:global([data-theme="dark"]) .logoImg {
+  filter: brightness(2.1) contrast(1.1) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}

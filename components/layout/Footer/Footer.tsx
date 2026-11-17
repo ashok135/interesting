@@ -21,7 +21,7 @@ export function Footer() {
           {/* Brand Col */}
           <div className={styles.brandCol}>
             <Link href="/" className={styles.brand} aria-label="INTERSTING Home">
-              <BrandLogo size={42} variant="horizontal" />
+              <BrandLogo size={52} variant="horizontal" />
             </Link>
 
             <p className={styles.tagline}>

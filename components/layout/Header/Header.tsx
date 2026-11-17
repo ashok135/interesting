@@ -60,7 +60,7 @@ export function Header() {
         <div className={styles.inner}>
           {/* Left: Brand Logo: INTERSTING */}
           <Link href="/" className={styles.brand} aria-label="INTERSTING Home">
-            <BrandLogo size={38} variant="horizontal" />
+            <BrandLogo size={42} variant="horizontal" />
           </Link>
 
           {/* Search Bar (Desktop: full center; Mobile: small, neat search bar beside user icon) */}
