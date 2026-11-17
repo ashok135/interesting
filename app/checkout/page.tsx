@@ -116,8 +116,10 @@ export default function CheckoutPage() {
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [addrError, setAddrError] = useState('');
   const [orderId, setOrderId] = useState<number | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   /* ── Preload Razorpay Checkout Script ── */
   useEffect(() => {
@@ -163,10 +165,10 @@ export default function CheckoutPage() {
           country: 'IN',
         });
       }
-    } else {
+    } else if (!isGuest) {
       setStep('auth');
     }
-  }, [user, customer, authLoading]);
+  }, [user, customer, authLoading, isGuest]);
 
   /* ── Redirect empty cart ── */
   useEffect(() => {
@@ -330,7 +332,14 @@ export default function CheckoutPage() {
     setPlacing(true);
     const addr = getAddr();
     if (!addr.address_1 || !addr.city || !addr.postcode) {
-      setOrderError('Please add a delivery address first.');
+      setOrderError('Please add a complete delivery address.');
+      setPlacing(false);
+      setStep('address');
+      return;
+    }
+    const cleanPhone = (addr.phone || '').replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setOrderError('Please enter a valid 10-digit mobile number for order delivery & SMS updates.');
       setPlacing(false);
       setStep('address');
       return;
@@ -574,9 +583,14 @@ export default function CheckoutPage() {
               <span style={{ color: '#16a34a', fontWeight: 700 }}>Confirmed &amp; Processing</span>
             </div>
           </div>
+          {isGuest && (
+            <p style={{ fontSize: '0.82rem', color: '#475569', textAlign: 'center', margin: '0.75rem 0 1rem', padding: '0.65rem 0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+              📱 Order updates and real-time dispatch tracking will be sent directly via SMS to your mobile.
+            </p>
+          )}
           <div className={styles.successActions}>
-            <Link href="/account" className={styles.successTrackBtn}>
-              <Package size={16} /> Track Order
+            <Link href={user ? "/account" : "/shop"} className={styles.successTrackBtn}>
+              <Package size={16} /> {user ? "Track Order" : "View More Products"}
             </Link>
             <Link href="/shop" className={styles.successShopBtn}>
               Continue Shopping <ArrowRight size={15} />
@@ -598,7 +612,7 @@ export default function CheckoutPage() {
         {/* ── Progress stepper ── */}
         <div className={styles.stepper}>
           {(['auth', 'address', 'payment'] as const).map((s, i) => {
-            const labels = ['Account', 'Address', 'Payment'];
+            const labels = [isGuest && !user ? 'Guest' : 'Account', 'Address', 'Payment'];
             const stepOrder = { auth: 0, address: 1, payment: 2, success: 3 };
             const current = stepOrder[step];
             const me = stepOrder[s];
@@ -747,10 +761,40 @@ export default function CheckoutPage() {
                   )}
                 </button>
 
-                <p className={styles.guestNote}>
-                  <Sparkles size={13} />
-                  Create an account to track orders, save addresses & get exclusive offers
-                </p>
+                {/* ── Guest Checkout Action ── */}
+                <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px dashed #e2e8f0', textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsGuest(true);
+                      setStep('address');
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.85rem 1rem',
+                      borderRadius: '12px',
+                      border: '1.5px solid #0d3821',
+                      background: '#f0fdf4',
+                      color: '#0d3821',
+                      fontWeight: 700,
+                      fontSize: '0.94rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#dcfce7'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#f0fdf4'; }}
+                  >
+                    <span>⚡ Continue as Guest (No Password Needed)</span>
+                    <ArrowRight size={16} />
+                  </button>
+                  <p style={{ margin: '0.55rem 0 0', fontSize: '0.78rem', color: '#64748b' }}>
+                    Quick express checkout. You will still receive full SMS order tracking updates.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -764,6 +808,56 @@ export default function CheckoutPage() {
                     <p className={styles.cardSubtitle}>Where should we deliver your order?</p>
                   </div>
                 </div>
+
+                {isGuest && !user && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.75rem 1rem',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    marginBottom: '1.25rem',
+                    fontSize: '0.85rem',
+                    color: '#334155',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{
+                        background: '#0d3821',
+                        color: '#fff',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        padding: '0.18rem 0.55rem',
+                        borderRadius: '999px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}>
+                        ⚡ Guest Checkout
+                      </span>
+                      <span>Express checkout without password</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsGuest(false);
+                        setStep('auth');
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#0d3821',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        fontSize: '0.82rem',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Sign in instead
+                    </button>
+                  </div>
+                )}
 
                 {hasSaved && (
                   <div className={styles.savedAddressToggle}>
@@ -883,10 +977,41 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+                {addrError && (
+                  <div className={styles.errorBox} style={{ marginBottom: '1rem' }}>
+                    <TriangleAlert size={14} /> {addrError}
+                  </div>
+                )}
+
                 <button type="button" className={styles.primaryBtn}
                   onClick={() => {
                     const a = getAddr();
-                    if (!a.address_1 || !a.city || !a.postcode) return;
+                    if (!a.first_name?.trim()) {
+                      setAddrError('Please enter your name.');
+                      return;
+                    }
+                    const cleanPhone = (a.phone || '').replace(/\D/g, '');
+                    if (!cleanPhone || cleanPhone.length < 10) {
+                      setAddrError('Please enter a valid 10-digit mobile number for delivery & SMS updates.');
+                      return;
+                    }
+                    if (!a.email?.trim() || !a.email.includes('@')) {
+                      setAddrError('Please enter a valid email address for order confirmation.');
+                      return;
+                    }
+                    if (!a.address_1?.trim()) {
+                      setAddrError('Please enter your house / flat / street address.');
+                      return;
+                    }
+                    if (!a.city?.trim()) {
+                      setAddrError('Please enter your city.');
+                      return;
+                    }
+                    if (!a.postcode?.trim() || a.postcode.trim().length < 6) {
+                      setAddrError('Please enter a valid 6-digit PIN code.');
+                      return;
+                    }
+                    setAddrError('');
                     setStep('payment');
                   }}>
                   Continue to Payment <ArrowRight size={16} />
@@ -909,7 +1034,7 @@ export default function CheckoutPage() {
                   <div className={styles.addrSummaryChip}>
                     <MapPin size={13} className={styles.addrChipIcon} />
                     <span className={styles.addrChipText}>
-                      Delivering to: {addrDisplay.address_1}, {addrDisplay.city} — {addrDisplay.postcode}
+                      Delivering to: {addrDisplay.first_name ? `${addrDisplay.first_name} ${addrDisplay.last_name || ''}`.trim() + ' • ' : ''}{addrDisplay.address_1}, {addrDisplay.city} — {addrDisplay.postcode}
                     </span>
                     <button type="button" className={styles.addrChipChange} onClick={() => setStep('address')}>
                       Change
