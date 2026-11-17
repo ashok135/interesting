@@ -4,6 +4,7 @@
  */
 
 import { wcFetch } from '@/lib/api/client';
+import { normalizeImageUrl } from '@/lib/api/products';
 import type { WooOrder } from '@/types';
 
 export interface WooCustomer {
@@ -149,13 +150,9 @@ export async function getOrCreateCustomer(data: CreateCustomerData): Promise<Woo
 
 function normalizeOrder(order: WooOrder): WooOrder {
   if (!order || !order.line_items) return order;
-  const prodWcUrl = (process.env.NEXT_PUBLIC_WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
   order.line_items = order.line_items.map((item) => {
-    if (item.image?.src && item.image.src.includes('/wp-content/uploads/')) {
-      const match = item.image.src.match(/\/wp-content\/uploads\/(.+)$/);
-      if (match) {
-        item.image.src = `${prodWcUrl}/wp-content/uploads/${match[1]}`;
-      }
+    if (item.image?.src) {
+      item.image.src = normalizeImageUrl(item.image.src);
     }
     return item;
   });

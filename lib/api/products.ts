@@ -76,17 +76,63 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Woo
 
 const PROD_WC_URL = (process.env.NEXT_PUBLIC_WC_URL || process.env.WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
 
+// Locally pre-optimized high-efficiency WebP product images
+const OPTIMIZED_PRODUCTS = new Set([
+  'hamper-casket-1',
+  'packaging-tin-seal-1',
+  'purity-quality-seal-1',
+  'hamper-gold',
+  'dryfruit-chikki',
+  'gourmet-laddu',
+  'trad-kajukatli-1',
+  'trail-mix-omega',
+  'dryfruit-berries',
+  'nuts-pistachios',
+  'nuts-almonds',
+  'nuts-cashews-1',
+  'makhana-roasted',
+  'roasted-chana-1',
+  'dryfruit-raisins-1',
+  'dryfruit-dates-1',
+  'dryfruit-anjeer',
+  'seeds-mix-1',
+  'seeds-pumpkin-1',
+  'seeds-chia-1',
+  'nuts-walnuts-1',
+]);
+
 export function normalizeImageUrl(url?: string | null): string {
   if (!url) return '';
   const cleanUrl = url.trim();
 
+  // Already a local path
+  if (cleanUrl.startsWith('/images/products/')) {
+    return cleanUrl;
+  }
+
+  // Match /wp-content/uploads/ or /api/media/
+  const match = cleanUrl.match(/(?:\/wp-content\/uploads\/|\/api\/media\/)(?:.*\/)?([^/]+)\.(?:jpe?g|png|webp)$/i);
+  if (match) {
+    const basename = match[1];
+    // If it is in our pre-compressed local WebP library, serve static asset instantly from server
+    if (OPTIMIZED_PRODUCTS.has(basename)) {
+      return `/images/products/${basename}.webp`;
+    }
+    // Otherwise route through our server media compression endpoint
+    const relativePath = cleanUrl
+      .replace(/^https?:\/\/[^/]+\/wp-content\/uploads\//, '')
+      .replace(/^\/wp-content\/uploads\//, '')
+      .replace(/^\/api\/media\//, '');
+    return `/api/media/${relativePath}`;
+  }
+
   // If already a full URL
   if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-    // Rewrite old local or tunnel domains to the production WooCommerce URL
+    // Rewrite old local or tunnel domains
     if (cleanUrl.includes('interesting.local') || cleanUrl.includes('localsite.io')) {
-      const match = cleanUrl.match(/\/wp-content\/uploads\/(.+)$/);
-      if (match) {
-        return `${PROD_WC_URL}/wp-content/uploads/${match[1]}`;
+      const m = cleanUrl.match(/\/wp-content\/uploads\/(.+)$/);
+      if (m) {
+        return `${PROD_WC_URL}/wp-content/uploads/${m[1]}`;
       }
     }
     // Ensure https for our domain
@@ -94,14 +140,6 @@ export function normalizeImageUrl(url?: string | null): string {
       return cleanUrl.replace('http://', 'https://');
     }
     return cleanUrl;
-  }
-
-  // Handle relative paths
-  if (cleanUrl.startsWith('/api/media/')) {
-    return `${PROD_WC_URL}/wp-content/uploads/${cleanUrl.replace('/api/media/', '')}`;
-  }
-  if (cleanUrl.startsWith('/wp-content/uploads/')) {
-    return `${PROD_WC_URL}${cleanUrl}`;
   }
 
   return cleanUrl;

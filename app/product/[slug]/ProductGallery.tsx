@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { normalizeImageUrl } from '@/lib/api/products';
 import { Badge } from '@/components/ui';
 import type { WooImage } from '@/types';
 import styles from './ProductGallery.module.css';
@@ -30,35 +31,23 @@ export function ProductGallery({
 
   // Guarantee at least 3 high quality images like Amazon & Flipkart
   const safeImages = useMemo(() => {
-    const prodWcUrl = (process.env.NEXT_PUBLIC_WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
-    const normalize = (src: string) => {
-      if (src && src.includes('/wp-content/uploads/')) {
-        const match = src.match(/\/wp-content\/uploads\/(.+)$/);
-        return match ? `${prodWcUrl}/wp-content/uploads/${match[1]}` : src;
-      }
-      if (src && src.startsWith('/api/media/')) {
-        return `${prodWcUrl}/wp-content/uploads/${src.replace('/api/media/', '')}`;
-      }
-      return src;
-    };
-
     const cleanImages = (images || []).map((img) => ({
       ...img,
-      src: normalize(img.src),
+      src: normalizeImageUrl(img.src),
     }));
 
     if (cleanImages.length >= 3) return cleanImages;
     if (cleanImages.length > 0) {
       const fallbackAngles = [
-        { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/11/packaging-tin-seal-1.jpg`, alt: `${productName} Airtight Vacuum Tin Packaging` },
-        { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/11/purity-quality-seal-1.jpg`, alt: `${productName} 100% Farm-Fresh Purity Harvest` },
+        { id: 1001, src: '/images/products/packaging-tin-seal-1.webp', alt: `${productName} Airtight Vacuum Tin Packaging` },
+        { id: 1002, src: '/images/products/purity-quality-seal-1.webp', alt: `${productName} 100% Farm-Fresh Purity Harvest` },
       ];
       return [...cleanImages, ...fallbackAngles].slice(0, 3);
     }
     return [
-      { id: 1000, src: `${prodWcUrl}/wp-content/uploads/2026/11/nuts-cashews-1.jpg`, alt: productName },
-      { id: 1001, src: `${prodWcUrl}/wp-content/uploads/2026/11/packaging-tin-seal-1.jpg`, alt: `${productName} Airtight Vacuum Tin Packaging` },
-      { id: 1002, src: `${prodWcUrl}/wp-content/uploads/2026/11/purity-quality-seal-1.jpg`, alt: `${productName} 100% Farm-Fresh Purity Harvest` },
+      { id: 1000, src: '/images/products/nuts-cashews-1.webp', alt: productName },
+      { id: 1001, src: '/images/products/packaging-tin-seal-1.webp', alt: `${productName} Airtight Vacuum Tin Packaging` },
+      { id: 1002, src: '/images/products/purity-quality-seal-1.webp', alt: `${productName} 100% Farm-Fresh Purity Harvest` },
     ];
   }, [images, productName]);
 
