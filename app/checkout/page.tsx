@@ -43,7 +43,7 @@ import styles from './page.module.css';
 
 type CheckoutStep = 'auth' | 'address' | 'payment' | 'success';
 type AuthMode = 'login' | 'signup';
-type PaymentMethod = 'cod' | 'upi';
+type PaymentMethod = 'razorpay' | 'cod' | 'upi';
 
 interface WooCommerceCoupon {
   id: number;
@@ -66,6 +66,24 @@ const EMPTY_ADDR: OrderBilling = {
   first_name: '', last_name: '', email: '', phone: '',
   address_1: '', address_2: '', city: '', state: '', postcode: '', country: 'IN',
 };
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(true));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -93,13 +111,18 @@ export default function CheckoutPage() {
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<WooCommerceCoupon | null>(null);
 
-  const [payMethod, setPayMethod] = useState<PaymentMethod>('cod');
+  const [payMethod, setPayMethod] = useState<PaymentMethod>('razorpay');
   const [upiRef, setUpiRef] = useState('');
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [orderId, setOrderId] = useState<number | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
+
+  /* ── Preload Razorpay Checkout Script ── */
+  useEffect(() => {
+    loadRazorpayScript();
+  }, []);
 
   /* ── Load WooCommerce live coupons ── */
   useEffect(() => {
@@ -324,7 +347,131 @@ export default function CheckoutPage() {
     const storeUpiId = process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi';
     const orderItemCount = items.reduce((sum, i) => sum + i.quantity, 0);
     const orderGrandTotal = grandTotal;
-    const orderPaymentTitle = payMethod === 'cod' ? 'Pay on Delivery (Cash / UPI)' : 'Direct UPI Transfer';
+    const orderPaymentTitle = payMethod === 'razorpay'
+      ? 'Online Payment (UPI / Cards / Netbanking via Razorpay)'
+      : payMethod === 'cod'
+      ? 'Pay on Delivery (Cash / UPI)'
+      : 'Direct UPI Transfer';
+
+    /* ── Razorpay Online Payment Flow ── */
+    if (payMethod === 'razorpay') {
+      try {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) {
+          throw new Error('Razorpay SDK failed to load. Please check your internet connection.');
+        }
+
+        // 1. Create order on Next.js backend
+        const createRes = await fetch('/api/payment/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: orderGrandTotal,
+            notes: {
+              customer_name: `${finalBilling.first_name} ${finalBilling.last_name}`.trim(),
+              customer_phone: finalBilling.phone,
+              items_count: String(orderItemCount),
+            },
+          }),
+        });
+
+        const rzpOrder = await createRes.json();
+        if (!createRes.ok || !rzpOrder.success) {
+          throw new Error(rzpOrder.error || 'Failed to initialize payment gateway order.');
+        }
+
+        // 2. Open Razorpay Checkout Modal
+        const options = {
+          key: rzpOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_U1ADQmS0qOpccj',
+          amount: rzpOrder.amount,
+          currency: rzpOrder.currency || 'INR',
+          name: 'Interesting Gourmet Pantry',
+          description: `Express Order (${orderItemCount} items)`,
+          image: '/images/squirrel-logo.png',
+          order_id: rzpOrder.orderId,
+          prefill: {
+            name: `${finalBilling.first_name} ${finalBilling.last_name}`.trim(),
+            email: finalBilling.email || 'guest@interestingstore.com',
+            contact: finalBilling.phone,
+          },
+          notes: {
+            delivery_city: finalBilling.city,
+            pincode: finalBilling.postcode,
+          },
+          theme: {
+            color: '#0d3821', // Forest Green
+          },
+          handler: async function (response: any) {
+            setPlacing(true);
+            setOrderError('');
+            try {
+              // 3. Cryptographically verify payment on server & confirm order
+              const verifyRes = await fetch('/api/payment/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  orderData: {
+                    customer_id: user?.id,
+                    billing: finalBilling,
+                    shipping: finalBilling,
+                    line_items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+                    coupon_code: appliedCoupon?.code,
+                    shipping_lines: [
+                      {
+                        method_id: delivery === 0 ? 'free_shipping' : 'flat_rate',
+                        method_title: delivery === 0 ? 'Free Express Delivery' : 'Standard Delivery',
+                        total: String(delivery),
+                      },
+                    ],
+                  },
+                }),
+              });
+
+              const verifyJson = await verifyRes.json();
+              if (!verifyRes.ok || !verifyJson.success) {
+                throw new Error(verifyJson.error || 'Payment verification failed. Please contact support.');
+              }
+
+              setConfirmedOrder({
+                id: verifyJson.order.id,
+                total: orderGrandTotal,
+                itemCount: orderItemCount,
+                paymentTitle: `Online Paid (Razorpay: ${response.razorpay_payment_id})`,
+              });
+              setOrderId(verifyJson.order.id);
+              setStep('success');
+              clearCart();
+              refresh?.();
+            } catch (vErr: any) {
+              setOrderError(vErr.message || 'Payment confirmation error.');
+            } finally {
+              setPlacing(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setPlacing(false);
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (resp: any) {
+          console.error('[Razorpay] Payment failed:', resp.error);
+          setOrderError(resp.error?.description || 'Payment was declined or cancelled. Please try again.');
+          setPlacing(false);
+        });
+        rzp.open();
+        return;
+      } catch (err: any) {
+        setOrderError(err.message || 'Failed to open Razorpay payment window.');
+        setPlacing(false);
+        return;
+      }
+    }
 
     if (payMethod === 'upi') {
       const cleanRef = upiRef.trim();
@@ -772,8 +919,27 @@ export default function CheckoutPage() {
 
                 <div className={styles.paymentOptions}>
                   {[
-                    { id: 'cod',  Icon: Banknote,   label: 'Pay on Delivery (Cash / UPI)',          sub: 'Pay at your doorstep via Cash or scan delivery partner UPI QR', badge: 'Most Popular' },
-                    { id: 'upi',  icon: 'UPI',       label: 'Direct UPI Transfer (GPay / PhonePe / Paytm)', sub: 'Scan QR code & enter 12-digit UPI Reference (UTR)', badge: 'Instant' },
+                    {
+                      id: 'razorpay',
+                      Icon: CreditCard,
+                      label: 'Online Payment (UPI, Cards, Netbanking)',
+                      sub: 'Instant & secure checkout via Razorpay • Supports Google Pay, PhonePe, Paytm, CRED, Cards, Netbanking',
+                      badge: 'Recommended',
+                    },
+                    {
+                      id: 'cod',
+                      Icon: Banknote,
+                      label: 'Pay on Delivery (Cash / UPI)',
+                      sub: 'Pay at your doorstep via Cash or scan delivery partner UPI QR upon arrival',
+                      badge: 'Cash / Scan',
+                    },
+                    {
+                      id: 'upi',
+                      icon: 'UPI',
+                      label: 'Direct Manual UPI Transfer',
+                      sub: 'Scan QR code & enter 12-digit UPI Reference (UTR)',
+                      badge: 'Manual QR',
+                    },
                   ].map((opt) => (
                     <label
                       key={opt.id}
@@ -799,6 +965,13 @@ export default function CheckoutPage() {
                     </label>
                   ))}
                 </div>
+
+                {payMethod === 'razorpay' && (
+                  <div className={styles.codNote}>
+                    <ShieldCheck size={18} />
+                    <span><strong>100% Encrypted &amp; Secure Payment:</strong> Powered by Razorpay. Complete your payment with any UPI App (GPay, PhonePe, Paytm, CRED), Debit/Credit Card, or 50+ Netbanking banks.</span>
+                  </div>
+                )}
 
                 {payMethod === 'cod' && (
                   <div className={styles.codNote}>
@@ -876,10 +1049,15 @@ export default function CheckoutPage() {
                 )}
 
                 <button type="button" className={styles.placeOrderBtn} onClick={placeOrder} disabled={placing}>
-                  {placing
-                    ? <><span className={styles.btnSpinner} /> Placing Order…</>
-                    : <><ShieldCheck size={17} /> Place Order — {formatPrice(grandTotal)}</>
-                  }
+                  {placing ? (
+                    <><span className={styles.btnSpinner} /> {payMethod === 'razorpay' ? 'Opening Razorpay…' : 'Placing Order…'}</>
+                  ) : payMethod === 'razorpay' ? (
+                    <><Lock size={17} /> Pay {formatPrice(grandTotal)} via Razorpay</>
+                  ) : payMethod === 'cod' ? (
+                    <><ShieldCheck size={17} /> Place Order (Pay on Delivery) — {formatPrice(grandTotal)}</>
+                  ) : (
+                    <><CheckCircle2 size={17} /> Confirm UPI Order — {formatPrice(grandTotal)}</>
+                  )}
                 </button>
               </div>
             )}
