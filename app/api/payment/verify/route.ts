@@ -61,11 +61,16 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Idempotent Order Confirmation (Prevents duplicates if Webhook arrived first)
+    const forwardedHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
+    const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
+    const requestOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : req.nextUrl.origin;
+
     const result = await confirmRazorpayOrder({
       razorpay_order_id,
       razorpay_payment_id,
       orderData,
       source: 'browser_verify',
+      originUrl: requestOrigin,
     });
 
     return NextResponse.json({

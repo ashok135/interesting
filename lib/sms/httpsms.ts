@@ -30,10 +30,25 @@ const PRODUCT_SLUGS_BY_ID: Record<number, string> = {
 
 /**
  * Resolves the public storefront URL for SMS links.
- * Prioritizes Vercel production domains so customers are directed to the live Next.js store,
- * rather than the raw WooCommerce WordPress backend.
+ * 1. Prioritizes explicitBaseUrl passed dynamically from incoming HTTP request headers (Host / X-Forwarded-Host).
+ * 2. Prioritizes Vercel production domains (VERCEL_PROJECT_PRODUCTION_URL).
+ * 3. Fallbacks to NEXT_PUBLIC_SITE_URL or VERCEL_URL.
  */
-export function getStorefrontUrl(): string {
+export function getStorefrontUrl(explicitBaseUrl?: string): string {
+  if (explicitBaseUrl) {
+    const cleaned = explicitBaseUrl.trim().replace(/\/$/, '');
+    if (cleaned.startsWith('http://localhost') || cleaned.startsWith('http://127.0.0.1')) {
+      return cleaned;
+    }
+    if (cleaned.startsWith('http://')) {
+      return cleaned.replace(/^http:\/\//, 'https://');
+    }
+    if (cleaned.startsWith('https://')) {
+      return cleaned;
+    }
+    return `https://${cleaned}`;
+  }
+
   const wcUrl = (process.env.NEXT_PUBLIC_WC_URL || '').replace(/\/$/, '');
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
 
@@ -42,7 +57,7 @@ export function getStorefrontUrl(): string {
     return siteUrl;
   }
 
-  // 2. Vercel production custom domain / primary project URL
+  // 2. Vercel production custom domain / primary project URL (auto-set by Vercel for your project)
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/$/, '');
   }
@@ -207,7 +222,10 @@ export async function sendHttpSms(options: SendSmsOptions): Promise<SmsResult> {
 /**
  * Sends an automated order confirmation SMS to the customer, and optionally an alert to the store admin.
  */
-export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
+export async function sendOrderConfirmationSms(
+  order: WooOrder,
+  originBaseUrl?: string
+): Promise<{
   customerSms: SmsResult;
   adminSms?: SmsResult;
 }> {
@@ -224,7 +242,7 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
   const primaryItem = items[0];
   const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-  const siteUrl = getStorefrontUrl();
+  const siteUrl = getStorefrontUrl(originBaseUrl);
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;
 
   const status = (order.status || '').toLowerCase();
@@ -304,7 +322,8 @@ const SILENT_STATUSES = new Set([
  */
 export async function sendOrderStatusUpdateSms(
   order: WooOrder,
-  newStatus?: string
+  newStatus?: string,
+  originBaseUrl?: string
 ): Promise<{ customerSms: SmsResult; adminSms?: SmsResult }> {
   const customerPhone = order.billing?.phone;
   const customerName = [order.billing?.first_name, order.billing?.last_name]
@@ -323,7 +342,7 @@ export async function sendOrderStatusUpdateSms(
     };
   }
 
-  const siteUrl = getStorefrontUrl();
+  const siteUrl = getStorefrontUrl(originBaseUrl);
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;
 
   const items = order.line_items || [];

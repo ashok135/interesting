@@ -29,6 +29,7 @@ export interface ConfirmOrderParams {
   razorpay_payment_id: string;
   orderData: OrderPayload;
   source?: 'browser_verify' | 'webhook';
+  originUrl?: string;
 }
 
 export interface ConfirmOrderResult {
@@ -41,6 +42,7 @@ export async function confirmRazorpayOrder({
   razorpay_payment_id,
   orderData,
   source = 'browser_verify',
+  originUrl,
 }: ConfirmOrderParams): Promise<ConfirmOrderResult> {
   // 1. Check idempotency: Has an order with this transaction_id already been created?
   try {
@@ -197,7 +199,7 @@ export async function confirmRazorpayOrder({
 
   // 6. Send Order Confirmation SMS
   try {
-    const smsResult = await sendOrderConfirmationSms(order);
+    const smsResult = await sendOrderConfirmationSms(order, originUrl);
     console.log(`[httpSMS] Razorpay Order #${order.id} (${source}) SMS sent:`, JSON.stringify(smsResult));
   } catch (smsErr) {
     console.error('[httpSMS] Error sending order SMS:', smsErr);

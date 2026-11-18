@@ -24,7 +24,11 @@ export async function GET(req: NextRequest) {
   const fromPhone = process.env.HTTPSMS_FROM_PHONE;
   const adminPhone = process.env.HTTPSMS_ADMIN_PHONE;
   const enabled = process.env.HTTPSMS_ENABLED !== 'false';
-  const siteUrl = getStorefrontUrl();
+
+  const forwardedHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
+  const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
+  const requestOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : req.nextUrl.origin;
+  const siteUrl = getStorefrontUrl(requestOrigin);
 
   const diagnostics = {
     configured: {
