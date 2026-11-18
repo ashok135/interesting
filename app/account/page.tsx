@@ -31,6 +31,9 @@ import {
   AlertCircle,
   AlertTriangle,
   Star,
+  Sparkles,
+  MessageCircle,
+  PhoneCall,
 } from 'lucide-react';
 import { useAuth } from '@/store/AuthContext';
 import { useToast } from '@/store/ToastContext';
@@ -120,6 +123,7 @@ function AccountContent() {
   const [activeTab, setActiveTab] = useState<TabKey>('orders');
   const [selectedOrder, setSelectedOrder] = useState<WooOrder | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState<WooOrder | null>(null);
+  const [orderHelpModal, setOrderHelpModal] = useState<WooOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('Ordered by mistake');
   const [cancelComments, setCancelComments] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
@@ -591,6 +595,111 @@ function AccountContent() {
     }
   };
 
+  const renderOrderHelpModal = () => {
+    if (!orderHelpModal) return null;
+    const order = orderHelpModal;
+    return (
+      <div className={styles.modalOverlay} onClick={() => setOrderHelpModal(null)}>
+        <div className={styles.helpModalCard} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.helpModalHeader}>
+            <div className={styles.helpModalHeaderLeft}>
+              <div className={styles.helpModalHeaderIcon}>
+                <Sparkles size={20} color="#16a34a" />
+              </div>
+              <div>
+                <h3 className={styles.helpModalTitle}>Need Help with Order #{order.id}?</h3>
+                <p className={styles.helpModalSub}>
+                  Total: {formatPrice(order.total)} • Placed on {new Date(order.date_created).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className={styles.helpModalCloseBtn}
+              onClick={() => setOrderHelpModal(null)}
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className={styles.helpModalBody}>
+            <p className={styles.helpModalDesc}>
+              Select how you would like to connect with us. Our AI chatbot and human care representatives are ready to help with tracking, delivery updates, and returns.
+            </p>
+
+            {/* Option 1: Chappie AI Assistant */}
+            <button
+              type="button"
+              className={styles.helpOptionBtnAI}
+              onClick={() => {
+                const targetOrder = order;
+                setOrderHelpModal(null);
+                window.dispatchEvent(
+                  new CustomEvent('open-ai-assistant', {
+                    detail: {
+                      message: `Hi Chappie! I need help with my Order #${targetOrder.id} (${formatPrice(targetOrder.total)}). Can you please check its status and delivery update?`,
+                      autoSend: true,
+                    },
+                  })
+                );
+              }}
+            >
+              <div className={styles.helpOptionIconWrapAI}>
+                <Sparkles size={22} color="#15803d" />
+              </div>
+              <div className={styles.helpOptionTextCol}>
+                <strong className={styles.helpOptionTitle}>Chat with Chappie AI</strong>
+                <span className={styles.helpOptionSubtitle}>
+                  Instant 24/7 answers regarding tracking, invoice &amp; delivery status
+                </span>
+              </div>
+              <ArrowRight size={18} className={styles.helpOptionArrow} />
+            </button>
+
+            {/* Option 2: WhatsApp Support */}
+            <a
+              href={`https://wa.me/919994847167?text=${encodeURIComponent(`Hi Interesting Support, I need help with my Order #${order.id} (Total: ${formatPrice(order.total)}). Please assist me.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.helpOptionBtn}
+              onClick={() => setOrderHelpModal(null)}
+            >
+              <div className={styles.helpOptionIconWrapWA}>
+                <MessageCircle size={22} color="#16a34a" />
+              </div>
+              <div className={styles.helpOptionTextCol}>
+                <strong className={styles.helpOptionTitle}>WhatsApp Support (+91 99948 47167)</strong>
+                <span className={styles.helpOptionSubtitle}>
+                  Connect directly with our dedicated customer care team on WhatsApp
+                </span>
+              </div>
+              <ArrowRight size={18} className={styles.helpOptionArrow} />
+            </a>
+
+            {/* Option 3: Direct Phone Call */}
+            <a
+              href="tel:+919994847167"
+              className={styles.helpOptionBtn}
+              onClick={() => setOrderHelpModal(null)}
+            >
+              <div className={styles.helpOptionIconWrapPhone}>
+                <PhoneCall size={22} color="#0284c7" />
+              </div>
+              <div className={styles.helpOptionTextCol}>
+                <strong className={styles.helpOptionTitle}>Direct Phone Call (+91 99948 47167)</strong>
+                <span className={styles.helpOptionSubtitle}>
+                  Call our customer care hotline directly for urgent inquiries
+                </span>
+              </div>
+              <ArrowRight size={18} className={styles.helpOptionArrow} />
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderOrderModal = () => {
     if (!selectedOrder) return null;
 
@@ -866,12 +975,17 @@ function AccountContent() {
 
             {/* Footer Actions */}
             <div className={styles.orderDetailFooter}>
-              <Link
-                href="/faq"
+              <button
+                type="button"
+                onClick={() => {
+                  const o = selectedOrder;
+                  setSelectedOrder(null);
+                  setOrderHelpModal(o);
+                }}
                 className={styles.helpActionBtn}
               >
                 <HelpCircle size={16} /> Need Help?
-              </Link>
+              </button>
 
               {canCancel && (
                 <button
@@ -934,6 +1048,7 @@ function AccountContent() {
           </div>
         </div>
         {renderOrderModal()}
+        {renderOrderHelpModal()}
       </div>
     );
   }
@@ -1128,6 +1243,18 @@ function AccountContent() {
                             <span className={styles.stripValueBold}>{formatPrice(order.total)}</span>
                           </div>
                           <div className={styles.stripCol}>
+                            <span className={styles.stripLabel}>PAYMENT</span>
+                            <span className={styles.stripValue} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600 }}>
+                              {order.payment_method === 'cod' ? (
+                                <span style={{ color: '#d97706' }}>💵 Pay on Delivery</span>
+                              ) : order.payment_method === 'bacs' ? (
+                                <span style={{ color: '#0284c7' }}>⚡ Direct UPI</span>
+                              ) : (
+                                <span style={{ color: '#16a34a' }}>💳 Paid Online</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className={styles.stripCol}>
                             <span className={styles.stripLabel}>SHIP TO</span>
                             <span className={styles.stripValue}>
                               {order.shipping?.first_name || order.billing.first_name || 'Customer'}{' '}
@@ -1212,12 +1339,21 @@ function AccountContent() {
                               </>
                             )}
                           </div>
-                          <span className={styles.paymentMethodTag}>
-                            {order.payment_method_title || (order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online Payment')}
-                          </span>
+                          <div className={styles.paymentMethodTagGroup}>
+                            <span className={styles.paymentMethodTag}>
+                              {order.payment_method === 'cod'
+                                ? '💵 Cash / UPI on Delivery'
+                                : order.payment_method === 'bacs'
+                                ? '⚡ Direct UPI Transfer'
+                                : `💳 Paid Online • ${order.payment_method_title || 'Razorpay'}`}
+                            </span>
+                            {order.payment_method !== 'cod' && !isCancelled && !isFailed && (
+                              <span className={styles.paymentVerifiedBadge}>✓ Paid</span>
+                            )}
+                          </div>
                         </div>
 
-                        {/* ── 3. 4-Stage Mini Progress Tracker ── */}
+                        {/* ── 3. 4-Stage Mini Progress Tracker (Rendered ONCE per order at top) ── */}
                         {isCancelled ? (
                           <div className={styles.miniTracker}>
                             <div className={`${styles.trackerStep} ${styles.trackerStepDone}`}>
@@ -1314,7 +1450,12 @@ function AccountContent() {
                           </div>
                         )}
 
-                        {/* ── 4. Product Items List with Photos ── */}
+                        {/* ── 4. Product Items List with Photos (All items in this order under the single tracking bar) ── */}
+                        <div className={styles.orderShipmentSummaryBar}>
+                          <span className={styles.orderShipmentLabel}>
+                            Package Contents ({order.line_items.length} {order.line_items.length === 1 ? 'Product' : 'Products'} • {order.line_items.reduce((acc, i) => acc + (i.quantity || 1), 0)} Total Units)
+                          </span>
+                        </div>
                         <div className={styles.cardItemsList}>
                           {order.line_items.map((item) => (
                             <div key={item.id} className={styles.amazonItemRow}>
@@ -1393,11 +1534,9 @@ function AccountContent() {
                           )}
                           <button
                             type="button"
-                            onClick={() => {
-                              const msg = `Hi, I need assistance with Order #${order.id} placed on Interesting.`;
-                              window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-                            }}
+                            onClick={() => setOrderHelpModal(order)}
                             className={styles.helpBtn}
+                            title="Help with this order"
                           >
                             <HelpCircle size={14} /> Help
                           </button>
@@ -1878,6 +2017,9 @@ function AccountContent() {
 
       {/* Order Details & Tracking Modal */}
       {renderOrderModal()}
+
+      {/* Order Help Modal (Chappie AI + WhatsApp + Call) */}
+      {renderOrderHelpModal()}
 
       {/* ── Cancel Order Customer Confirmation Modal ── */}
       {cancellingOrder && (
