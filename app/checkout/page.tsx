@@ -85,6 +85,30 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
+function RazorpayIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+      aria-label="Razorpay"
+    >
+      <rect width="32" height="32" rx="7" fill="#0C2340" />
+      <path
+        d="M22.8 5.2L13.2 11.4L12.3 14.8L17.6 11.3L13.7 24.2L22.8 11.7H18.4L22.8 5.2Z"
+        fill="#0284C7"
+      />
+      <path
+        d="M11.5 17L9.9 22.4L16.9 12.7H13.5L16.6 8L9.8 12.4L9.1 15L13 12.5L11.5 17Z"
+        fill="#38BDF8"
+      />
+    </svg>
+  );
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, total, clearCart } = useCartContext();
@@ -1050,7 +1074,7 @@ export default function CheckoutPage() {
                   {[
                     {
                       id: 'razorpay',
-                      Icon: CreditCard,
+                      Icon: RazorpayIcon,
                       label: 'Online Payment (UPI, Cards, Netbanking)',
                       sub: 'Instant & secure checkout via Razorpay • Supports Google Pay, PhonePe, Paytm, CRED, Cards, Netbanking',
                       badge: 'Recommended',
@@ -1097,7 +1121,7 @@ export default function CheckoutPage() {
 
                 {payMethod === 'razorpay' && (
                   <div className={styles.codNote}>
-                    <ShieldCheck size={18} />
+                    <RazorpayIcon size={20} />
                     <span><strong>100% Encrypted &amp; Secure Payment:</strong> Powered by Razorpay. Complete your payment with any UPI App (GPay, PhonePe, Paytm, CRED), Debit/Credit Card, or 50+ Netbanking banks.</span>
                   </div>
                 )}
@@ -1181,7 +1205,7 @@ export default function CheckoutPage() {
                   {placing ? (
                     <><span className={styles.btnSpinner} /> {payMethod === 'razorpay' ? 'Opening Razorpay…' : 'Placing Order…'}</>
                   ) : payMethod === 'razorpay' ? (
-                    <><Lock size={17} /> Pay {formatPrice(grandTotal)} via Razorpay</>
+                    <><RazorpayIcon size={18} /> Pay {formatPrice(grandTotal)} via Razorpay</>
                   ) : payMethod === 'cod' ? (
                     <><ShieldCheck size={17} /> Place Order (Pay on Delivery) — {formatPrice(grandTotal)}</>
                   ) : (

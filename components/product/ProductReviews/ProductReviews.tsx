@@ -27,7 +27,7 @@ export default function ProductReviews({
   productName,
   initialReviews = [],
 }: ProductReviewsProps) {
-  const { user } = useAuth();
+  const { user, orders } = useAuth();
   const { showSuccess, showError } = useToast();
 
   const [reviews, setReviews] = useState<WooReview[]>(initialReviews);
@@ -49,6 +49,29 @@ export default function ProductReviews({
       if (!reviewerEmail && user.email) setReviewerEmail(user.email);
     }
   }, [user, reviewer, reviewerEmail]);
+
+  // Strict Amazon/Flipkart Check: ONLY buyers with a completed/delivered order can review
+  const hasPurchasedAndReceived = Boolean(
+    user &&
+    Array.isArray(orders) &&
+    orders.some((order) => {
+      const isCompleted = (order.status || '').toLowerCase() === 'completed';
+      const hasItem = Array.isArray(order.line_items) && order.line_items.some(
+        (item) => Number(item.product_id || item.id) === Number(productId)
+      );
+      return isCompleted && hasItem;
+    })
+  );
+
+  const alreadyReviewed = Boolean(
+    user &&
+    reviews.some(
+      (r) =>
+        Number(r.product_id) === Number(productId) &&
+        ((r.reviewer_email && user.email && r.reviewer_email.toLowerCase() === user.email.toLowerCase()) ||
+         (r.reviewer && user.name && r.reviewer.toLowerCase() === user.name.toLowerCase()))
+    )
+  );
 
   // Derived metrics
   const totalReviews = reviews.length;
@@ -168,20 +191,41 @@ export default function ProductReviews({
             <span className={styles.badge}>{totalReviews} verified {totalReviews === 1 ? 'rating' : 'ratings'}</span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setShowForm((prev) => !prev);
-            setVerifiedError(null);
-          }}
-          className={styles.writeBtn}
-        >
-          {showForm ? 'Cancel Review' : (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <PenLine size={16} /> Write a Review
+        {/* ONLY customers who bought and received the product can see and open the review form! */}
+        {hasPurchasedAndReceived ? (
+          alreadyReviewed ? (
+            <span className={styles.alreadyReviewedBadge}>
+              <CheckCircle2 size={15} /> Verified Review Submitted
             </span>
-          )}
-        </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm((prev) => !prev);
+                setVerifiedError(null);
+              }}
+              className={styles.writeBtn}
+            >
+              {showForm ? 'Cancel Review' : (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <PenLine size={16} /> Write a Review
+                </span>
+              )}
+            </button>
+          )
+        ) : !user ? (
+          <div className={styles.verifiedNoticeBadge}>
+            <ShieldCheck size={16} className={styles.verifiedShieldIcon} />
+            <span>
+              Bought this harvest? <Link href="/login" className={styles.loginReviewLink}>Sign in</Link> to review.
+            </span>
+          </div>
+        ) : (
+          <div className={styles.verifiedNoticeBadge}>
+            <ShieldCheck size={16} className={styles.verifiedShieldIcon} />
+            <span>Verified Buyers Only</span>
+          </div>
+        )}
       </div>
 
       {/* Amazon-style Verified Purchase Trust Banner */}
@@ -193,8 +237,8 @@ export default function ProductReviews({
         </div>
       </div>
 
-      {/* Write Review Form */}
-      {showForm && (
+      {/* Write Review Form - Only visible if customer actually bought the product */}
+      {hasPurchasedAndReceived && showForm && (
         <div className={styles.formCard}>
           <h3 className={styles.formTitle}>Review {productName}</h3>
           <p className={styles.formSubtitle}>
