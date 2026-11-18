@@ -128,6 +128,8 @@ export default function AiAssistant() {
 
   // Sync with mobile bottom navigation capsule & floating cart bar
   const [isCapsuleVisible, setIsCapsuleVisible] = useState(true);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [visualHeight, setVisualHeight] = useState<number | null>(null);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -221,16 +223,65 @@ export default function AiAssistant() {
     setShowRemoveZone(false);
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
+
+  // Mobile virtual keyboard handling and background scroll lock
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return;
+
+    // Lock background body scroll while chat modal is open on mobile
+    const origOverflow = document.body.style.overflow;
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      document.body.style.overflow = 'hidden';
+    }
+
+    const vv = window.visualViewport;
+    const handleViewportChange = () => {
+      if (!vv) return;
+      const keyboardActive = window.innerHeight - vv.height > 100;
+      setIsKeyboardOpen(keyboardActive);
+      setVisualHeight(vv.height);
+      // Keep messages visible right above the virtual keyboard
+      setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 50);
+    };
+
+    if (vv) {
+      handleViewportChange();
+      vv.addEventListener('resize', handleViewportChange);
+      vv.addEventListener('scroll', handleViewportChange);
+    }
+
+    return () => {
+      document.body.style.overflow = origOverflow;
+      if (vv) {
+        vv.removeEventListener('resize', handleViewportChange);
+        vv.removeEventListener('scroll', handleViewportChange);
+      }
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
-      scrollToBottom();
-      setTimeout(() => inputRef.current?.focus(), 150);
+      scrollToBottom('auto');
+      // On mobile devices, DO NOT auto-focus input so the keyboard doesn't abruptly pop up
+      // and hide the welcome text and starter prompt chips! Only auto-focus on desktop keyboards.
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+      if (!isMobile) {
+        setTimeout(() => inputRef.current?.focus(), 150);
+      }
     }
-  }, [isOpen, messages, isLoading]);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom('smooth');
+    }
+  }, [messages, isLoading, isOpen]);
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || input).trim();
@@ -387,6 +438,7 @@ export default function AiAssistant() {
       {isOpen && (
         <div
           className={styles.chatWindow}
+          style={visualHeight && typeof window !== 'undefined' && window.innerWidth <= 768 ? { height: `${visualHeight}px` } : undefined}
           role="dialog"
           aria-modal="true"
         >
@@ -538,7 +590,7 @@ export default function AiAssistant() {
           </div>
 
           {/* Footer Input */}
-          <div className={styles.chatFooter}>
+          <div className={`${styles.chatFooter} ${isKeyboardOpen ? styles.chatFooterKeyboard : ''}`}>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -551,6 +603,19 @@ export default function AiAssistant() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onFocus={() => {
+                  setIsKeyboardOpen(true);
+                  setTimeout(() => scrollToBottom('smooth'), 120);
+                }}
+                onBlur={() => {
+                  setTimeout(() => {
+                    if (typeof window !== 'undefined' && window.visualViewport) {
+                      setIsKeyboardOpen(window.innerHeight - window.visualViewport.height > 100);
+                    } else {
+                      setIsKeyboardOpen(false);
+                    }
+                  }, 120);
+                }}
                 placeholder="Ask about nutrition, gifts, prices..."
                 className={styles.chatInput}
                 disabled={isLoading}
