@@ -18,6 +18,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://intersting.duckdns.org'),
   title: {
     default: 'Interesting — Gourmet Quick Pantry',
     template: '%s | Interesting',
