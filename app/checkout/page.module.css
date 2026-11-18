@@ -732,6 +732,130 @@
   gap: 0.5rem;
 }
 
+.addressSectionSubtitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+  margin: 0 0 0.5rem;
+}
+
+.savedAddressesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.addAddressCheckoutBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, var(--color-brand-green, #14532d) 0%, #166534 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(20, 83, 45, 0.2);
+}
+
+.addAddressCheckoutBtn:hover {
+  background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+  transform: translateY(-1px);
+}
+
+.newAddressTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.newAddressFormTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+}
+
+.closeNewAddrBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #64748b);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.closeNewAddrBtn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.tagPickerWrap {
+  margin-bottom: 0.85rem;
+}
+
+.tagOptionsRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.tagOptionBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface, #fff);
+  border: 1.5px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tagOptionBtn:hover {
+  border-color: #94a3b8;
+  color: var(--color-text, #0f172a);
+}
+
+.tagOptionActive {
+  background: #0d3821 !important;
+  color: #fff !important;
+  border-color: #0d3821 !important;
+}
+
+.saveAddressCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text, #334155);
+  cursor: pointer;
+  margin: 0.4rem 0 0.2rem;
+}
+
+.addrCheckbox {
+  accent-color: #16a34a;
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+}
+
 .savedAddressOption {
   background: var(--color-surface, #fff);
   border: 1.5px solid var(--color-border, #e2e8f0);
@@ -2009,6 +2133,35 @@
 
 [data-theme="dark"] .newAddrHeading {
   color: #f1f5f9;
+}
+
+[data-theme="dark"] .newAddressFormTitle {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .tagOptionBtn {
+  background: #151f32;
+  border-color: #243048;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .tagOptionBtn:hover {
+  border-color: #38bdf8;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .tagOptionActive {
+  background: #22c55e !important;
+  color: #022c22 !important;
+  border-color: #22c55e !important;
+}
+
+[data-theme="dark"] .saveAddressCheckboxLabel {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .closeNewAddrBtn {
+  color: #94a3b8;
 }
 
 [data-theme="dark"] .deliverToThisBtn {

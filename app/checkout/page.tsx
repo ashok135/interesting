@@ -37,6 +37,9 @@ import {
   Navigation,
   Copy,
   ExternalLink,
+  Home,
+  Briefcase,
+  Check,
 } from 'lucide-react';
 import type { OrderBilling, OrderPayload } from '@/types';
 import styles from './page.module.css';
@@ -60,6 +63,21 @@ interface ConfirmedOrder {
   total: number;
   itemCount: number;
   paymentTitle: string;
+}
+
+export interface SavedAddress {
+  id: string;
+  tag: 'Home' | 'Work' | 'Other';
+  firstName: string;
+  lastName: string;
+  address1: string;
+  address2: string;
+  city: string;
+  state: string;
+  postcode: string;
+  country: string;
+  phone: string;
+  isDefault: boolean;
 }
 
 const EMPTY_ADDR: OrderBilling = {
@@ -145,6 +163,11 @@ export default function CheckoutPage() {
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isChangingAddress, setIsChangingAddress] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [saveToAccount, setSaveToAccount] = useState(true);
+  const [addrTag, setAddrTag] = useState<'Home' | 'Work' | 'Other'>('Home');
 
   /* ── Preload Razorpay Checkout Script ── */
   useEffect(() => {
@@ -168,12 +191,53 @@ export default function CheckoutPage() {
   const [locError, setLocError] = useState('');
   const [locSuccess, setLocSuccess] = useState(false);
 
-  /* ── Auto-advance step on auth change ── */
+  /* ── Auto-advance step on auth change & load saved addresses ── */
   useEffect(() => {
     if (authLoading) return;
     if (user) {
       setStep('payment');
-      const hasAddr = !!(customer?.shipping?.address_1 || customer?.billing?.address_1);
+
+      // 1. Load addresses from localStorage
+      const storageKey = `intersting_saved_addresses_${user.id}`;
+      let loaded: SavedAddress[] = [];
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) loaded = JSON.parse(stored);
+      } catch {
+        loaded = [];
+      }
+
+      // 2. If no saved addresses exist yet in localStorage, populate from customer shipping/billing
+      if (loaded.length === 0 && (customer?.shipping?.address_1 || customer?.billing?.address_1)) {
+        const s = customer?.shipping;
+        const b = customer?.billing;
+        const primaryAddr: SavedAddress = {
+          id: 'wc-default',
+          tag: 'Home',
+          firstName: s?.first_name || b?.first_name || user.name?.split(' ')[0] || '',
+          lastName: s?.last_name || b?.last_name || user.name?.split(' ').slice(1).join(' ') || '',
+          address1: s?.address_1 || b?.address_1 || '',
+          address2: s?.address_2 || b?.address_2 || '',
+          city: s?.city || b?.city || '',
+          state: s?.state || b?.state || '',
+          postcode: s?.postcode || b?.postcode || '',
+          country: s?.country || 'IN',
+          phone: b?.phone || '',
+          isDefault: true,
+        };
+        loaded = [primaryAddr];
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(loaded));
+        } catch {}
+      }
+
+      setSavedAddresses(loaded);
+      const def = loaded.find((a) => a.isDefault) || loaded[0];
+      if (def) {
+        setSelectedAddressId(def.id);
+      }
+
+      const hasAddr = loaded.length > 0 || !!(customer?.shipping?.address_1 || customer?.billing?.address_1);
       if (customer) {
         const s = customer.shipping;
         const b = customer.billing;
@@ -214,12 +278,29 @@ export default function CheckoutPage() {
   const grandTotal = Math.max(0, subtotal + delivery - discount);
 
   /* ── Saved address ── */
-  const hasSaved = !!(customer?.shipping?.address_1 || customer?.billing?.address_1);
+  const hasSaved = savedAddresses.length > 0 || !!(customer?.shipping?.address_1 || customer?.billing?.address_1);
 
   function getAddr(): OrderBilling {
-    if (hasSaved && addressMode === 'saved') {
-      const s = customer!.shipping;
-      const b = customer!.billing;
+    if (!isAddingNew && selectedAddressId) {
+      const found = savedAddresses.find((a) => a.id === selectedAddressId);
+      if (found) {
+        return {
+          first_name: found.firstName || user?.name?.split(' ')[0] || '',
+          last_name:  found.lastName  || user?.name?.split(' ').slice(1).join(' ') || '',
+          email:      user?.email     || addrForm.email || '',
+          phone:      found.phone     || addrForm.phone || '',
+          address_1:  found.address1  || '',
+          address_2:  found.address2  || '',
+          city:       found.city      || '',
+          state:      found.state     || '',
+          postcode:   found.postcode  || '',
+          country:    found.country   || 'IN',
+        };
+      }
+    }
+    if (hasSaved && addressMode === 'saved' && customer) {
+      const s = customer.shipping;
+      const b = customer.billing;
       return {
         first_name: s?.first_name || b?.first_name || user?.name?.split(' ')[0] || '',
         last_name:  s?.last_name  || b?.last_name  || user?.name?.split(' ').slice(1).join(' ') || '',
@@ -640,6 +721,7 @@ export default function CheckoutPage() {
   if (items.length === 0 && !confirmedOrder) return null;
 
   const addrDisplay = getAddr();
+  const activeSaved = savedAddresses.find((a) => a.id === selectedAddressId) || savedAddresses[0];
   const hasSelectedValidAddr = !!(
     addrDisplay.first_name?.trim() &&
     addrDisplay.phone?.trim() &&
@@ -652,32 +734,36 @@ export default function CheckoutPage() {
     <div className={styles.page}>
       <div className={styles.inner}>
 
-        {/* ── Progress stepper (2 steps: Account ── Delivery & Payment) ── */}
+        {/* ── Progress stepper (3 steps: Account ── Address ── Payment) ── */}
         <div className={styles.stepper}>
-          {[
-            { id: 'auth', label: isGuest && !user ? 'Guest' : 'Account' },
-            { id: 'payment', label: 'Delivery & Payment' },
-          ].map((s, i) => {
-            const isDone = s.id === 'auth' && (!!user || isGuest) && step === 'payment';
-            const isActive = step === s.id;
+          {(['auth', 'address', 'payment'] as const).map((s, i) => {
+            const labels = [isGuest && !user ? 'Guest' : 'Account', 'Address', 'Payment'];
+            const stepOrder = { auth: 0, address: 1, payment: 2, success: 3 };
+            const current = stepOrder[step];
+            const me = stepOrder[s];
+            const isActive = step === s;
+            const isDone = current > me || (step === 'payment' && (s === 'auth' || s === 'address'));
             return (
-              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <button
                   type="button"
                   onClick={() => {
-                    if (isDone && s.id === 'auth') {
+                    if (s === 'auth' && (user || isGuest)) {
                       setIsGuest(false);
                       setStep('auth');
+                    } else if (s === 'address' && step === 'payment') {
+                      setIsChangingAddress(true);
+                      setIsAddingNew(false);
                     }
                   }}
-                  disabled={!isDone}
+                  disabled={!isDone && !isActive}
                   className={`${styles.stepPill} ${isActive ? styles.stepActive : ''} ${isDone ? styles.stepDone : ''} ${isDone ? styles.stepClickable : ''}`}
-                  title={isDone ? `Switch ${s.label}` : undefined}
+                  title={isDone ? `Change ${labels[i]}` : undefined}
                 >
                   {isDone ? <CheckCircle2 size={14} /> : <span className={styles.stepNum}>{i + 1}</span>}
-                  <span>{s.label}</span>
+                  <span>{labels[i]}</span>
                 </button>
-                {i < 1 && <div className={`${styles.stepLine} ${isDone ? styles.stepLineDone : ''}`} />}
+                {i < 2 && <div className={`${styles.stepLine} ${isDone ? styles.stepLineDone : ''}`} />}
               </div>
             );
           })}
@@ -902,7 +988,10 @@ export default function CheckoutPage() {
                     <div className={styles.deliverToCard}>
                       <div className={styles.deliverToTop}>
                         <div className={styles.deliverToBadgeWrap}>
-                          <span className={styles.deliverToTag}><MapPin size={11} /> Deliver to</span>
+                          <span className={styles.deliverToTag}>
+                            {activeSaved?.tag === 'Work' ? <Briefcase size={11} /> : <MapPin size={11} />}
+                            Deliver to ({activeSaved?.tag || 'Home'})
+                          </span>
                           <span className={styles.deliverToName}>
                             {[addrDisplay.first_name, addrDisplay.last_name].filter(Boolean).join(' ') || 'Customer'}
                           </span>
@@ -910,16 +999,6 @@ export default function CheckoutPage() {
                             <span className={styles.deliverToPhone}>• {addrDisplay.phone}</span>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          className={styles.deliverToChangeInlineBtn}
-                          onClick={() => {
-                            setIsChangingAddress(true);
-                            setAddrError('');
-                          }}
-                        >
-                          Change
-                        </button>
                       </div>
                       <p className={styles.deliverToAddressText}>
                         {addrDisplay.address_1}
@@ -929,87 +1008,139 @@ export default function CheckoutPage() {
                   ) : (
                     /* Inline Address Selector / Form (No page navigation or screen conflict) */
                     <div className={styles.addressEditorPanel}>
-                      {hasSaved && (
+                      {savedAddresses.length > 0 && (
                         <div className={styles.savedAddressPickSection}>
-                          <div
-                            className={`${styles.savedAddressOption} ${addressMode === 'saved' ? styles.savedAddressOptionActive : ''}`}
-                            onClick={() => {
-                              setAddressMode('saved');
-                              setAddrError('');
-                            }}
-                          >
-                            <div className={styles.savedAddrOptionLeft}>
-                              <input
-                                type="radio"
-                                id="addr-pick-saved"
-                                name="addressSelection"
-                                checked={addressMode === 'saved'}
-                                onChange={() => {
-                                  setAddressMode('saved');
-                                  setAddrError('');
-                                }}
-                                className={styles.addrRadio}
-                              />
-                              <label htmlFor="addr-pick-saved" className={styles.savedAddrOptionLabel}>
-                                <div className={styles.savedAddrTagWrap}>
-                                  <span className={styles.savedAddrTag}><MapPin size={11} /> Saved Address</span>
-                                  <span className={styles.savedAddrName}>
-                                    {[customer?.shipping?.first_name || customer?.billing?.first_name, customer?.shipping?.last_name || customer?.billing?.last_name].filter(Boolean).join(' ') || user?.name || 'Customer'}
-                                  </span>
-                                  {customer?.billing?.phone && (
-                                    <span className={styles.savedAddrPhone}>• {customer.billing.phone}</span>
+                          <p className={styles.addressSectionSubtitle}>Select a saved delivery address:</p>
+                          <div className={styles.savedAddressesList}>
+                            {savedAddresses.map((addr) => {
+                              const isSelected = selectedAddressId === addr.id && !isAddingNew;
+                              return (
+                                <div
+                                  key={addr.id}
+                                  className={`${styles.savedAddressOption} ${isSelected ? styles.savedAddressOptionActive : ''}`}
+                                  onClick={() => {
+                                    setSelectedAddressId(addr.id);
+                                    setIsAddingNew(false);
+                                    setAddrError('');
+                                  }}
+                                >
+                                  <div className={styles.savedAddrOptionLeft}>
+                                    <input
+                                      type="radio"
+                                      id={`addr-${addr.id}`}
+                                      name="addressSelection"
+                                      checked={isSelected}
+                                      onChange={() => {
+                                        setSelectedAddressId(addr.id);
+                                        setIsAddingNew(false);
+                                        setAddrError('');
+                                      }}
+                                      className={styles.addrRadio}
+                                    />
+                                    <label htmlFor={`addr-${addr.id}`} className={styles.savedAddrOptionLabel}>
+                                      <div className={styles.savedAddrTagWrap}>
+                                        <span className={styles.savedAddrTag}>
+                                          {addr.tag === 'Home' && <Home size={11} />}
+                                          {addr.tag === 'Work' && <Briefcase size={11} />}
+                                          {addr.tag === 'Other' && <MapPin size={11} />}
+                                          {addr.tag}
+                                        </span>
+                                        <span className={styles.savedAddrName}>
+                                          {[addr.firstName, addr.lastName].filter(Boolean).join(' ') || 'Customer'}
+                                        </span>
+                                        {addr.phone && (
+                                          <span className={styles.savedAddrPhone}>• {addr.phone}</span>
+                                        )}
+                                      </div>
+                                      <p className={styles.savedAddrText}>
+                                        {addr.address1}
+                                        {addr.address2 ? `, ${addr.address2}` : ''}, {addr.city}, {addr.state} — {addr.postcode}
+                                      </p>
+                                    </label>
+                                  </div>
+                                  {isSelected && (
+                                    <button
+                                      type="button"
+                                      className={styles.deliverHereBtn}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedAddressId(addr.id);
+                                        setIsAddingNew(false);
+                                        setIsChangingAddress(false);
+                                        setAddrError('');
+                                      }}
+                                    >
+                                      Deliver Here
+                                    </button>
                                   )}
                                 </div>
-                                <p className={styles.savedAddrText}>
-                                  {customer?.shipping?.address_1 || customer?.billing?.address_1}
-                                  {(customer?.shipping?.address_2 || customer?.billing?.address_2) ? `, ${customer?.shipping?.address_2 || customer?.billing?.address_2}` : ''}, {customer?.shipping?.city || customer?.billing?.city}, {customer?.shipping?.state || customer?.billing?.state} — {customer?.shipping?.postcode || customer?.billing?.postcode}
-                                </p>
-                              </label>
-                            </div>
-                            {addressMode === 'saved' && (
-                              <button
-                                type="button"
-                                className={styles.deliverHereBtn}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAddressMode('saved');
-                                  setIsChangingAddress(false);
-                                  setAddrError('');
-                                }}
-                              >
-                                Deliver Here
-                              </button>
-                            )}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
 
-                      {/* New Address / Alternate Address Section */}
-                      <div className={styles.newAddressSection}>
-                        <div
-                          className={`${styles.newAddressHeaderRow} ${addressMode === 'new' ? styles.newAddressHeaderRowActive : ''}`}
-                          onClick={() => {
-                            setAddressMode('new');
-                            setAddrError('');
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            id="addr-pick-new"
-                            name="addressSelection"
-                            checked={!hasSaved || addressMode === 'new'}
-                            onChange={() => {
-                              setAddressMode('new');
+                      {/* "+ Add New Address" button styled like the account page */}
+                      {!isAddingNew && (
+                        <div style={{ marginTop: '0.25rem' }}>
+                          <button
+                            type="button"
+                            className={styles.addAddressCheckoutBtn}
+                            onClick={() => {
+                              setIsAddingNew(true);
+                              setAddrForm({
+                                ...EMPTY_ADDR,
+                                email: user?.email || '',
+                                first_name: user?.name?.split(' ')[0] || '',
+                                last_name: user?.name?.split(' ').slice(1).join(' ') || '',
+                              });
                               setAddrError('');
                             }}
-                            className={styles.addrRadio}
-                          />
-                          <label htmlFor="addr-pick-new" className={styles.newAddrHeading}>
-                            {hasSaved ? 'Deliver to a different address' : 'Enter Delivery Address'}
-                          </label>
+                          >
+                            <Plus size={16} /> Add New Address
+                          </button>
                         </div>
+                      )}
 
-                        {(!hasSaved || addressMode === 'new') && (
+                      {/* New Address Form (Expands when "+ Add New Address" is clicked or when no saved addresses exist) */}
+                      {(isAddingNew || savedAddresses.length === 0) && (
+                        <div className={styles.newAddressSection}>
+                          <div className={styles.newAddressTitleRow}>
+                            <h4 className={styles.newAddressFormTitle}>Add New Delivery Address</h4>
+                            {savedAddresses.length > 0 && (
+                              <button
+                                type="button"
+                                className={styles.closeNewAddrBtn}
+                                onClick={() => {
+                                  setIsAddingNew(false);
+                                  setAddrError('');
+                                }}
+                              >
+                                <X size={15} /> Close
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Address Type Tag Picker (Home, Work, Other) */}
+                          <div className={styles.tagPickerWrap}>
+                            <label className={styles.inputLabel}>Address Tag</label>
+                            <div className={styles.tagOptionsRow}>
+                              {(['Home', 'Work', 'Other'] as const).map((t) => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  className={`${styles.tagOptionBtn} ${addrTag === t ? styles.tagOptionActive : ''}`}
+                                  onClick={() => setAddrTag(t)}
+                                >
+                                  {t === 'Home' && <Home size={13} />}
+                                  {t === 'Work' && <Briefcase size={13} />}
+                                  {t === 'Other' && <MapPin size={13} />}
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
                           <div className={styles.addrFormInner}>
                             <div className={styles.row2}>
                               <div className={styles.inputGroup}>
@@ -1138,6 +1269,19 @@ export default function CheckoutPage() {
                               </div>
                             </div>
 
+                            {/* "Save as new address" Checkbox */}
+                            {user && (
+                              <label className={styles.saveAddressCheckboxLabel}>
+                                <input
+                                  type="checkbox"
+                                  checked={saveToAccount}
+                                  onChange={(e) => setSaveToAccount(e.target.checked)}
+                                  className={styles.addrCheckbox}
+                                />
+                                <span>Save as new address to my account for future orders</span>
+                              </label>
+                            )}
+
                             {addrError && (
                               <div className={styles.errorBox} style={{ margin: '0.6rem 0' }}>
                                 <TriangleAlert size={14} /> {addrError}
@@ -1148,7 +1292,7 @@ export default function CheckoutPage() {
                               <button
                                 type="button"
                                 className={styles.deliverToThisBtn}
-                                onClick={() => {
+                                onClick={async () => {
                                   if (!addrForm.first_name?.trim()) {
                                     setAddrError('Please enter your name.');
                                     return;
@@ -1175,19 +1319,61 @@ export default function CheckoutPage() {
                                     return;
                                   }
                                   setAddrError('');
-                                  setAddressMode('new');
+
+                                  // If saveToAccount is checked and user is logged in, save to savedAddresses & WooCommerce
+                                  if (user && saveToAccount) {
+                                    const newSaved: SavedAddress = {
+                                      id: `addr-${Date.now()}`,
+                                      tag: addrTag,
+                                      firstName: addrForm.first_name.trim(),
+                                      lastName: (addrForm.last_name || '').trim(),
+                                      address1: addrForm.address_1.trim(),
+                                      address2: (addrForm.address_2 || '').trim(),
+                                      city: addrForm.city.trim(),
+                                      state: addrForm.state.trim(),
+                                      postcode: addrForm.postcode.trim(),
+                                      country: 'IN',
+                                      phone: addrForm.phone.trim(),
+                                      isDefault: true,
+                                    };
+                                    const updated = [newSaved, ...savedAddresses.map((a) => ({ ...a, isDefault: false }))];
+                                    setSavedAddresses(updated);
+                                    setSelectedAddressId(newSaved.id);
+                                    try {
+                                      localStorage.setItem(`intersting_saved_addresses_${user.id}`, JSON.stringify(updated));
+                                    } catch {}
+
+                                    // Background sync to WooCommerce customer profile
+                                    fetch('/api/account/address', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        firstName: newSaved.firstName,
+                                        lastName: newSaved.lastName,
+                                        address1: newSaved.address1,
+                                        address2: newSaved.address2,
+                                        city: newSaved.city,
+                                        state: newSaved.state,
+                                        postcode: newSaved.postcode,
+                                        country: 'IN',
+                                        phone: newSaved.phone,
+                                      }),
+                                    }).catch(console.warn);
+                                  }
+
+                                  setIsAddingNew(false);
                                   setIsChangingAddress(false);
                                 }}
                               >
-                                Deliver to this Address
+                                <Check size={16} /> Deliver to this Address
                               </button>
 
-                              {hasSaved && (
+                              {savedAddresses.length > 0 && (
                                 <button
                                   type="button"
                                   className={styles.cancelAddressBtn}
                                   onClick={() => {
-                                    setAddressMode('saved');
+                                    setIsAddingNew(false);
                                     setIsChangingAddress(false);
                                     setAddrError('');
                                   }}
@@ -1197,8 +1383,8 @@ export default function CheckoutPage() {
                               )}
                             </div>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
