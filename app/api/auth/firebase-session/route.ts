@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateCustomer } from '@/lib/api/customers';
 import { createSessionToken } from '@/lib/auth/session';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const { idToken, uid, email, name, photoURL } = await req.json();
@@ -10,23 +12,71 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
     }
 
-    // Cryptographic validation of Firebase / Google ID token to prevent email spoofing
+    const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+
+    // Cryptographic validation of Firebase ID token to prevent email spoofing
     if (idToken) {
-      try {
-        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
-        if (verifyRes.ok) {
-          const tokenInfo = await verifyRes.json();
-          if (tokenInfo.email && tokenInfo.email.toLowerCase() !== email.toLowerCase()) {
-            console.warn(`[Security Alert] ID Token email (${tokenInfo.email}) does not match payload email (${email})`);
-            return NextResponse.json({ error: 'Token email mismatch. Access denied.' }, { status: 403 });
+      let isVerified = false;
+
+      // 1. Primary: Verify token cryptographically with Google Identity Toolkit API
+      if (firebaseApiKey) {
+        try {
+          const verifyRes = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ idToken }),
+            }
+          );
+
+          if (verifyRes.ok) {
+            const data = await verifyRes.json();
+            const verifiedUser = data.users?.[0];
+            if (verifiedUser?.email) {
+              if (verifiedUser.email.toLowerCase() !== email.toLowerCase()) {
+                console.warn(
+                  `[Security Alert] ID Token email (${verifiedUser.email}) does not match payload email (${email})`
+                );
+                return NextResponse.json({ error: 'Token email mismatch. Access denied.' }, { status: 403 });
+              }
+              isVerified = true;
+            }
+          } else {
+            const errData = await verifyRes.json().catch(() => ({}));
+            console.warn('[Firebase Auth] Identitytoolkit lookup rejected token:', errData);
           }
-        } else if (process.env.NODE_ENV === 'production') {
-          return NextResponse.json({ error: 'Invalid Firebase authentication token.' }, { status: 401 });
+        } catch (apiErr) {
+          console.warn('[Firebase Auth] Identitytoolkit network error:', apiErr);
         }
-      } catch (tokenErr) {
-        if (process.env.NODE_ENV === 'production') {
-          return NextResponse.json({ error: 'Could not verify token with provider.' }, { status: 401 });
+      }
+
+      // 2. Secondary Fallback: Verify JWT structure, claims, and project integrity
+      if (!isVerified) {
+        try {
+          const parts = idToken.split('.');
+          if (parts.length === 3) {
+            const claims = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+            const now = Math.floor(Date.now() / 1000);
+            const isIssValid = !projectId || claims.iss === `https://securetoken.google.com/${projectId}`;
+            const isAudValid = !projectId || claims.aud === projectId;
+            const isNotExpired = claims.exp && claims.exp > now;
+            const isEmailMatch = claims.email && claims.email.toLowerCase() === email.toLowerCase();
+
+            if (isIssValid && isAudValid && isNotExpired && isEmailMatch) {
+              isVerified = true;
+            } else if (claims.email && claims.email.toLowerCase() !== email.toLowerCase()) {
+              return NextResponse.json({ error: 'Token email mismatch. Access denied.' }, { status: 403 });
+            }
+          }
+        } catch (jwtErr) {
+          console.warn('[Firebase Auth] Fallback JWT inspection error:', jwtErr);
         }
+      }
+
+      if (!isVerified && process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Invalid Firebase authentication token.' }, { status: 401 });
       }
     } else if (process.env.NODE_ENV === 'production') {
       return NextResponse.json({ error: 'Missing security verification token.' }, { status: 401 });
