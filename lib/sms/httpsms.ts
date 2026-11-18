@@ -157,7 +157,8 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
 
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://intersting.duckdns.org')
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '') ||
+    'https://interesting-ten.vercel.app'
   ).replace(/\/$/, '');
 
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;
@@ -246,7 +247,8 @@ export async function sendOrderStatusUpdateSms(
 
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://intersting.duckdns.org')
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '') ||
+    'https://interesting-ten.vercel.app'
   ).replace(/\/$/, '');
 
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;

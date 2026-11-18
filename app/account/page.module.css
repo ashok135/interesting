@@ -2347,6 +2347,55 @@
   transition: all 0.15s ease;
 }
 
+.invoiceActionBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1rem;
+  background: #0d3821;
+  color: #ffffff;
+  border: 1px solid #0d3821;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(13, 56, 33, 0.2);
+}
+
+.invoiceActionBtn:hover {
+  background: #144f2f;
+  border-color: #144f2f;
+  color: #ffffff;
+}
+
+.orderInvoiceBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.85rem;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 9px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.orderInvoiceBtn:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
+}
+
 .helpActionBtn:hover {
   background: #f1f5f9;
   color: #0f172a;

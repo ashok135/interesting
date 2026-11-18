@@ -1539,6 +1539,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.itemName:hover {
+  color: #0d3821;
+  text-decoration: underline;
 }
 
 .itemQty {
@@ -1886,9 +1893,41 @@
 
 .successActions {
   display: flex;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.65rem;
   width: 100%;
-  margin-top: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.successInvoiceBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid #0d3821;
+  background: #0d3821;
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(13, 56, 33, 0.2);
+  transition: all 0.15s ease;
+}
+
+.successInvoiceBtn:hover {
+  background: #144f2f;
+  border-color: #144f2f;
+  transform: translateY(-1px);
+}
+
+.successSubActions {
+  display: flex;
+  gap: 0.65rem;
+  width: 100%;
 }
 
 .successTrackBtn {

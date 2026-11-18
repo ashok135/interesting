@@ -40,6 +40,7 @@ import {
   Home,
   Briefcase,
   Check,
+  FileText,
 } from 'lucide-react';
 import type { OrderBilling, OrderPayload } from '@/types';
 import styles from './page.module.css';
@@ -732,12 +733,25 @@ export default function CheckoutPage() {
             </p>
           )}
           <div className={styles.successActions}>
-            <Link href={user ? "/account" : "/shop"} className={styles.successTrackBtn}>
-              <Package size={16} /> {user ? "Track Order" : "View More Products"}
-            </Link>
-            <Link href="/shop" className={styles.successShopBtn}>
-              Continue Shopping <ArrowRight size={15} />
-            </Link>
+            {oId && (
+              <a
+                href={`/invoice/${oId}?print=true`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.successInvoiceBtn}
+                title="Download or print official tax invoice"
+              >
+                <FileText size={16} /> Download Tax Invoice (PDF)
+              </a>
+            )}
+            <div className={styles.successSubActions}>
+              <Link href={user ? "/account" : "/shop"} className={styles.successTrackBtn}>
+                <Package size={16} /> {user ? "Track Order" : "View More Products"}
+              </Link>
+              <Link href="/shop" className={styles.successShopBtn}>
+                Continue Shopping <ArrowRight size={15} />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -1593,12 +1607,26 @@ export default function CheckoutPage() {
                 {items.map((item) => (
                   <div key={item.productId} className={styles.summaryItem}>
                     {item.image && (
-                      <div className={styles.itemThumb}>
+                      <Link
+                        href={item.slug ? `/product/${item.slug}` : `/shop`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.itemThumb}
+                        title={`View ${item.name}`}
+                      >
                         <Image src={item.image} alt={item.name} fill sizes="48px" style={{ objectFit: 'cover' }} />
-                      </div>
+                      </Link>
                     )}
                     <div className={styles.itemInfo}>
-                      <span className={styles.itemName}>{item.name}</span>
+                      <Link
+                        href={item.slug ? `/product/${item.slug}` : `/shop`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.itemName}
+                        title={item.name}
+                      >
+                        {item.name}
+                      </Link>
                       <span className={styles.itemQty}>Qty: {item.quantity}</span>
                     </div>
                     <span className={styles.itemTotal}>

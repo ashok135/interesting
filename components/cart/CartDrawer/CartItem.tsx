@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCartContext } from '@/store/CartContext';
 import { QuantitySelector } from '@/components/ui';
 import { formatPrice } from '@/lib/utils/formatters';
@@ -13,12 +14,18 @@ interface CartItemProps {
 }
 
 export function CartItem({ item }: CartItemProps) {
-  const { updateQuantity, removeItem } = useCartContext();
+  const { updateQuantity, removeItem, closeDrawer } = useCartContext();
   const subtotal = parseFloat(item.price) * item.quantity;
+  const productHref = item.slug ? `/product/${item.slug}` : `/shop`;
 
   return (
     <div className={styles.item}>
-      <div className={styles.imageWrapper}>
+      <Link
+        href={productHref}
+        onClick={closeDrawer}
+        className={styles.imageWrapper}
+        title={`View ${item.name}`}
+      >
         {item.image ? (
           <Image
             src={item.image}
@@ -30,10 +37,17 @@ export function CartItem({ item }: CartItemProps) {
         ) : (
           <div className={styles.imagePlaceholder} />
         )}
-      </div>
+      </Link>
 
       <div className={styles.details}>
-        <p className={styles.name}>{item.name}</p>
+        <Link
+          href={productHref}
+          onClick={closeDrawer}
+          className={styles.name}
+          title={item.name}
+        >
+          {item.name}
+        </Link>
         <p className={styles.unitPrice}>{formatPrice(item.price)} each</p>
         <div className={styles.controls}>
           <QuantitySelector

@@ -44,7 +44,7 @@ export default function CartPage() {
 
             {items.map((item) => (
               <div key={item.productId} className={styles.item}>
-                <div className={styles.itemImage}>
+                <Link href={`/product/${item.slug}`} className={styles.itemImage} title={item.name}>
                   {item.image ? (
                     <Image
                       src={item.image}
@@ -56,7 +56,7 @@ export default function CartPage() {
                   ) : (
                     <div className={styles.imgPlaceholder} />
                   )}
-                </div>
+                </Link>
 
                 <div className={styles.itemDetails}>
                   <Link href={`/product/${item.slug}`} className={styles.itemName}>

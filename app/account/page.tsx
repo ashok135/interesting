@@ -31,6 +31,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Star,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '@/store/AuthContext';
 import { useToast } from '@/store/ToastContext';
@@ -866,6 +867,16 @@ function AccountContent() {
 
             {/* Footer Actions */}
             <div className={styles.orderDetailFooter}>
+              <a
+                href={`/invoice/${selectedOrder.id}?print=true`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.invoiceActionBtn}
+                title="Download or print official tax invoice (PDF)"
+              >
+                <FileText size={16} /> Download Invoice
+              </a>
+
               <Link
                 href="/faq"
                 className={styles.helpActionBtn}
@@ -1357,6 +1368,15 @@ function AccountContent() {
                           >
                             <Package size={14} /> View Details
                           </button>
+                          <a
+                            href={`/invoice/${order.id}?print=true`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.orderInvoiceBtn}
+                            title="Download Tax Invoice (PDF)"
+                          >
+                            <FileText size={13} /> Invoice
+                          </a>
                           {isCompleted ? (
                             <button
                               type="button"
