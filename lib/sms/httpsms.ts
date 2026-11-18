@@ -18,88 +18,6 @@ export interface SmsResult {
   error?: string;
 }
 
-// Known catalog product slug mappings for clean SMS links
-const PRODUCT_SLUGS_BY_ID: Record<number, string> = {
-  54: 'royal-gond-dry-fruit-nutri-laddu',
-  55: 'jaggery-crushed-nut-artisanal-chikki',
-  51: 'energy-crunch-pre-workout-trail',
-  49: 'gourmet-omega-3-vitality-trail-mix',
-  48: 'lightly-salted-california-pistachios',
-  42: 'himalayan-pink-salt-popped-makhana',
-};
-
-/**
- * Resolves the public storefront URL for SMS links.
- * 1. Prioritizes explicitBaseUrl passed dynamically from incoming HTTP request headers (Host / X-Forwarded-Host).
- * 2. Prioritizes Vercel production domains (VERCEL_PROJECT_PRODUCTION_URL).
- * 3. Fallbacks to NEXT_PUBLIC_SITE_URL or VERCEL_URL.
- */
-export function getStorefrontUrl(explicitBaseUrl?: string): string {
-  if (explicitBaseUrl) {
-    const cleaned = explicitBaseUrl.trim().replace(/\/$/, '');
-    if (cleaned.startsWith('http://localhost') || cleaned.startsWith('http://127.0.0.1')) {
-      return cleaned;
-    }
-    if (cleaned.startsWith('http://')) {
-      return cleaned.replace(/^http:\/\//, 'https://');
-    }
-    if (cleaned.startsWith('https://')) {
-      return cleaned;
-    }
-    return `https://${cleaned}`;
-  }
-
-  const wcUrl = (process.env.NEXT_PUBLIC_WC_URL || '').replace(/\/$/, '');
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
-
-  // 1. If an explicit custom site URL is set (and not pointing to WordPress backend)
-  if (siteUrl && siteUrl !== wcUrl && !siteUrl.includes('duckdns.org')) {
-    return siteUrl;
-  }
-
-  // 2. Vercel production custom domain / primary project URL (auto-set by Vercel for your project)
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/$/, '');
-  }
-
-  // 3. Vercel deployment URL
-  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-    const v = process.env.NEXT_PUBLIC_VERCEL_URL.startsWith('http')
-      ? process.env.NEXT_PUBLIC_VERCEL_URL
-      : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
-    return v.replace(/\/$/, '');
-  }
-
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '');
-  }
-
-  // 4. Default to siteUrl or local
-  return siteUrl || 'https://intersting.duckdns.org';
-}
-
-/**
- * Builds a direct, verified product URL for SMS messages.
- */
-export function formatProductLink(
-  siteUrl: string,
-  item?: { product_id?: number; name?: string }
-): string {
-  if (!item) return `${siteUrl}/shop`;
-
-  if (item.product_id && PRODUCT_SLUGS_BY_ID[item.product_id]) {
-    return `${siteUrl}/product/${PRODUCT_SLUGS_BY_ID[item.product_id]}`;
-  }
-  if (item.product_id) {
-    return `${siteUrl}/product/${item.product_id}`;
-  }
-  if (item.name) {
-    const slug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    return `${siteUrl}/product/${slug}`;
-  }
-  return `${siteUrl}/shop`;
-}
-
 /**
  * Normalizes a phone number into international E.164 format.
  * E.g., "9876543210" -> "+919876543210" (assuming default IN code)
@@ -222,10 +140,7 @@ export async function sendHttpSms(options: SendSmsOptions): Promise<SmsResult> {
 /**
  * Sends an automated order confirmation SMS to the customer, and optionally an alert to the store admin.
  */
-export async function sendOrderConfirmationSms(
-  order: WooOrder,
-  originBaseUrl?: string
-): Promise<{
+export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
   customerSms: SmsResult;
   adminSms?: SmsResult;
 }> {
@@ -238,34 +153,22 @@ export async function sendOrderConfirmationSms(
   const orderId = order.id;
   const total = order.total || '0';
   const paymentTitle = order.payment_method_title || order.payment_method || 'Order';
-  const items = order.line_items || [];
-  const primaryItem = items[0];
-  const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+  const itemCount = (order.line_items || []).reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-  const siteUrl = getStorefrontUrl(originBaseUrl);
+  const siteUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://intersting.duckdns.org')
+  ).replace(/\/$/, '');
+
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;
 
   const status = (order.status || '').toLowerCase();
   const isPending = status.includes('pending');
 
-  // Format exact product title & link
-  let productInfoText = '';
-  if (items.length === 1 && primaryItem) {
-    const qtyText = (primaryItem.quantity || 1) > 1 ? ` (Qty: ${primaryItem.quantity})` : '';
-    const pLink = formatProductLink(siteUrl, primaryItem);
-    productInfoText = `\nItem: ${primaryItem.name}${qtyText}\nProduct Link: ${pLink}`;
-  } else if (items.length > 1) {
-    const itemNames = items.slice(0, 2).map((i) => `${i.name} (x${i.quantity || 1})`).join(', ');
-    const moreCount = items.length - 2;
-    const summary = moreCount > 0 ? `${itemNames} + ${moreCount} more` : itemNames;
-    const pLink = primaryItem ? formatProductLink(siteUrl, primaryItem) : '';
-    productInfoText = `\nItems (${items.length}): ${summary}${pLink ? `\nProduct Link: ${pLink}` : ''}`;
-  }
-
-  // Compose customer SMS with product link and live order tracking link
+  // Compose customer SMS with tracking link
   const customerMessage = isPending
-    ? `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been received.${productInfoText}\nTrack Order: ${trackingUrl}\nThank you for shopping with INTERSTING!`
-    : `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) is confirmed!${productInfoText}\nTrack Order: ${trackingUrl}\nThank you for shopping with INTERSTING!`;
+    ? `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been received. Track your order: ${trackingUrl} . Thank you for shopping with INTERSTING!`
+    : `Hi ${customerName}, your order #${orderId} for Rs.${total} (${paymentTitle}) has been confirmed! Track your order: ${trackingUrl} . Thank you for shopping with INTERSTING!`;
 
   let customerResult: SmsResult;
 
@@ -289,7 +192,7 @@ export async function sendOrderConfirmationSms(
   if (adminPhone) {
     const adminMessage =
       `New Order Alert! #${orderId} by ${customerName} for Rs.${total} (${paymentTitle}). ` +
-      `${productInfoText ? productInfoText.trim() + ' ' : ''}Status: ${order.status || 'processing'}. Track: ${trackingUrl}`;
+      `Items: ${itemCount}. Status: ${order.status || 'processing'}. Track: ${trackingUrl}`;
 
     adminResult = await sendHttpSms({
       to: adminPhone,
@@ -322,8 +225,7 @@ const SILENT_STATUSES = new Set([
  */
 export async function sendOrderStatusUpdateSms(
   order: WooOrder,
-  newStatus?: string,
-  originBaseUrl?: string
+  newStatus?: string
 ): Promise<{ customerSms: SmsResult; adminSms?: SmsResult }> {
   const customerPhone = order.billing?.phone;
   const customerName = [order.billing?.first_name, order.billing?.last_name]
@@ -342,43 +244,36 @@ export async function sendOrderStatusUpdateSms(
     };
   }
 
-  const siteUrl = getStorefrontUrl(originBaseUrl);
-  const trackingUrl = `${siteUrl}/account?order=${orderId}`;
+  const siteUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://intersting.duckdns.org')
+  ).replace(/\/$/, '');
 
-  const items = order.line_items || [];
-  const primaryItem = items[0];
-  let productInfoLine = '';
-  if (items.length === 1 && primaryItem) {
-    const pLink = formatProductLink(siteUrl, primaryItem);
-    productInfoLine = `\nProduct: ${pLink}`;
-  } else if (items.length > 1 && primaryItem) {
-    const pLink = formatProductLink(siteUrl, primaryItem);
-    productInfoLine = `\nProducts: ${pLink}`;
-  }
+  const trackingUrl = `${siteUrl}/account?order=${orderId}`;
 
   let customerMessage = '';
   if (status === 'completed') {
     customerMessage =
-      `Hi ${customerName}, your order #${orderId} has been marked as Completed & Delivered!${productInfoLine}\n` +
-      `Track / View Order: ${trackingUrl}\n` +
+      `Hi ${customerName}, your order #${orderId} has been marked as Completed & Delivered! ` +
+      `We hope you love your purchase. View order: ${trackingUrl} . ` +
       `Thank you for shopping with INTERSTING!`;
   } else if (status === 'shipped') {
     customerMessage =
-      `Hi ${customerName}, exciting news! Your order #${orderId} has been shipped and is on its way!${productInfoLine}\n` +
-      `Track live delivery: ${trackingUrl}\n` +
+      `Hi ${customerName}, exciting news! Your order #${orderId} has been shipped and is on its way. ` +
+      `Track your delivery: ${trackingUrl} . ` +
       `Thank you for shopping with INTERSTING!`;
   } else if (status === 'processing') {
     customerMessage =
-      `Hi ${customerName}, payment confirmed! Your order #${orderId} is now being processed and packed.${productInfoLine}\n` +
-      `Track your order: ${trackingUrl}\n` +
+      `Hi ${customerName}, payment confirmed! Your order #${orderId} is now being processed and packed. ` +
+      `Track your order: ${trackingUrl} . ` +
       `Thank you for shopping with INTERSTING!`;
   } else if (status === 'cancelled') {
     customerMessage =
-      `Hi ${customerName}, your order #${orderId} has been cancelled.\n` +
+      `Hi ${customerName}, your order #${orderId} has been cancelled. ` +
       `View order details or contact support: ${trackingUrl}`;
   } else if (status === 'refunded') {
     customerMessage =
-      `Hi ${customerName}, a refund has been processed for your order #${orderId}.\n` +
+      `Hi ${customerName}, a refund has been processed for your order #${orderId}. ` +
       `View order details: ${trackingUrl}`;
   } else {
     // For other unmapped statuses, do not send confusing SMS to customer

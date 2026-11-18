@@ -33,8 +33,6 @@ import {
   Package,
   Sparkles,
   TriangleAlert,
-  Check,
-  ArrowLeft,
   LocateFixed,
   Navigation,
   Copy,
@@ -62,21 +60,6 @@ interface ConfirmedOrder {
   total: number;
   itemCount: number;
   paymentTitle: string;
-}
-
-interface SavedAddress {
-  id: string;
-  tag: 'Home' | 'Work' | 'Other';
-  firstName: string;
-  lastName: string;
-  address1: string;
-  address2: string;
-  city: string;
-  state: string;
-  postcode: string;
-  country: string;
-  phone: string;
-  isDefault?: boolean;
 }
 
 const EMPTY_ADDR: OrderBilling = {
@@ -143,9 +126,6 @@ export default function CheckoutPage() {
   const [authError, setAuthError] = useState('');
 
   const [addressMode, setAddressMode] = useState<'saved' | 'new'>('saved');
-  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
-  const [isChangingAddress, setIsChangingAddress] = useState(false);
   const [addrForm, setAddrForm] = useState<OrderBilling>(EMPTY_ADDR);
 
   const [availableCoupons, setAvailableCoupons] = useState<WooCommerceCoupon[]>([]);
@@ -187,64 +167,27 @@ export default function CheckoutPage() {
   const [locError, setLocError] = useState('');
   const [locSuccess, setLocSuccess] = useState(false);
 
-  /* ── Auto-advance step on auth change & Load Saved Addresses ── */
+  /* ── Auto-advance step on auth change ── */
   useEffect(() => {
     if (authLoading) return;
     if (user) {
-      const storageKey = `intersting_saved_addresses_${user.id}`;
-      let loaded: SavedAddress[] = [];
-      try {
-        const stored = localStorage.getItem(storageKey);
-        if (stored) loaded = JSON.parse(stored);
-      } catch (e) {}
-
-      // Fallback to customer shipping/billing if no addresses exist in storage
-      if (loaded.length === 0 && customer?.shipping && (customer.shipping.address_1 || customer.shipping.city)) {
+      const hasAddr = !!(customer?.shipping?.address_1 || customer?.billing?.address_1);
+      setStep(hasAddr ? 'payment' : 'address');
+      if (customer) {
         const s = customer.shipping;
         const b = customer.billing;
-        const primaryAddr: SavedAddress = {
-          id: 'wc-default',
-          tag: 'Home',
-          firstName: s.first_name || customer.first_name || user.name?.split(' ')[0] || '',
-          lastName: s.last_name || customer.last_name || user.name?.split(' ').slice(1).join(' ') || '',
-          address1: s.address_1 || '',
-          address2: s.address_2 || '',
-          city: s.city || '',
-          state: s.state || '',
-          postcode: s.postcode || '',
-          country: 'IN',
-          phone: b?.phone || '',
-          isDefault: true,
-        };
-        loaded = [primaryAddr];
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(loaded));
-        } catch (e) {}
-      }
-
-      setSavedAddresses(loaded);
-
-      // ALWAYS select the Default address (or the first address)
-      const defaultAddr = loaded.find((a) => a.isDefault) || loaded[0];
-      if (defaultAddr) {
-        setSelectedAddressId(defaultAddr.id);
         setAddrForm({
-          first_name: defaultAddr.firstName,
-          last_name: defaultAddr.lastName,
-          email: user.email || '',
-          phone: defaultAddr.phone || '',
-          address_1: defaultAddr.address1,
-          address_2: defaultAddr.address2 || '',
-          city: defaultAddr.city,
-          state: defaultAddr.state,
-          postcode: defaultAddr.postcode,
+          first_name: s?.first_name || b?.first_name || '',
+          last_name:  s?.last_name  || b?.last_name  || '',
+          email:      b?.email      || user.email     || '',
+          phone:      b?.phone      || '',
+          address_1:  s?.address_1  || b?.address_1   || '',
+          address_2:  s?.address_2  || b?.address_2   || '',
+          city:       s?.city       || b?.city         || '',
+          state:      s?.state      || b?.state        || '',
+          postcode:   s?.postcode   || b?.postcode     || '',
           country: 'IN',
         });
-        setAddressMode('saved');
-        setStep('payment');
-      } else {
-        setAddressMode('new');
-        setStep('address');
       }
     } else if (!isGuest) {
       setStep('auth');
@@ -269,26 +212,23 @@ export default function CheckoutPage() {
   const grandTotal = Math.max(0, subtotal + delivery - discount);
 
   /* ── Saved address ── */
-  const selectedSavedAddr =
-    savedAddresses.find((a) => a.id === selectedAddressId) ||
-    savedAddresses.find((a) => a.isDefault) ||
-    savedAddresses[0];
-
-  const hasSaved = savedAddresses.length > 0 || !!(customer?.shipping?.address_1 || customer?.billing?.address_1);
+  const hasSaved = !!(customer?.shipping?.address_1 || customer?.billing?.address_1);
 
   function getAddr(): OrderBilling {
-    if (addressMode === 'saved' && selectedSavedAddr) {
+    if (hasSaved && addressMode === 'saved') {
+      const s = customer!.shipping;
+      const b = customer!.billing;
       return {
-        first_name: selectedSavedAddr.firstName || user?.name?.split(' ')[0] || addrForm.first_name || '',
-        last_name:  selectedSavedAddr.lastName || user?.name?.split(' ').slice(1).join(' ') || addrForm.last_name || '',
-        email:      user?.email || addrForm.email || '',
-        phone:      selectedSavedAddr.phone || addrForm.phone || '',
-        address_1:  selectedSavedAddr.address1,
-        address_2:  selectedSavedAddr.address2 || '',
-        city:       selectedSavedAddr.city,
-        state:      selectedSavedAddr.state,
-        postcode:   selectedSavedAddr.postcode,
-        country:    selectedSavedAddr.country || 'IN',
+        first_name: s?.first_name || b?.first_name || '',
+        last_name:  s?.last_name  || b?.last_name  || '',
+        email:      b?.email      || user?.email    || '',
+        phone:      b?.phone      || '',
+        address_1:  s?.address_1  || b?.address_1   || '',
+        address_2:  s?.address_2  || b?.address_2   || '',
+        city:       s?.city       || b?.city         || '',
+        state:      s?.state      || b?.state        || '',
+        postcode:   s?.postcode   || b?.postcode     || '',
+        country: 'IN',
       };
     }
     return addrForm;
@@ -955,183 +895,45 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* Mode 1: Clean Selected Default Address Card (Default View) */}
-                {savedAddresses.length > 0 && addressMode === 'saved' && !isChangingAddress && selectedSavedAddr && (
-                  <div className={styles.cleanSelectedAddrCard}>
-                    <div className={styles.cleanAddrTopRow}>
-                      <div className={styles.cleanAddrBadgeGroup}>
-                        <span className={styles.cleanAddrTagBadge}>
-                          <MapPin size={12} /> {selectedSavedAddr.tag || 'Home'}
-                        </span>
-                        {selectedSavedAddr.isDefault && (
-                          <span className={styles.cleanDefaultBadge}>Default</span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.cleanChangeAddrBtn}
-                        onClick={() => setIsChangingAddress(true)}
-                        title="Choose another delivery address"
-                      >
-                        <Edit2 size={13} /> Change Address {savedAddresses.length > 1 ? `(${savedAddresses.length} saved)` : ''}
-                      </button>
-                    </div>
-
-                    <div className={styles.cleanAddrRecipient}>
-                      <strong className={styles.cleanRecipientName}>
-                        {[selectedSavedAddr.firstName, selectedSavedAddr.lastName].filter(Boolean).join(' ') || user?.name || 'Customer'}
-                      </strong>
-                      {selectedSavedAddr.phone && (
-                        <span className={styles.cleanRecipientPhone}>
-                          <Phone size={12} /> {selectedSavedAddr.phone}
-                        </span>
-                      )}
-                    </div>
-
-                    <p className={styles.cleanAddrFullText}>
-                      {selectedSavedAddr.address1}
-                      {selectedSavedAddr.address2 ? `, ${selectedSavedAddr.address2}` : ''}
-                      <br />
-                      {selectedSavedAddr.city}, {selectedSavedAddr.state} — {selectedSavedAddr.postcode}
-                    </p>
-
-                    <button
-                      type="button"
-                      className={styles.primaryBtn}
-                      style={{ marginTop: '1.25rem' }}
-                      onClick={() => {
-                        setAddrError('');
-                        setStep('payment');
-                      }}
-                    >
-                      Deliver to this Address → Continue to Payment <ArrowRight size={16} />
+                {hasSaved && (
+                  <div className={styles.savedAddressToggle}>
+                    <button type="button"
+                      className={`${styles.addrToggleBtn} ${addressMode === 'saved' ? styles.addrToggleActive : ''}`}
+                      onClick={() => setAddressMode('saved')}>
+                      <MapPin size={14} /> Saved Address
+                    </button>
+                    <button type="button"
+                      className={`${styles.addrToggleBtn} ${addressMode === 'new' ? styles.addrToggleActive : ''}`}
+                      onClick={() => setAddressMode('new')}>
+                      <Plus size={14} /> New Address
                     </button>
                   </div>
                 )}
 
-                {/* Mode 2: Address Selection Drawer / Modal when user clicks "Change Address" */}
-                {isChangingAddress && (
-                  <div className={styles.addressSelectionDrawer}>
-                    <div className={styles.addressDrawerHeader}>
-                      <div>
-                        <h3 className={styles.addressDrawerTitle}>Select Delivery Address</h3>
-                        <p className={styles.addressDrawerSub}>
-                          Select your active address or add a new delivery location
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.closeDrawerBtn}
-                        onClick={() => setIsChangingAddress(false)}
-                      >
-                        <X size={16} /> Cancel
-                      </button>
-                    </div>
-
-                    <div className={styles.addressChoicesList}>
-                      {savedAddresses.map((addr) => {
-                        const isCurrent = addr.id === (selectedSavedAddr?.id || selectedAddressId);
-                        return (
-                          <div
-                            key={addr.id}
-                            className={`${styles.addrChoiceCard} ${isCurrent ? styles.addrChoiceCardActive : ''}`}
-                          >
-                            <div className={styles.addrChoiceTop}>
-                              <div className={styles.cleanAddrBadgeGroup}>
-                                <span className={styles.cleanAddrTagBadge}>
-                                  <MapPin size={12} /> {addr.tag || 'Address'}
-                                </span>
-                                {addr.isDefault && (
-                                  <span className={styles.cleanDefaultBadge}>Default</span>
-                                )}
-                              </div>
-                              {isCurrent ? (
-                                <span className={styles.activeSelectedPill}>
-                                  <Check size={12} strokeWidth={3} /> Selected
-                                </span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className={styles.deliverHereBtn}
-                                  onClick={() => {
-                                    setSelectedAddressId(addr.id);
-                                    setAddrForm({
-                                      first_name: addr.firstName,
-                                      last_name: addr.lastName,
-                                      email: user?.email || '',
-                                      phone: addr.phone || '',
-                                      address_1: addr.address1,
-                                      address_2: addr.address2 || '',
-                                      city: addr.city,
-                                      state: addr.state,
-                                      postcode: addr.postcode,
-                                      country: 'IN',
-                                    });
-                                    setIsChangingAddress(false);
-                                  }}
-                                >
-                                  Deliver Here
-                                </button>
-                              )}
-                            </div>
-
-                            <strong className={styles.cleanRecipientName}>
-                              {[addr.firstName, addr.lastName].filter(Boolean).join(' ') || 'Recipient'}
-                            </strong>
-                            <p className={styles.cleanAddrFullText}>
-                              {addr.address1}
-                              {addr.address2 ? `, ${addr.address2}` : ''}, {addr.city}, {addr.state} — {addr.postcode}
-                            </p>
-                            {addr.phone && (
-                              <span className={styles.cleanRecipientPhone}>
-                                <Phone size={12} /> {addr.phone}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className={styles.changeAddrBottomRow}>
-                      <button
-                        type="button"
-                        className={styles.addNewAddrBtn}
-                        onClick={() => {
-                          setAddressMode('new');
-                          setIsChangingAddress(false);
-                        }}
-                      >
-                        <Plus size={14} /> Add a New Delivery Address
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.keepCurrentAddrBtn}
-                        onClick={() => setIsChangingAddress(false)}
-                      >
-                        Keep Selected Address
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Mode 3: Add New Address Form (or when no saved addresses exist) */}
-                {(savedAddresses.length === 0 || addressMode === 'new') && !isChangingAddress && (
-                  <div className={styles.addrForm}>
-                    {savedAddresses.length > 0 && (
-                      <div className={styles.backToSavedRow}>
-                        <button
-                          type="button"
-                          className={styles.backToSavedBtn}
-                          onClick={() => {
-                            setAddressMode('saved');
-                            setIsChangingAddress(false);
-                          }}
-                        >
-                          <ArrowLeft size={14} /> Back to Saved Addresses
+                {hasSaved && addressMode === 'saved' && (() => {
+                  const a = getAddr();
+                  const name = `${a.first_name} ${a.last_name}`.trim();
+                  return (
+                    <div className={styles.savedAddrCard}>
+                      <div className={styles.savedAddrTop}>
+                        <div className={styles.savedAddrTagWrap}>
+                          <span className={styles.savedAddrTag}><MapPin size={11} /> Home</span>
+                          {name && <span className={styles.savedAddrName}>{name}</span>}
+                        </div>
+                        <button type="button" className={styles.editAddrBtn} onClick={() => setAddressMode('new')}>
+                          <Edit2 size={13} /> Change
                         </button>
                       </div>
-                    )}
+                      <p className={styles.savedAddrText}>{a.address_1}</p>
+                      {a.address_2 && <p className={styles.savedAddrText}>{a.address_2}</p>}
+                      <p className={styles.savedAddrCity}>{a.city}, {a.state} — {a.postcode}</p>
+                      {a.phone && <p className={styles.savedAddrPhone}><Phone size={12} /> {a.phone}</p>}
+                    </div>
+                  );
+                })()}
 
+                {(!hasSaved || addressMode === 'new') && (
+                  <div className={styles.addrForm}>
                     <div className={styles.row2}>
                       <div className={styles.inputGroup}>
                         <label className={styles.inputLabel}>First Name *</label>
@@ -1208,74 +1010,48 @@ export default function CheckoutPage() {
                           required placeholder="110001" maxLength={6} className={styles.input} />
                       </div>
                     </div>
-
-                    {addrError && (
-                      <div className={styles.errorBox} style={{ marginBottom: '1rem' }}>
-                        <TriangleAlert size={14} /> {addrError}
-                      </div>
-                    )}
-
-                    <button type="button" className={styles.primaryBtn}
-                      onClick={() => {
-                        const a = getAddr();
-                        if (!a.first_name?.trim()) {
-                          setAddrError('Please enter your name.');
-                          return;
-                        }
-                        const cleanPhone = (a.phone || '').replace(/\D/g, '');
-                        if (!cleanPhone || cleanPhone.length < 10) {
-                          setAddrError('Please enter a valid 10-digit mobile number for delivery & SMS updates.');
-                          return;
-                        }
-                        if (!a.email?.trim() || !a.email.includes('@')) {
-                          setAddrError('Please enter a valid email address for order confirmation.');
-                          return;
-                        }
-                        if (!a.address_1?.trim()) {
-                          setAddrError('Please enter your house / flat / street address.');
-                          return;
-                        }
-                        if (!a.city?.trim()) {
-                          setAddrError('Please enter your city.');
-                          return;
-                        }
-                        if (!a.postcode?.trim() || a.postcode.trim().length < 6) {
-                          setAddrError('Please enter a valid 6-digit PIN code.');
-                          return;
-                        }
-                        setAddrError('');
-
-                        // Auto-persist new address to localStorage for user
-                        if (user) {
-                          const newSaved: SavedAddress = {
-                            id: `addr-${Date.now()}`,
-                            tag: 'Home',
-                            firstName: a.first_name,
-                            lastName: a.last_name,
-                            address1: a.address_1,
-                            address2: a.address_2 || '',
-                            city: a.city,
-                            state: a.state,
-                            postcode: a.postcode,
-                            country: 'IN',
-                            phone: a.phone,
-                            isDefault: savedAddresses.length === 0,
-                          };
-                          const updated = [newSaved, ...savedAddresses];
-                          setSavedAddresses(updated);
-                          setSelectedAddressId(newSaved.id);
-                          setAddressMode('saved');
-                          try {
-                            localStorage.setItem(`intersting_saved_addresses_${user.id}`, JSON.stringify(updated));
-                          } catch (e) {}
-                        }
-
-                        setStep('payment');
-                      }}>
-                      Save &amp; Continue to Payment <ArrowRight size={16} />
-                    </button>
                   </div>
                 )}
+
+                {addrError && (
+                  <div className={styles.errorBox} style={{ marginBottom: '1rem' }}>
+                    <TriangleAlert size={14} /> {addrError}
+                  </div>
+                )}
+
+                <button type="button" className={styles.primaryBtn}
+                  onClick={() => {
+                    const a = getAddr();
+                    if (!a.first_name?.trim()) {
+                      setAddrError('Please enter your name.');
+                      return;
+                    }
+                    const cleanPhone = (a.phone || '').replace(/\D/g, '');
+                    if (!cleanPhone || cleanPhone.length < 10) {
+                      setAddrError('Please enter a valid 10-digit mobile number for delivery & SMS updates.');
+                      return;
+                    }
+                    if (!a.email?.trim() || !a.email.includes('@')) {
+                      setAddrError('Please enter a valid email address for order confirmation.');
+                      return;
+                    }
+                    if (!a.address_1?.trim()) {
+                      setAddrError('Please enter your house / flat / street address.');
+                      return;
+                    }
+                    if (!a.city?.trim()) {
+                      setAddrError('Please enter your city.');
+                      return;
+                    }
+                    if (!a.postcode?.trim() || a.postcode.trim().length < 6) {
+                      setAddrError('Please enter a valid 6-digit PIN code.');
+                      return;
+                    }
+                    setAddrError('');
+                    setStep('payment');
+                  }}>
+                  Continue to Payment <ArrowRight size={16} />
+                </button>
               </div>
             )}
 
@@ -1330,12 +1106,7 @@ export default function CheckoutPage() {
                         <button
                           type="button"
                           className={styles.summaryChangeBtn}
-                          onClick={() => {
-                            if (savedAddresses.length > 1) {
-                              setIsChangingAddress(true);
-                            }
-                            setStep('address');
-                          }}
+                          onClick={() => setStep('address')}
                           title="Change delivery address"
                         >
                           Change

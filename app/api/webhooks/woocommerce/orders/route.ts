@@ -98,16 +98,13 @@ export async function POST(req: NextRequest) {
     }
 
     let smsResult;
-    const forwardedHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
-    const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
-    const requestOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : req.nextUrl.origin;
 
     if (topic === 'order.created') {
       // Order created in WooCommerce
-      smsResult = await sendOrderConfirmationSms(orderData, requestOrigin);
+      smsResult = await sendOrderConfirmationSms(orderData);
     } else {
       // order.updated: triggers when status moves to completed, shipped, processing, cancelled, refunded
-      smsResult = await sendOrderStatusUpdateSms(orderData, orderStatus, requestOrigin);
+      smsResult = await sendOrderStatusUpdateSms(orderData, orderStatus);
     }
 
     return NextResponse.json({

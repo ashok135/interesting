@@ -375,33 +375,6 @@ export default function AiAssistant() {
     showSuccess(`Added "${product.name}" to your bag!`);
   };
 
-  const handleSendMessageRef = useRef(handleSendMessage);
-  handleSendMessageRef.current = handleSendMessage;
-
-  // External trigger listener to open AI Assistant (e.g. from Order Help button)
-  useEffect(() => {
-    const handleOpenAiAssistant = (e: Event) => {
-      const customEvent = e as CustomEvent<{ message?: string; autoSend?: boolean }>;
-      setIsDismissed(false);
-      setIsOpen(true);
-      if (customEvent.detail?.message) {
-        const text = customEvent.detail.message;
-        if (customEvent.detail.autoSend) {
-          setTimeout(() => {
-            handleSendMessageRef.current(text);
-          }, 350);
-        } else {
-          setInput(text);
-        }
-      }
-    };
-
-    window.addEventListener('open-ai-assistant', handleOpenAiAssistant);
-    return () => {
-      window.removeEventListener('open-ai-assistant', handleOpenAiAssistant);
-    };
-  }, []);
-
   const hasCart = itemCount > 0;
   const positionClass = hasCart
     ? isCapsuleVisible

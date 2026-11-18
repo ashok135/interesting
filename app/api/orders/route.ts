@@ -120,10 +120,7 @@ export async function POST(req: NextRequest) {
 
     // Dispatch order confirmation SMS via httpSMS (with live tracking link)
     try {
-      const forwardedHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
-      const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
-      const requestOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : req.nextUrl.origin;
-      const smsResult = await sendOrderConfirmationSms(order, requestOrigin);
+      const smsResult = await sendOrderConfirmationSms(order);
       console.log(`[httpSMS] Order #${order.id} SMS dispatch result:`, JSON.stringify(smsResult));
     } catch (smsErr) {
       console.error('[httpSMS] Non-blocking error sending order SMS:', smsErr);
