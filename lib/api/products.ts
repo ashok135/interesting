@@ -99,7 +99,32 @@ const OPTIMIZED_PRODUCTS = new Set([
   'seeds-pumpkin-1',
   'seeds-chia-1',
   'nuts-walnuts-1',
+  'royal-gond-laddu',
+  'artisanal-nut-chikki',
+  'energy-crunch-trail',
+  'omega3-vitality-trail',
+  'california-pistachios',
+  'pink-salt-makhana',
 ]);
+
+// Dedicated 1-to-1 high-res photography for individual products (replaces shared/generic placeholders)
+const DEDICATED_PRODUCT_IMAGES: Record<string, string> = {
+  'royal-gond-dry-fruit-nutri-laddu': '/images/products/royal-gond-laddu.webp',
+  'jaggery-crushed-nut-artisanal-chikki': '/images/products/artisanal-nut-chikki.webp',
+  'energy-crunch-pre-workout-trail': '/images/products/energy-crunch-trail.webp',
+  'gourmet-omega-3-vitality-trail-mix': '/images/products/omega3-vitality-trail.webp',
+  'lightly-salted-california-pistachios': '/images/products/california-pistachios.webp',
+  'himalayan-pink-salt-popped-makhana': '/images/products/pink-salt-makhana.webp',
+};
+
+const DEDICATED_PRODUCT_ID_IMAGES: Record<number, string> = {
+  54: '/images/products/royal-gond-laddu.webp',
+  55: '/images/products/artisanal-nut-chikki.webp',
+  51: '/images/products/energy-crunch-trail.webp',
+  49: '/images/products/omega3-vitality-trail.webp',
+  48: '/images/products/california-pistachios.webp',
+  42: '/images/products/pink-salt-makhana.webp',
+};
 
 export function normalizeImageUrl(url?: string | null): string {
   if (!url) return '';
@@ -147,7 +172,23 @@ export function normalizeImageUrl(url?: string | null): string {
 
 function normalizeProduct(p: WooProduct): WooProduct {
   if (!p) return p;
-  if (p.images && Array.isArray(p.images)) {
+
+  const dedicatedSrc = (p.slug && DEDICATED_PRODUCT_IMAGES[p.slug]) || (p.id && DEDICATED_PRODUCT_ID_IMAGES[p.id]);
+
+  if (dedicatedSrc) {
+    const existingOtherImages = Array.isArray(p.images)
+      ? p.images.slice(1).map((img) => ({ ...img, src: normalizeImageUrl(img.src) }))
+      : [];
+    p.images = [
+      {
+        id: p.id || 0,
+        src: dedicatedSrc,
+        name: p.name || '',
+        alt: p.name || '',
+      },
+      ...existingOtherImages,
+    ];
+  } else if (p.images && Array.isArray(p.images)) {
     p.images = p.images.map((img) => ({
       ...img,
       src: normalizeImageUrl(img.src),
