@@ -1,9 +1,28 @@
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 import { wcFetch, clearWcCache } from '@/lib/api/client';
 import { updateCustomer } from '@/lib/api/customers';
 import { sendOrderConfirmationSms } from '@/lib/sms/httpsms';
 import { getRazorpay } from '@/lib/payment/razorpay';
 import { deletePendingOrder } from './pendingOrders';
 import type { OrderPayload, WooOrder } from '@/types';
+
+const ORPHANED_LOG_FILE = path.join(os.tmpdir(), 'intersting_orphaned_payments.json');
+
+function logOrphanedPayment(record: Record<string, any>) {
+  try {
+    let existing: any[] = [];
+    if (fs.existsSync(ORPHANED_LOG_FILE)) {
+      existing = JSON.parse(fs.readFileSync(ORPHANED_LOG_FILE, 'utf-8')) || [];
+    }
+    existing.push({ ...record, logged_at: new Date().toISOString() });
+    fs.writeFileSync(ORPHANED_LOG_FILE, JSON.stringify(existing, null, 2), 'utf-8');
+    console.warn(`[OrphanedPayments] Successfully recorded failed transaction to: ${ORPHANED_LOG_FILE}`);
+  } catch (err) {
+    console.error('[OrphanedPayments] Failed to record orphaned payment to disk:', err);
+  }
+}
 
 export interface ConfirmOrderParams {
   razorpay_order_id: string;
@@ -138,10 +157,23 @@ export async function confirmRazorpayOrder({
   }
 
   // 4. Create confirmed Order in WooCommerce
-  const order = await wcFetch<WooOrder>('orders', {
-    method: 'POST',
-    body: wcPayload,
-  });
+  let order: WooOrder;
+  try {
+    order = await wcFetch<WooOrder>('orders', {
+      method: 'POST',
+      body: wcPayload,
+    });
+  } catch (createErr: any) {
+    console.error(`[CRITICAL_PAYMENT_ALERT] Payment was CAPTURED on Razorpay (${razorpay_payment_id}), but WooCommerce order creation failed:`, createErr.message);
+    logOrphanedPayment({
+      razorpay_order_id,
+      razorpay_payment_id,
+      wcPayload,
+      errorMessage: createErr.message,
+      source,
+    });
+    throw new Error(`Payment was captured, but WooCommerce order provisioning encountered an error: ${createErr.message}. Admin has been notified.`);
+  }
 
   clearWcCache();
   deletePendingOrder(razorpay_order_id);

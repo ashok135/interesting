@@ -329,16 +329,14 @@
 @media (max-width: 768px) {
   .chatWindow {
     position: fixed !important;
-    inset: 0 !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    bottom: 0 !important;
+    bottom: auto !important;
     width: 100vw !important;
     max-width: 100vw !important;
-    height: 100% !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
+    height: var(--chat-vh, 100dvh) !important;
+    max-height: var(--chat-vh, 100dvh) !important;
     border-radius: 0 !important;
     border: none !important;
     margin: 0 !important;

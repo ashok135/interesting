@@ -252,13 +252,15 @@ export default function AiAssistant() {
     const vv = window.visualViewport;
     const handleViewportChange = () => {
       if (!vv) return;
-      const keyboardActive = window.innerHeight - vv.height > 100;
+      const vh = vv.height;
+      const keyboardActive = window.innerHeight - vh > 70;
       setIsKeyboardOpen(keyboardActive);
-      setVisualHeight(vv.height);
+      setVisualHeight(vh);
+      document.documentElement.style.setProperty('--chat-vh', `${vh}px`);
       // Keep messages visible right above the virtual keyboard
       setTimeout(() => {
         scrollToBottom('smooth');
-      }, 50);
+      }, 80);
     };
 
     if (vv) {
@@ -269,6 +271,7 @@ export default function AiAssistant() {
 
     return () => {
       document.body.style.overflow = origOverflow;
+      document.documentElement.style.removeProperty('--chat-vh');
       if (vv) {
         vv.removeEventListener('resize', handleViewportChange);
         vv.removeEventListener('scroll', handleViewportChange);

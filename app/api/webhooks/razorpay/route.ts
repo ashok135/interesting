@@ -94,11 +94,35 @@ export async function POST(req: NextRequest) {
 
       // 2. If server restarted and in-memory cache was lost, reconstruct from Razorpay notes
       if (!orderData) {
-        console.log(`[Razorpay Webhook] Order #${orderId} not in memory cache, reconstructing from payment notes...`);
+        console.log(`[Razorpay Webhook] Order #${orderId} not in cache, reconstructing from payment notes...`);
         const customerName = notes.customer_name || 'Valued Customer';
         const nameParts = customerName.split(' ');
         const firstName = nameParts[0] || 'Customer';
         const lastName = nameParts.slice(1).join(' ') || '';
+
+        let parsedLineItems: { product_id: number; quantity: number }[] = [];
+        if (notes.items_compact) {
+          try {
+            parsedLineItems = notes.items_compact.split(',').map((pair: string) => {
+              const [pid, qty] = pair.split(':');
+              return {
+                product_id: Number(pid),
+                quantity: Number(qty) || 1,
+              };
+            }).filter((item: any) => !isNaN(item.product_id) && item.product_id > 0);
+          } catch (e) {
+            console.warn('[Razorpay Webhook] Failed to parse items_compact from notes:', e);
+          }
+        }
+
+        if (parsedLineItems.length === 0) {
+          parsedLineItems = [
+            {
+              product_id: Number(notes.primary_product_id) || 124,
+              quantity: Number(notes.items_count) || 1,
+            },
+          ];
+        }
 
         orderData = {
           billing: {
@@ -107,8 +131,9 @@ export async function POST(req: NextRequest) {
             email: payment.email || notes.customer_email || 'guest@interestingstore.com',
             phone: payment.contact || notes.customer_phone || '',
             address_1: notes.address_1 || 'Express Delivery Address',
+            address_2: notes.address_2 || '',
             city: notes.city || 'Chennai',
-            state: 'Tamil Nadu',
+            state: notes.state || 'Tamil Nadu',
             postcode: notes.pincode || '600001',
             country: 'IN',
           },
@@ -118,18 +143,14 @@ export async function POST(req: NextRequest) {
             email: payment.email || notes.customer_email || 'guest@interestingstore.com',
             phone: payment.contact || notes.customer_phone || '',
             address_1: notes.address_1 || 'Express Delivery Address',
+            address_2: notes.address_2 || '',
             city: notes.city || 'Chennai',
-            state: 'Tamil Nadu',
+            state: notes.state || 'Tamil Nadu',
             postcode: notes.pincode || '600001',
             country: 'IN',
           },
-          line_items: [
-            // If line items were passed in notes, parse them; otherwise standard fallback
-            {
-              product_id: Number(notes.primary_product_id) || 124,
-              quantity: Number(notes.items_count) || 1,
-            },
-          ],
+          line_items: parsedLineItems,
+          coupon_code: notes.coupon_code || undefined,
         };
       }
 

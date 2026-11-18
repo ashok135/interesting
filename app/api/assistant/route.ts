@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { retrieveRagContext } from '@/lib/rag/catalog';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -18,6 +19,22 @@ const nvidiaClient = new OpenAI({
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute per IP
+    const rl = checkRateLimit(req, { limit: 30, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded.',
+          reply: 'You are asking questions a bit too fast! Please pause for a few seconds and try again.',
+          products: [],
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.resetSec) },
+        }
+      );
+    }
+
     const body = await req.json();
     const { message, history } = body;
 
