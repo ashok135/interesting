@@ -424,7 +424,13 @@ export default function CheckoutPage() {
       (err) => {
         setLocLoading(false);
         if (err.code === err.PERMISSION_DENIED) {
-          setLocError('Location permission denied. Please allow access and try again.');
+          setLocError(
+            'Location permission is blocked by your browser. Click the lock/settings icon (🔒) next to the website URL to allow location, or fill your address below.'
+          );
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setLocError('Device location is turned off or unavailable. Please enter address manually.');
+        } else if (err.code === err.TIMEOUT) {
+          setLocError('Location detection timed out. Please try again or enter address manually.');
         } else {
           setLocError('Unable to detect location. Please enter address manually.');
         }
