@@ -1075,16 +1075,16 @@ export default function CheckoutPage() {
                     {
                       id: 'razorpay',
                       Icon: RazorpayIcon,
-                      label: 'Online Payment (UPI, Cards, Netbanking)',
+                      label: 'Online Payment',
                       sub: 'Instant & secure checkout via Razorpay • Supports Google Pay, PhonePe, Paytm, CRED, Cards, Netbanking',
                       badge: 'Recommended',
                     },
                     {
                       id: 'cod',
                       Icon: Banknote,
-                      label: 'Pay on Delivery (Cash / UPI)',
+                      label: 'Pay on Delivery',
                       sub: 'Pay at your doorstep via Cash or scan delivery partner UPI QR upon arrival',
-                      badge: 'Cash / Scan',
+                      badge: 'Cash / UPI',
                     },
                     {
                       id: 'upi',
@@ -1099,21 +1099,30 @@ export default function CheckoutPage() {
                       className={`${styles.paymentOpt} ${payMethod === opt.id ? styles.paymentOptActive : ''}`}
                       htmlFor={`pay-${opt.id}`}
                     >
-                      <input type="radio" id={`pay-${opt.id}`} name="payment" value={opt.id}
-                        checked={payMethod === opt.id as PaymentMethod}
+                      <input
+                        type="radio"
+                        id={`pay-${opt.id}`}
+                        name="payment"
+                        value={opt.id}
+                        checked={payMethod === (opt.id as PaymentMethod)}
                         onChange={() => {
                           setPayMethod(opt.id as PaymentMethod);
                           setOrderError('');
                         }}
-                        className={styles.radioInput} />
-                      <span className={styles.payOptIcon}>
-                        {'icon' in opt ? <span className={styles.upiIcon}>{opt.icon}</span> : <opt.Icon size={20} />}
-                      </span>
-                      <span className={styles.payOptInfo}>
-                        <span className={styles.payOptLabel}>{opt.label}</span>
-                        <span className={styles.payOptSub}>{opt.sub}</span>
-                      </span>
-                      {opt.badge && <span className={styles.payOptBadge}>{opt.badge}</span>}
+                        className={styles.radioInput}
+                      />
+                      <div className={styles.payOptLeft}>
+                        <span className={styles.payOptIcon}>
+                          {'icon' in opt ? <span className={styles.upiIcon}>{opt.icon}</span> : <opt.Icon size={20} />}
+                        </span>
+                        <div className={styles.payOptInfo}>
+                          <div className={styles.payOptHeader}>
+                            <span className={styles.payOptLabel}>{opt.label}</span>
+                            {opt.badge && <span className={styles.payOptBadge}>{opt.badge}</span>}
+                          </div>
+                          <span className={styles.payOptSub}>{opt.sub}</span>
+                        </div>
+                      </div>
                       <span className={styles.radioCircle} />
                     </label>
                   ))}

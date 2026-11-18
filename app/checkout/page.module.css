@@ -618,19 +618,20 @@
 .paymentOptions {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
 .paymentOpt {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.85rem;
-  padding: 0.9rem 1.1rem;
+  padding: 0.95rem 1.15rem;
   border: 1.5px solid var(--color-border, #e2e8f0);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--color-surface-2, #f8fafc);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
 }
 
@@ -642,7 +643,15 @@
 .paymentOptActive {
   border-color: #22c55e !important;
   background: #f0fdf4 !important;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.12);
+}
+
+.payOptLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .radioInput {
@@ -652,26 +661,27 @@
 }
 
 .radioCircle {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border: 2px solid #cbd5e1;
   border-radius: 50%;
-  margin-left: auto;
+  margin-left: 0.5rem;
   flex-shrink: 0;
   transition: all 0.15s ease;
   position: relative;
+  align-self: center;
 }
 
 .paymentOptActive .radioCircle {
   border-color: #22c55e;
   background: #22c55e;
-  box-shadow: inset 0 0 0 3px #fff;
+  box-shadow: inset 0 0 0 3.5px #fff;
 }
 
 .payOptIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: #fff;
   border: 1px solid #e2e8f0;
   display: flex;
@@ -679,6 +689,7 @@
   justify-content: center;
   color: #374151;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .upiIcon {
@@ -691,30 +702,42 @@
 .payOptInfo {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.2rem;
   flex: 1;
+  min-width: 0;
+}
+
+.payOptHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .payOptLabel {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--color-text, #0f172a);
+  line-height: 1.3;
 }
 
 .payOptSub {
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   color: var(--color-text-muted, #64748b);
+  line-height: 1.4;
+  word-break: normal;
 }
 
 .payOptBadge {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  padding: 0.15rem 0.5rem;
+  padding: 0.18rem 0.5rem;
   border-radius: 6px;
   background: #dcfce7;
   color: #166534;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .paymentNote {
@@ -1556,6 +1579,10 @@
 [data-theme="dark"] .paymentOptActive {
   border-color: #22c55e !important;
   background: rgba(34, 197, 94, 0.08) !important;
+}
+
+[data-theme="dark"] .paymentOptActive .radioCircle {
+  box-shadow: inset 0 0 0 3.5px #111827;
 }
 
 [data-theme="dark"] .payOptIcon {

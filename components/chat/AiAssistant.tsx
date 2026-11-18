@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Sparkles, MessageCircle, X, Send, ShoppingBag, Check, Package, RotateCcw, Truck, PhoneCall } from 'lucide-react';
 import { Mascot } from 'page-mascot';
 import { useCartContext } from '@/store/CartContext';
@@ -124,6 +125,7 @@ function renderFormattedText(text: string, onLinkClick: () => void) {
 }
 
 export default function AiAssistant() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -381,6 +383,11 @@ export default function AiAssistant() {
     : isCapsuleVisible
     ? styles.posEmptyWithCapsule
     : styles.posEmptyWithoutCapsule;
+
+  // Automatically hide AI assistant on checkout / payment pages to avoid blocking payment buttons and radio options
+  if (pathname?.startsWith('/checkout')) {
+    return null;
+  }
 
   return (
     <>
