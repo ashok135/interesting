@@ -267,6 +267,21 @@ export default function CheckoutPage() {
     }
   }, [items.length, orderId, confirmedOrder, step, authLoading, router]);
 
+  /* ── Auto-scroll to top and focus celebration card when order is placed ── */
+  useEffect(() => {
+    if (step === 'success' || confirmedOrder) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+      const t = setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        const el = document.getElementById('order-success-card');
+        if (el) {
+          el.focus({ preventScroll: true });
+        }
+      }, 60);
+      return () => clearTimeout(t);
+    }
+  }, [step, confirmedOrder]);
+
   /* ── Pricing ── */
   const subtotal = parseFloat(total) || 0;
   const delivery = subtotal >= 499 ? 0 : 49;
@@ -678,7 +693,12 @@ export default function CheckoutPage() {
 
     return (
       <div className={styles.successPage}>
-        <div className={styles.successCard}>
+        <div
+          id="order-success-card"
+          tabIndex={-1}
+          style={{ outline: 'none' }}
+          className={styles.successCard}
+        >
           <div className={styles.successCircle}>
             <CheckCircle2 size={40} strokeWidth={2} />
           </div>

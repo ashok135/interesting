@@ -1800,11 +1800,11 @@
 
 /* ── Success page ───────────────────────────────── */
 .successPage {
-  min-height: 90vh;
+  min-height: 85vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 2rem 1.25rem;
+  padding: 2.25rem 1.25rem 3.5rem;
   background: var(--color-bg, #f8fafc);
 }
 
