@@ -1327,44 +1327,52 @@ function AccountContent() {
                                 >
                                   <ShoppingBag size={14} /> Buy Again
                                 </button>
-                                {isCompleted && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setReviewModalItem({ item, orderId: order.id });
-                                      setReviewRating(5);
-                                      setReviewHeadline('');
-                                      setReviewComment('');
-                                    }}
-                                    className={reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`) ? styles.reviewSubmittedBtn : styles.writeReviewOrderBtn}
-                                    disabled={reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`)}
-                                    title="Write a verified customer review"
-                                  >
-                                    <Star size={13} fill={reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`) ? '#10b981' : '#f59e0b'} color={reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`) ? '#10b981' : '#f59e0b'} />
-                                    {reviewedKeys.includes(`${order.id}-${item.product_id || item.id}`) ? 'Reviewed' : 'Write a Review'}
-                                  </button>
-                                )}
                               </div>
                             </div>
                           ))}
                         </div>
 
-                        {/* ── 5. Action Buttons (Details, Cancel, Help) ── */}
+                        {/* ── 5. Action Buttons: Clean 3-Card Bottom Row (Details, Review/Cancel, Help) ── */}
                         <div className={styles.cardFooterActions}>
                           <button
                             type="button"
                             onClick={() => setSelectedOrder(order)}
                             className={styles.viewOrderDetailsBtn}
                           >
-                            View Details
+                            <Package size={14} /> View Details
                           </button>
-                          {canCancel && (
+                          {isCompleted ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const itemToReview = order.line_items[0];
+                                setReviewModalItem({ item: itemToReview, orderId: order.id });
+                                setReviewRating(5);
+                                setReviewHeadline('');
+                                setReviewComment('');
+                              }}
+                              className={reviewedKeys.some((k) => k.startsWith(`${order.id}-`)) ? styles.reviewSubmittedBtn : styles.writeReviewOrderBtn}
+                              disabled={reviewedKeys.some((k) => k.startsWith(`${order.id}-`))}
+                              title="Write a verified customer review"
+                            >
+                              <Star size={13} fill={reviewedKeys.some((k) => k.startsWith(`${order.id}-`)) ? '#10b981' : '#f59e0b'} color={reviewedKeys.some((k) => k.startsWith(`${order.id}-`)) ? '#10b981' : '#f59e0b'} />
+                              {reviewedKeys.some((k) => k.startsWith(`${order.id}-`)) ? 'Reviewed' : 'Review'}
+                            </button>
+                          ) : canCancel ? (
                             <button
                               type="button"
                               onClick={() => setCancellingOrder(order)}
                               className={styles.cancelOrderBtn}
                             >
-                              <XCircle size={15} /> Cancel Order
+                              <XCircle size={14} /> Cancel
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrder(order)}
+                              className={styles.trackPackageBtn}
+                            >
+                              <Truck size={14} /> Track
                             </button>
                           )}
                           <button
@@ -1375,7 +1383,7 @@ function AccountContent() {
                             }}
                             className={styles.helpBtn}
                           >
-                            <HelpCircle size={15} /> Help
+                            <HelpCircle size={14} /> Help
                           </button>
                         </div>
                       </div>

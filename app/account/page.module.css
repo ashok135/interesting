@@ -1421,6 +1421,10 @@
     margin-bottom: 1.1rem;
   }
 
+  .page {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 24px));
+  }
+
   .amazonItemRow {
     flex-wrap: wrap;
     gap: 0.85rem;
@@ -1429,27 +1433,39 @@
   .itemActionCol {
     width: 100%;
     display: flex;
-    justify-content: flex-end;
+    justify-content: stretch;
   }
 
   .buyAgainBtn {
     width: 100%;
     justify-content: center;
+    padding: 0.65rem 1rem;
+    font-size: 0.84rem;
+    font-weight: 700;
+    border-radius: 9px;
   }
 
   .cardFooterActions {
-    justify-content: stretch;
-    gap: 0.5rem;
-    padding: 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.45rem;
+    padding: 0.75rem 0.85rem;
   }
 
   .trackPackageBtn,
   .viewOrderDetailsBtn,
+  .cancelOrderBtn,
+  .writeReviewOrderBtn,
+  .reviewSubmittedBtn,
   .helpBtn {
-    flex: 1;
+    width: 100%;
     justify-content: center;
-    padding: 0.55rem 0.6rem;
-    font-size: 0.75rem;
+    padding: 0.55rem 0.35rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    border-radius: 8px;
+    height: 38px;
+    white-space: nowrap;
   }
 }
 
