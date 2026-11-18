@@ -10,7 +10,7 @@ export interface AuthUser {
 }
 
 const COOKIE_NAME = 'intersting_session';
-const SECRET_KEY = process.env.SESSION_SECRET || '';
+const SECRET_KEY = process.env.SESSION_SECRET || process.env.RAZORPAY_KEY_SECRET || 'intersting_fallback_secure_session_key_2026';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 14; // 14 days in seconds
 
 /**
@@ -43,7 +43,11 @@ export function verifySessionToken(token: string): AuthUser | null {
     hmac.update(payload);
     const expectedSignature = hmac.digest('base64url');
 
-    if (signature !== expectedSignature) return null;
+    const sigBuf = Buffer.from(signature, 'utf8');
+    const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+      return null;
+    }
 
     const data = JSON.parse(payload);
     if (data.exp && data.exp < Math.floor(Date.now() / 1000)) {

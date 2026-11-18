@@ -521,7 +521,7 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
       ? retrievedProducts
           .map(
             (p, i) =>
-              `${i + 1}. **${p.name}** — ₹${p.price}` +
+              `${i + 1}. **${p.name}** — ₹${p.price} | Exact Link: [${p.name}](/product/${p.slug})` +
               (p.stock_status === 'instock' ? ' (In Stock)' : ' (Out of Stock)') +
               (p.description ? `\n   ${p.description.slice(0, 120)}` : '')
           )
@@ -537,7 +537,7 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
       '### Live Store Products (Real-Time):',
       productContextText,
       '',
-      'Instruction: Reply in 1-2 sentences max (under 35 words). Mention product name and price only. DO NOT include any URLs, /product/ paths, slugs, or markdown links — interactive product cards with images and links already appear below your message automatically.',
+      'Instruction: Reply in 1-2 sentences max (under 35 words). If mentioning a product link, ONLY use the Exact Link given above. Never invent fake slugs or order URLs. For order tracking, ALWAYS use [My Account > Orders](/account). Interactive product cards already appear below your message automatically.',
     ]
       .filter(Boolean)
       .join('\n'),

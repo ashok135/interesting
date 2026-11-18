@@ -1,6 +1,7 @@
 import { wcFetch, clearWcCache } from '@/lib/api/client';
 import { updateCustomer } from '@/lib/api/customers';
 import { sendOrderConfirmationSms } from '@/lib/sms/httpsms';
+import { getRazorpay } from '@/lib/payment/razorpay';
 import { deletePendingOrder } from './pendingOrders';
 import type { OrderPayload, WooOrder } from '@/types';
 
@@ -51,7 +52,24 @@ export async function confirmRazorpayOrder({
     console.warn(`[Order Confirmation (${source})] Error searching for existing order:`, searchErr);
   }
 
-  // 2. Format customer addresses
+  // 2. Gateway Verification: Verify directly with Razorpay gateway that funds were captured
+  try {
+    const rzp = getRazorpay();
+    const paymentEntity = await rzp.payments.fetch(razorpay_payment_id) as any;
+    if (!paymentEntity) {
+      throw new Error(`Razorpay payment ${razorpay_payment_id} not found.`);
+    }
+    const validStatuses = ['captured', 'authorized'];
+    if (!validStatuses.includes(paymentEntity.status)) {
+      throw new Error(`Payment ${razorpay_payment_id} has invalid status "${paymentEntity.status}".`);
+    }
+    console.log(`[Order Confirmation (${source})] Gateway verified: payment ${razorpay_payment_id} is ${paymentEntity.status} for ₹${(paymentEntity.amount || 0) / 100}`);
+  } catch (rzpErr: any) {
+    console.error(`[Order Confirmation (${source})] Gateway fetch error:`, rzpErr.message);
+    throw new Error(`Could not verify payment status with Razorpay gateway: ${rzpErr.message}`);
+  }
+
+  // 3. Format customer addresses
   const customerId = orderData.customer_id && Number(orderData.customer_id) > 0 ? Number(orderData.customer_id) : undefined;
 
   const billingAddress = {

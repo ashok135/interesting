@@ -48,6 +48,15 @@ const nextConfig: NextConfig = {
       fullUrl: true,
     },
   },
+  async redirects() {
+    return [
+      { source: '/order', destination: '/account', permanent: false },
+      { source: '/orders', destination: '/account', permanent: false },
+      { source: '/track', destination: '/account', permanent: false },
+      { source: '/track-order', destination: '/account', permanent: false },
+      { source: '/order-tracking', destination: '/account', permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

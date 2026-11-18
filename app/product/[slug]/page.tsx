@@ -62,12 +62,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
     console.error(`Failed to fetch product for slug "${decodedSlug}":`, err);
   }
 
-  // Fallback: if slug is a numeric ID, fetch by ID directly
+  // Fallback 1: if slug is a numeric ID, fetch by ID directly
   if (!product && /^\d+$/.test(decodedSlug)) {
     try {
       product = await getProductById(parseInt(decodedSlug, 10));
     } catch (err) {
       console.error(`Failed to fetch product by ID "${decodedSlug}":`, err);
+      product = null;
+    }
+  }
+
+  // Fallback 2: if not found by exact slug, search WooCommerce for closest matching product
+  if (!product) {
+    try {
+      const searchKeywords = decodedSlug.replace(/[-_]/g, ' ').trim();
+      const results = await getProducts({ search: searchKeywords, perPage: 1 });
+      if (Array.isArray(results) && results.length > 0) {
+        product = results[0];
+      }
+    } catch (err) {
+      console.warn(`Search fallback failed for slug "${decodedSlug}":`, err);
       product = null;
     }
   }
