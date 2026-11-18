@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    const sessionUser = await getCurrentUser(req);
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -147,7 +148,64 @@ export async function GET(req: NextRequest) {
     }
 
     const order = await wcFetch<WooOrder>(`orders/${id}`);
-    return NextResponse.json({ success: true, order });
+    if (!order || !order.id) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Security & Privacy Check: Prevent Insecure Direct Object Reference (IDOR)
+    const orderCustomerId = order.customer_id ? Number(order.customer_id) : null;
+    const sessionUserId = sessionUser?.id ? Number(sessionUser.id) : null;
+    const orderEmail = order.billing?.email?.toLowerCase().trim();
+    const sessionEmail = sessionUser?.email?.toLowerCase().trim();
+
+    const isOwner =
+      Boolean(orderCustomerId && sessionUserId && orderCustomerId === sessionUserId) ||
+      Boolean(orderEmail && sessionEmail && orderEmail === sessionEmail);
+
+    if (isOwner) {
+      return NextResponse.json({ success: true, order });
+    }
+
+    // Guest verification via query params
+    const queryEmail = searchParams.get('email')?.toLowerCase().trim();
+    const rawQueryPhone = searchParams.get('phone')?.replace(/[^0-9]/g, '');
+    const billingPhone = order.billing?.phone?.replace(/[^0-9]/g, '');
+
+    const isGuestVerified =
+      Boolean(queryEmail && orderEmail === queryEmail) ||
+      Boolean(rawQueryPhone && billingPhone && (billingPhone.endsWith(rawQueryPhone) || rawQueryPhone.endsWith(billingPhone)));
+
+    if (isGuestVerified) {
+      return NextResponse.json({ success: true, order });
+    }
+
+    // Unauthenticated guest tracking: return masked/sanitized order (no sensitive PII leaked)
+    const maskedOrder = {
+      id: order.id,
+      status: order.status,
+      date_created: order.date_created,
+      date_modified: order.date_modified,
+      total: order.total,
+      payment_method_title: order.payment_method_title,
+      line_items: order.line_items?.map((item) => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        total: item.total,
+        image: item.image,
+      })),
+      shipping: {
+        first_name: order.shipping?.first_name ? `${order.shipping.first_name[0]}***` : 'Customer',
+        last_name: '',
+        city: order.shipping?.city || order.billing?.city,
+        state: order.shipping?.state || order.billing?.state,
+        postcode: order.shipping?.postcode ? `${order.shipping.postcode.slice(0, 3)}***` : '',
+        country: order.shipping?.country || 'IN',
+      },
+      is_guest_view: true,
+    };
+
+    return NextResponse.json({ success: true, order: maskedOrder });
   } catch (error: unknown) {
     console.error('Get order error:', error);
     const message = error instanceof Error ? error.message : 'Failed to retrieve order.';

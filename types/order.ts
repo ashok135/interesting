@@ -64,4 +64,5 @@ export interface WooOrder {
     };
   }>;
   date_created: string;
+  date_modified?: string;
 }

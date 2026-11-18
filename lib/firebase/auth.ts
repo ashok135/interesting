@@ -47,11 +47,13 @@ export async function signInWithGoogleFirebase(): Promise<{ success: boolean; us
       console.warn('Firestore write warning (check Firebase rules):', firestoreErr);
     }
 
-    // 2. Synchronize with WooCommerce backend and set session cookie
+    // 2. Synchronize with WooCommerce backend and set session cookie using cryptographically signed Firebase ID token
+    const idToken = await user.getIdToken();
     const syncRes = await fetch('/api/auth/firebase-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        idToken,
         uid: user.uid,
         email: user.email,
         name: user.displayName || user.email?.split('@')[0] || 'Customer',

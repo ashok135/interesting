@@ -31,16 +31,20 @@ export function useCart(): CartState & {
   clearCart: () => void;
 } {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
     setItems(loadCart());
+    setIsHydrated(true);
   }, []);
 
-  // Persist to localStorage whenever items change
+  // Persist to localStorage only AFTER initial hydration (prevents wiping cart on mount)
   useEffect(() => {
-    saveCart(items);
-  }, [items]);
+    if (isHydrated) {
+      saveCart(items);
+    }
+  }, [items, isHydrated]);
 
   // Listen for logout event to immediately clear cart
   useEffect(() => {

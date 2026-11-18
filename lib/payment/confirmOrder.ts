@@ -82,6 +82,11 @@ export async function confirmRazorpayOrder({
     if (!validStatuses.includes(paymentEntity.status)) {
       throw new Error(`Payment ${razorpay_payment_id} has invalid status "${paymentEntity.status}".`);
     }
+
+    // Security Verification: Ensure payment belongs to the expected Razorpay order
+    if (paymentEntity.order_id && paymentEntity.order_id !== razorpay_order_id) {
+      throw new Error(`Payment ${razorpay_payment_id} belongs to order ${paymentEntity.order_id}, not ${razorpay_order_id}.`);
+    }
     console.log(`[Order Confirmation (${source})] Gateway verified: payment ${razorpay_payment_id} is ${paymentEntity.status} for ₹${(paymentEntity.amount || 0) / 100}`);
   } catch (rzpErr: any) {
     console.error(`[Order Confirmation (${source})] Gateway fetch error:`, rzpErr.message);

@@ -13,7 +13,7 @@ interface GoogleUserInfo {
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const code = searchParams.get('code');
-  const isDevMock = searchParams.get('dev_mock') === 'true';
+  const isDevMock = process.env.NODE_ENV !== 'production' && searchParams.get('dev_mock') === 'true';
 
   let googleUser: GoogleUserInfo;
 

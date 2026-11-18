@@ -5,8 +5,11 @@ export async function GET(req: NextRequest) {
   const baseUrl = req.nextUrl.origin;
   const redirectUri = `${baseUrl}/api/auth/google/callback`;
 
-  // If Google credentials are not yet configured in .env.local, provide smooth local dev testing
+  // If Google credentials are not yet configured in .env.local, provide smooth local dev testing (NEVER in production)
   if (!clientId || clientId.includes('your_google_client_id')) {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.redirect(new URL('/login?error=Google+login+is+not+configured+in+production', req.url));
+    }
     const devTestRedirect = new URL('/api/auth/google/callback?dev_mock=true', req.url);
     return NextResponse.redirect(devTestRedirect);
   }

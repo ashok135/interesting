@@ -4,10 +4,32 @@ import { createSessionToken } from '@/lib/auth/session';
 
 export async function POST(req: NextRequest) {
   try {
-    const { uid, email, name, photoURL } = await req.json();
+    const { idToken, uid, email, name, photoURL } = await req.json();
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
+    }
+
+    // Cryptographic validation of Firebase / Google ID token to prevent email spoofing
+    if (idToken) {
+      try {
+        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+        if (verifyRes.ok) {
+          const tokenInfo = await verifyRes.json();
+          if (tokenInfo.email && tokenInfo.email.toLowerCase() !== email.toLowerCase()) {
+            console.warn(`[Security Alert] ID Token email (${tokenInfo.email}) does not match payload email (${email})`);
+            return NextResponse.json({ error: 'Token email mismatch. Access denied.' }, { status: 403 });
+          }
+        } else if (process.env.NODE_ENV === 'production') {
+          return NextResponse.json({ error: 'Invalid Firebase authentication token.' }, { status: 401 });
+        }
+      } catch (tokenErr) {
+        if (process.env.NODE_ENV === 'production') {
+          return NextResponse.json({ error: 'Could not verify token with provider.' }, { status: 401 });
+        }
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Missing security verification token.' }, { status: 401 });
     }
 
     const parts = (name || '').trim().split(' ');

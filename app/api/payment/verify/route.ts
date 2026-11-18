@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Retrieve orderData from request or from server pending store
-    const orderData = directOrderData || getPendingOrder(razorpay_order_id);
+    // Authoritative Server Order Data: Always prioritize server-verified pending order over client payload
+    const orderData = getPendingOrder(razorpay_order_id) || directOrderData;
 
     if (!orderData || !orderData.line_items || orderData.line_items.length === 0) {
       return NextResponse.json(

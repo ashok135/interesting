@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findCustomerByEmail, createWooCustomer } from '@/lib/api/customers';
 import { createSessionToken } from '@/lib/auth/session';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Signup spam prevention: 5 account creations per minute per IP
+    const rl = checkRateLimit(req, { limit: 5, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many signup attempts. Please wait a moment before trying again.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSec) } }
+      );
+    }
+
     const { name, email, password } = await req.json();
 
     if (!email || !email.includes('@')) {

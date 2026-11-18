@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findCustomerByEmail, verifyCustomerCredentials } from '@/lib/api/customers';
 import { createSessionToken } from '@/lib/auth/session';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Brute force protection: 10 login attempts per minute per IP
+    const rl = checkRateLimit(req, { limit: 10, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please wait a minute before trying again.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSec) } }
+      );
+    }
+
     const { email, password } = await req.json();
 
     if (!email || !password) {
