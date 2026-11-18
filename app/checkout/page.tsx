@@ -144,6 +144,7 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
   const [isGuest, setIsGuest] = useState(false);
+  const [isChangingAddress, setIsChangingAddress] = useState(false);
 
   /* ── Preload Razorpay Checkout Script ── */
   useEffect(() => {
@@ -171,14 +172,14 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (authLoading) return;
     if (user) {
+      setStep('payment');
       const hasAddr = !!(customer?.shipping?.address_1 || customer?.billing?.address_1);
-      setStep(hasAddr ? 'payment' : 'address');
       if (customer) {
         const s = customer.shipping;
         const b = customer.billing;
         setAddrForm({
-          first_name: s?.first_name || b?.first_name || '',
-          last_name:  s?.last_name  || b?.last_name  || '',
+          first_name: s?.first_name || b?.first_name || user.name?.split(' ')[0] || '',
+          last_name:  s?.last_name  || b?.last_name  || user.name?.split(' ').slice(1).join(' ') || '',
           email:      b?.email      || user.email     || '',
           phone:      b?.phone      || '',
           address_1:  s?.address_1  || b?.address_1   || '',
@@ -189,6 +190,7 @@ export default function CheckoutPage() {
           country: 'IN',
         });
       }
+      setIsChangingAddress(!hasAddr);
     } else if (!isGuest) {
       setStep('auth');
     }
@@ -219,8 +221,8 @@ export default function CheckoutPage() {
       const s = customer!.shipping;
       const b = customer!.billing;
       return {
-        first_name: s?.first_name || b?.first_name || '',
-        last_name:  s?.last_name  || b?.last_name  || '',
+        first_name: s?.first_name || b?.first_name || user?.name?.split(' ')[0] || '',
+        last_name:  s?.last_name  || b?.last_name  || user?.name?.split(' ').slice(1).join(' ') || '',
         email:      b?.email      || user?.email    || '',
         phone:      b?.phone      || '',
         address_1:  s?.address_1  || b?.address_1   || '',
@@ -355,17 +357,23 @@ export default function CheckoutPage() {
     setOrderError('');
     setPlacing(true);
     const addr = getAddr();
-    if (!addr.address_1 || !addr.city || !addr.postcode) {
+    if (!addr.address_1?.trim() || !addr.city?.trim() || !addr.postcode?.trim()) {
       setOrderError('Please add a complete delivery address.');
+      setIsChangingAddress(true);
       setPlacing(false);
-      setStep('address');
       return;
     }
     const cleanPhone = (addr.phone || '').replace(/\D/g, '');
     if (!cleanPhone || cleanPhone.length < 10) {
       setOrderError('Please enter a valid 10-digit mobile number for order delivery & SMS updates.');
+      setIsChangingAddress(true);
       setPlacing(false);
-      setStep('address');
+      return;
+    }
+    if (!addr.email?.trim() || !addr.email.includes('@')) {
+      setOrderError('Please enter a valid email address for order confirmation.');
+      setIsChangingAddress(true);
+      setPlacing(false);
       return;
     }
 
@@ -632,35 +640,44 @@ export default function CheckoutPage() {
   if (items.length === 0 && !confirmedOrder) return null;
 
   const addrDisplay = getAddr();
+  const hasSelectedValidAddr = !!(
+    addrDisplay.first_name?.trim() &&
+    addrDisplay.phone?.trim() &&
+    addrDisplay.address_1?.trim() &&
+    addrDisplay.city?.trim() &&
+    addrDisplay.postcode?.trim()
+  );
 
   return (
     <div className={styles.page}>
       <div className={styles.inner}>
 
-        {/* ── Progress stepper ── */}
+        {/* ── Progress stepper (2 steps: Account ── Delivery & Payment) ── */}
         <div className={styles.stepper}>
-          {(['auth', 'address', 'payment'] as const).map((s, i) => {
-            const labels = [isGuest && !user ? 'Guest' : 'Account', 'Address', 'Payment'];
-            const stepOrder = { auth: 0, address: 1, payment: 2, success: 3 };
-            const current = stepOrder[step];
-            const me = stepOrder[s];
-            const isActive = step === s;
-            const isDone = current > me;
+          {[
+            { id: 'auth', label: isGuest && !user ? 'Guest' : 'Account' },
+            { id: 'payment', label: 'Delivery & Payment' },
+          ].map((s, i) => {
+            const isDone = s.id === 'auth' && (!!user || isGuest) && step === 'payment';
+            const isActive = step === s.id;
             return (
-              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                 <button
                   type="button"
                   onClick={() => {
-                    if (isDone) setStep(s);
+                    if (isDone && s.id === 'auth') {
+                      setIsGuest(false);
+                      setStep('auth');
+                    }
                   }}
-                  disabled={!isDone && !isActive}
+                  disabled={!isDone}
                   className={`${styles.stepPill} ${isActive ? styles.stepActive : ''} ${isDone ? styles.stepDone : ''} ${isDone ? styles.stepClickable : ''}`}
-                  title={isDone ? `Change ${labels[i]}` : undefined}
+                  title={isDone ? `Switch ${s.label}` : undefined}
                 >
                   {isDone ? <CheckCircle2 size={14} /> : <span className={styles.stepNum}>{i + 1}</span>}
-                  <span>{labels[i]}</span>
+                  <span>{s.label}</span>
                 </button>
-                {i < 2 && <div className={`${styles.stepLine} ${current > me ? styles.stepLineDone : ''}`} />}
+                {i < 1 && <div className={`${styles.stepLine} ${isDone ? styles.stepLineDone : ''}`} />}
               </div>
             );
           })}
@@ -803,7 +820,8 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={() => {
                       setIsGuest(true);
-                      setStep('address');
+                      setIsChangingAddress(true);
+                      setStep('payment');
                     }}
                     style={{
                       width: '100%',
@@ -834,308 +852,367 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {/* STEP 2 — Address */}
-            {step === 'address' && (
+            {/* STEP 2 — Unified Delivery & Payment */}
+            {step === 'payment' && (
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
-                  <div className={styles.cardHeaderIcon}><MapPin size={18} /></div>
-                  <div>
-                    <h2 className={styles.cardTitle}>Delivery Address</h2>
-                    <p className={styles.cardSubtitle}>Where should we deliver your order?</p>
+                  <div className={styles.cardHeaderIcon}><ShieldCheck size={18} /></div>
+                  <div style={{ flex: 1 }}>
+                    <h2 className={styles.cardTitle}>Delivery &amp; Payment</h2>
+                    <p className={styles.cardSubtitle}>Confirm your delivery address and choose payment method</p>
                   </div>
-                </div>
-
-                {isGuest && !user && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.75rem 1rem',
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '10px',
-                    marginBottom: '1.25rem',
-                    fontSize: '0.85rem',
-                    color: '#334155',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span style={{
-                        background: '#0d3821',
-                        color: '#fff',
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        padding: '0.18rem 0.55rem',
-                        borderRadius: '999px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                      }}>
-                        ⚡ Guest Checkout
-                      </span>
-                      <span>Express checkout without password</span>
-                    </div>
+                  {isGuest && !user && (
                     <button
                       type="button"
                       onClick={() => {
                         setIsGuest(false);
                         setStep('auth');
                       }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#0d3821',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        textDecoration: 'underline',
-                        fontSize: '0.82rem',
-                        whiteSpace: 'nowrap',
-                      }}
+                      className={styles.guestSwitchBtn}
+                      title="Sign in with your account"
                     >
-                      Sign in instead
+                      Sign In
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {hasSaved && (
-                  <div className={styles.savedAddressToggle}>
-                    <button type="button"
-                      className={`${styles.addrToggleBtn} ${addressMode === 'saved' ? styles.addrToggleActive : ''}`}
-                      onClick={() => setAddressMode('saved')}>
-                      <MapPin size={14} /> Saved Address
-                    </button>
-                    <button type="button"
-                      className={`${styles.addrToggleBtn} ${addressMode === 'new' ? styles.addrToggleActive : ''}`}
-                      onClick={() => setAddressMode('new')}>
-                      <Plus size={14} /> New Address
-                    </button>
-                  </div>
-                )}
-
-                {hasSaved && addressMode === 'saved' && (() => {
-                  const a = getAddr();
-                  const name = `${a.first_name} ${a.last_name}`.trim();
-                  return (
-                    <div className={styles.savedAddrCard}>
-                      <div className={styles.savedAddrTop}>
-                        <div className={styles.savedAddrTagWrap}>
-                          <span className={styles.savedAddrTag}><MapPin size={11} /> Home</span>
-                          {name && <span className={styles.savedAddrName}>{name}</span>}
-                        </div>
-                        <button type="button" className={styles.editAddrBtn} onClick={() => setAddressMode('new')}>
-                          <Edit2 size={13} /> Change
-                        </button>
-                      </div>
-                      <p className={styles.savedAddrText}>{a.address_1}</p>
-                      {a.address_2 && <p className={styles.savedAddrText}>{a.address_2}</p>}
-                      <p className={styles.savedAddrCity}>{a.city}, {a.state} — {a.postcode}</p>
-                      {a.phone && <p className={styles.savedAddrPhone}><Phone size={12} /> {a.phone}</p>}
+                {/* ── 1. DELIVERY ADDRESS SECTION (Seamless Flipkart / Blinkit flow) ── */}
+                <div className={styles.deliveryBlock}>
+                  <div className={styles.blockHeadingRow}>
+                    <div className={styles.blockHeadingLeft}>
+                      <MapPin size={16} className={styles.blockIcon} />
+                      <h3 className={styles.blockHeading}>Delivery Address</h3>
                     </div>
-                  );
-                })()}
-
-                {(!hasSaved || addressMode === 'new') && (
-                  <div className={styles.addrForm}>
-                    <div className={styles.row2}>
-                      <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>First Name *</label>
-                        <input value={addrForm.first_name} onChange={(e) => setAddrForm((p) => ({ ...p, first_name: e.target.value }))}
-                          required placeholder="First name" className={styles.input} />
-                      </div>
-                      <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>Last Name *</label>
-                        <input value={addrForm.last_name} onChange={(e) => setAddrForm((p) => ({ ...p, last_name: e.target.value }))}
-                          required placeholder="Last name" className={styles.input} />
-                      </div>
-                    </div>
-                    <div className={styles.row2}>
-                      <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>Email *</label>
-                        <input type="email" value={addrForm.email} onChange={(e) => setAddrForm((p) => ({ ...p, email: e.target.value }))}
-                          required placeholder="Email" className={styles.input} />
-                      </div>
-                      <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>Phone *</label>
-                        <input type="tel" value={addrForm.phone} onChange={(e) => setAddrForm((p) => ({ ...p, phone: e.target.value }))}
-                          required placeholder="+91 98765 43210" className={styles.input} />
-                      </div>
-                    </div>
-                    {/* GPS Location button */}
-                    <div className={styles.locationRow}>
+                    {!isChangingAddress && hasSelectedValidAddr && (
                       <button
                         type="button"
-                        className={`${styles.locationBtn} ${locLoading ? styles.locationBtnBusy : ''} ${locSuccess ? styles.locationBtnSuccess : ''}`}
-                        onClick={useCurrentLocation}
-                        disabled={locLoading}
+                        className={styles.changeAddressBtn}
+                        onClick={() => {
+                          setIsChangingAddress(true);
+                          setAddrError('');
+                        }}
                       >
-                        {locLoading ? (
-                          <><span className={styles.locSpinner} /> Detecting location…</>
-                        ) : locSuccess ? (
-                          <><Navigation size={15} /> Location detected!</>
-                        ) : (
-                          <><LocateFixed size={15} /> Use current location</>  
-                        )}
+                        <Edit2 size={13} /> Change
                       </button>
-                      <span className={styles.locationOr}>or enter manually below</span>
-                    </div>
-
-                    {locError && (
-                      <div className={styles.locErrorBox}>
-                        <TriangleAlert size={13} /> {locError}
-                      </div>
                     )}
-
-                    <div className={styles.inputGroup}>
-                      <label className={styles.inputLabel}>House / Flat / Building *</label>
-                      <input value={addrForm.address_1} onChange={(e) => setAddrForm((p) => ({ ...p, address_1: e.target.value }))}
-                        required placeholder="Flat no, building name, street" className={styles.input} />
-                    </div>
-                    <div className={styles.inputGroup}>
-                      <label className={styles.inputLabel}>Area / Landmark</label>
-                      <input value={addrForm.address_2 || ''} onChange={(e) => setAddrForm((p) => ({ ...p, address_2: e.target.value }))}
-                        placeholder="Area or nearby landmark (optional)" className={styles.input} />
-                    </div>
-                    <div className={styles.row3}>
-                      <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>City *</label>
-                        <input value={addrForm.city} onChange={(e) => setAddrForm((p) => ({ ...p, city: e.target.value }))}
-                          required placeholder="City" className={styles.input} />
-                      </div>
-                      <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>State *</label>
-                        <input value={addrForm.state} onChange={(e) => setAddrForm((p) => ({ ...p, state: e.target.value }))}
-                          required placeholder="State" className={styles.input} />
-                      </div>
-                      <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>Pincode *</label>
-                        <input value={addrForm.postcode} onChange={(e) => setAddrForm((p) => ({ ...p, postcode: e.target.value }))}
-                          required placeholder="110001" maxLength={6} className={styles.input} />
-                      </div>
-                    </div>
                   </div>
-                )}
 
-                {addrError && (
-                  <div className={styles.errorBox} style={{ marginBottom: '1rem' }}>
-                    <TriangleAlert size={14} /> {addrError}
-                  </div>
-                )}
-
-                <button type="button" className={styles.primaryBtn}
-                  onClick={() => {
-                    const a = getAddr();
-                    if (!a.first_name?.trim()) {
-                      setAddrError('Please enter your name.');
-                      return;
-                    }
-                    const cleanPhone = (a.phone || '').replace(/\D/g, '');
-                    if (!cleanPhone || cleanPhone.length < 10) {
-                      setAddrError('Please enter a valid 10-digit mobile number for delivery & SMS updates.');
-                      return;
-                    }
-                    if (!a.email?.trim() || !a.email.includes('@')) {
-                      setAddrError('Please enter a valid email address for order confirmation.');
-                      return;
-                    }
-                    if (!a.address_1?.trim()) {
-                      setAddrError('Please enter your house / flat / street address.');
-                      return;
-                    }
-                    if (!a.city?.trim()) {
-                      setAddrError('Please enter your city.');
-                      return;
-                    }
-                    if (!a.postcode?.trim() || a.postcode.trim().length < 6) {
-                      setAddrError('Please enter a valid 6-digit PIN code.');
-                      return;
-                    }
-                    setAddrError('');
-                    setStep('payment');
-                  }}>
-                  Continue to Payment <ArrowRight size={16} />
-                </button>
-              </div>
-            )}
-
-            {/* STEP 3 — Payment */}
-            {step === 'payment' && (
-              <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <div className={styles.cardHeaderIcon}><CreditCard size={18} /></div>
-                  <div>
-                    <h2 className={styles.cardTitle}>Payment Method</h2>
-                    <p className={styles.cardSubtitle}>Select how you'd like to pay</p>
-                  </div>
-                </div>
-
-                {/* ── Verified Account & Delivery Details Review (Shows on both Mobile & Desktop) ── */}
-                <div className={styles.checkoutSummaryCard}>
-                  {/* Account Detail Row */}
-                  <div className={styles.summaryItemRow}>
-                    <div className={styles.summaryItemIconWrap}>
-                      <User size={15} className={styles.summaryItemIcon} />
-                    </div>
-                    <div className={styles.summaryItemContent}>
-                      <div className={styles.summaryItemLabelRow}>
-                        <span className={styles.summaryItemLabel}>Account Details</span>
+                  {/* Clean default selected address card */}
+                  {!isChangingAddress && hasSelectedValidAddr ? (
+                    <div className={styles.deliverToCard}>
+                      <div className={styles.deliverToTop}>
+                        <div className={styles.deliverToBadgeWrap}>
+                          <span className={styles.deliverToTag}><MapPin size={11} /> Deliver to</span>
+                          <span className={styles.deliverToName}>
+                            {[addrDisplay.first_name, addrDisplay.last_name].filter(Boolean).join(' ') || 'Customer'}
+                          </span>
+                          {addrDisplay.phone && (
+                            <span className={styles.deliverToPhone}>• {addrDisplay.phone}</span>
+                          )}
+                        </div>
                         <button
                           type="button"
-                          className={styles.summaryChangeBtn}
-                          onClick={() => setStep('auth')}
-                          title="Change account"
+                          className={styles.deliverToChangeInlineBtn}
+                          onClick={() => {
+                            setIsChangingAddress(true);
+                            setAddrError('');
+                          }}
                         >
                           Change
                         </button>
                       </div>
-                      <p className={styles.summaryItemValue}>
-                        <strong>{user?.name || customer?.first_name || addrDisplay.first_name || 'Customer'}</strong>
-                        <span className={styles.summaryItemDivider}>•</span>
-                        <span>{user?.email || customer?.email || addrDisplay.email || 'guest@interestingstore.com'}</span>
+                      <p className={styles.deliverToAddressText}>
+                        {addrDisplay.address_1}
+                        {addrDisplay.address_2 ? `, ${addrDisplay.address_2}` : ''}, {addrDisplay.city}, {addrDisplay.state} — {addrDisplay.postcode}
                       </p>
                     </div>
-                  </div>
+                  ) : (
+                    /* Inline Address Selector / Form (No page navigation or screen conflict) */
+                    <div className={styles.addressEditorPanel}>
+                      {hasSaved && (
+                        <div className={styles.savedAddressPickSection}>
+                          <div
+                            className={`${styles.savedAddressOption} ${addressMode === 'saved' ? styles.savedAddressOptionActive : ''}`}
+                            onClick={() => {
+                              setAddressMode('saved');
+                              setAddrError('');
+                            }}
+                          >
+                            <div className={styles.savedAddrOptionLeft}>
+                              <input
+                                type="radio"
+                                id="addr-pick-saved"
+                                name="addressSelection"
+                                checked={addressMode === 'saved'}
+                                onChange={() => {
+                                  setAddressMode('saved');
+                                  setAddrError('');
+                                }}
+                                className={styles.addrRadio}
+                              />
+                              <label htmlFor="addr-pick-saved" className={styles.savedAddrOptionLabel}>
+                                <div className={styles.savedAddrTagWrap}>
+                                  <span className={styles.savedAddrTag}><MapPin size={11} /> Saved Address</span>
+                                  <span className={styles.savedAddrName}>
+                                    {[customer?.shipping?.first_name || customer?.billing?.first_name, customer?.shipping?.last_name || customer?.billing?.last_name].filter(Boolean).join(' ') || user?.name || 'Customer'}
+                                  </span>
+                                  {customer?.billing?.phone && (
+                                    <span className={styles.savedAddrPhone}>• {customer.billing.phone}</span>
+                                  )}
+                                </div>
+                                <p className={styles.savedAddrText}>
+                                  {customer?.shipping?.address_1 || customer?.billing?.address_1}
+                                  {(customer?.shipping?.address_2 || customer?.billing?.address_2) ? `, ${customer?.shipping?.address_2 || customer?.billing?.address_2}` : ''}, {customer?.shipping?.city || customer?.billing?.city}, {customer?.shipping?.state || customer?.billing?.state} — {customer?.shipping?.postcode || customer?.billing?.postcode}
+                                </p>
+                              </label>
+                            </div>
+                            {addressMode === 'saved' && (
+                              <button
+                                type="button"
+                                className={styles.deliverHereBtn}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAddressMode('saved');
+                                  setIsChangingAddress(false);
+                                  setAddrError('');
+                                }}
+                              >
+                                Deliver Here
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
-                  <div className={styles.summaryCardDivider} />
-
-                  {/* Delivery Address Detail Row */}
-                  <div className={styles.summaryItemRow}>
-                    <div className={styles.summaryItemIconWrap}>
-                      <MapPin size={15} className={styles.summaryItemIcon} />
-                    </div>
-                    <div className={styles.summaryItemContent}>
-                      <div className={styles.summaryItemLabelRow}>
-                        <span className={styles.summaryItemLabel}>Delivery Address</span>
-                        <button
-                          type="button"
-                          className={styles.summaryChangeBtn}
-                          onClick={() => setStep('address')}
-                          title="Change delivery address"
+                      {/* New Address / Alternate Address Section */}
+                      <div className={styles.newAddressSection}>
+                        <div
+                          className={`${styles.newAddressHeaderRow} ${addressMode === 'new' ? styles.newAddressHeaderRowActive : ''}`}
+                          onClick={() => {
+                            setAddressMode('new');
+                            setAddrError('');
+                          }}
                         >
-                          Change
-                        </button>
+                          <input
+                            type="radio"
+                            id="addr-pick-new"
+                            name="addressSelection"
+                            checked={!hasSaved || addressMode === 'new'}
+                            onChange={() => {
+                              setAddressMode('new');
+                              setAddrError('');
+                            }}
+                            className={styles.addrRadio}
+                          />
+                          <label htmlFor="addr-pick-new" className={styles.newAddrHeading}>
+                            {hasSaved ? 'Deliver to a different address' : 'Enter Delivery Address'}
+                          </label>
+                        </div>
+
+                        {(!hasSaved || addressMode === 'new') && (
+                          <div className={styles.addrFormInner}>
+                            <div className={styles.row2}>
+                              <div className={styles.inputGroup}>
+                                <label className={styles.inputLabel}>First Name *</label>
+                                <input
+                                  value={addrForm.first_name}
+                                  onChange={(e) => setAddrForm((p) => ({ ...p, first_name: e.target.value }))}
+                                  required
+                                  placeholder="First name"
+                                  className={styles.input}
+                                />
+                              </div>
+                              <div className={styles.inputGroup}>
+                                <label className={styles.inputLabel}>Last Name</label>
+                                <input
+                                  value={addrForm.last_name}
+                                  onChange={(e) => setAddrForm((p) => ({ ...p, last_name: e.target.value }))}
+                                  placeholder="Last name (optional)"
+                                  className={styles.input}
+                                />
+                              </div>
+                            </div>
+
+                            <div className={styles.row2}>
+                              <div className={styles.inputGroup}>
+                                <label className={styles.inputLabel}>Mobile Phone *</label>
+                                <input
+                                  type="tel"
+                                  value={addrForm.phone}
+                                  onChange={(e) => setAddrForm((p) => ({ ...p, phone: e.target.value }))}
+                                  required
+                                  placeholder="10-digit mobile number"
+                                  className={styles.input}
+                                />
+                              </div>
+                              <div className={styles.inputGroup}>
+                                <label className={styles.inputLabel}>Email Address *</label>
+                                <input
+                                  type="email"
+                                  value={addrForm.email}
+                                  onChange={(e) => setAddrForm((p) => ({ ...p, email: e.target.value }))}
+                                  required
+                                  placeholder="you@email.com"
+                                  className={styles.input}
+                                />
+                              </div>
+                            </div>
+
+                            {/* GPS Location Button */}
+                            <div className={styles.locationRow}>
+                              <button
+                                type="button"
+                                className={`${styles.locationBtn} ${locLoading ? styles.locationBtnBusy : ''} ${locSuccess ? styles.locationBtnSuccess : ''}`}
+                                onClick={useCurrentLocation}
+                                disabled={locLoading}
+                              >
+                                {locLoading ? (
+                                  <><span className={styles.locSpinner} /> Detecting location…</>
+                                ) : locSuccess ? (
+                                  <><Navigation size={15} /> Location detected!</>
+                                ) : (
+                                  <><LocateFixed size={15} /> Use current GPS location</>
+                                )}
+                              </button>
+                              <span className={styles.locationOr}>or fill manually below</span>
+                            </div>
+
+                            {locError && (
+                              <div className={styles.locErrorBox}>
+                                <TriangleAlert size={13} /> {locError}
+                              </div>
+                            )}
+
+                            <div className={styles.inputGroup}>
+                              <label className={styles.inputLabel}>House / Flat / Building / Street *</label>
+                              <input
+                                value={addrForm.address_1}
+                                onChange={(e) => setAddrForm((p) => ({ ...p, address_1: e.target.value }))}
+                                required
+                                placeholder="Flat no, building, road"
+                                className={styles.input}
+                              />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                              <label className={styles.inputLabel}>Area / Landmark (Optional)</label>
+                              <input
+                                value={addrForm.address_2 || ''}
+                                onChange={(e) => setAddrForm((p) => ({ ...p, address_2: e.target.value }))}
+                                placeholder="Area, colony or nearby landmark"
+                                className={styles.input}
+                              />
+                            </div>
+
+                            <div className={styles.row3}>
+                              <div className={styles.inputGroup}>
+                                <label className={styles.inputLabel}>City *</label>
+                                <input
+                                  value={addrForm.city}
+                                  onChange={(e) => setAddrForm((p) => ({ ...p, city: e.target.value }))}
+                                  required
+                                  placeholder="City"
+                                  className={styles.input}
+                                />
+                              </div>
+                              <div className={styles.inputGroup}>
+                                <label className={styles.inputLabel}>State *</label>
+                                <input
+                                  value={addrForm.state}
+                                  onChange={(e) => setAddrForm((p) => ({ ...p, state: e.target.value }))}
+                                  required
+                                  placeholder="State"
+                                  className={styles.input}
+                                />
+                              </div>
+                              <div className={styles.inputGroup}>
+                                <label className={styles.inputLabel}>PIN Code *</label>
+                                <input
+                                  value={addrForm.postcode}
+                                  onChange={(e) => setAddrForm((p) => ({ ...p, postcode: e.target.value }))}
+                                  required
+                                  placeholder="6-digit PIN"
+                                  maxLength={6}
+                                  className={styles.input}
+                                />
+                              </div>
+                            </div>
+
+                            {addrError && (
+                              <div className={styles.errorBox} style={{ margin: '0.6rem 0' }}>
+                                <TriangleAlert size={14} /> {addrError}
+                              </div>
+                            )}
+
+                            <div className={styles.addressFormActions}>
+                              <button
+                                type="button"
+                                className={styles.deliverToThisBtn}
+                                onClick={() => {
+                                  if (!addrForm.first_name?.trim()) {
+                                    setAddrError('Please enter your name.');
+                                    return;
+                                  }
+                                  const cleanPhone = (addrForm.phone || '').replace(/\D/g, '');
+                                  if (!cleanPhone || cleanPhone.length < 10) {
+                                    setAddrError('Please enter a valid 10-digit mobile number for delivery & SMS updates.');
+                                    return;
+                                  }
+                                  if (!addrForm.email?.trim() || !addrForm.email.includes('@')) {
+                                    setAddrError('Please enter a valid email address for order confirmation.');
+                                    return;
+                                  }
+                                  if (!addrForm.address_1?.trim()) {
+                                    setAddrError('Please enter your house / flat / street address.');
+                                    return;
+                                  }
+                                  if (!addrForm.city?.trim()) {
+                                    setAddrError('Please enter your city.');
+                                    return;
+                                  }
+                                  if (!addrForm.postcode?.trim() || addrForm.postcode.trim().length < 6) {
+                                    setAddrError('Please enter a valid 6-digit PIN code.');
+                                    return;
+                                  }
+                                  setAddrError('');
+                                  setAddressMode('new');
+                                  setIsChangingAddress(false);
+                                }}
+                              >
+                                Deliver to this Address
+                              </button>
+
+                              {hasSaved && (
+                                <button
+                                  type="button"
+                                  className={styles.cancelAddressBtn}
+                                  onClick={() => {
+                                    setAddressMode('saved');
+                                    setIsChangingAddress(false);
+                                    setAddrError('');
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <p className={styles.summaryItemValue}>
-                        <strong>
-                          {[addrDisplay.first_name, addrDisplay.last_name].filter(Boolean).join(' ') || 'Customer'}
-                        </strong>
-                        {addrDisplay.phone && (
-                          <>
-                            <span className={styles.summaryItemDivider}>•</span>
-                            <span>{addrDisplay.phone}</span>
-                          </>
-                        )}
-                      </p>
-                      <p className={styles.summaryAddressText}>
-                        {addrDisplay.address_1 ? (
-                          <>
-                            {addrDisplay.address_1}
-                            {addrDisplay.address_2 ? `, ${addrDisplay.address_2}` : ''}, {addrDisplay.city}, {addrDisplay.state} — {addrDisplay.postcode}
-                          </>
-                        ) : (
-                          <span style={{ color: '#ef4444' }}>Address not selected. Click Change to specify.</span>
-                        )}
-                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.cardDivider} />
+
+                {/* ── 2. PAYMENT METHOD SECTION ── */}
+                <div className={styles.paymentBlock}>
+                  <div className={styles.blockHeadingRow}>
+                    <div className={styles.blockHeadingLeft}>
+                      <CreditCard size={16} className={styles.blockIcon} />
+                      <h3 className={styles.blockHeading}>Payment Method</h3>
                     </div>
                   </div>
-                </div>
 
                 <div className={styles.paymentOptions}>
                   {[
@@ -1288,6 +1365,7 @@ export default function CheckoutPage() {
                     <><CheckCircle2 size={17} /> Confirm UPI Order — {formatPrice(grandTotal)}</>
                   )}
                 </button>
+                </div>
               </div>
             )}
           </div>
