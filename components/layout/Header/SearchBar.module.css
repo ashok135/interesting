@@ -45,6 +45,16 @@
   box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.12);
 }
 
+/* Hide native browser clear 'x' button to prevent duplicate X marks with custom clear button */
+.input::-webkit-search-decoration,
+.input::-webkit-search-cancel-button,
+.input::-webkit-search-results-button,
+.input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 .clearBtn {
   position: absolute;
   right: 0.75rem;

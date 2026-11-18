@@ -647,11 +647,19 @@ export default function CheckoutPage() {
             const isActive = step === s;
             const isDone = current > me;
             return (
-              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div className={`${styles.stepPill} ${isActive ? styles.stepActive : ''} ${isDone ? styles.stepDone : ''}`}>
+              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isDone) setStep(s);
+                  }}
+                  disabled={!isDone && !isActive}
+                  className={`${styles.stepPill} ${isActive ? styles.stepActive : ''} ${isDone ? styles.stepDone : ''} ${isDone ? styles.stepClickable : ''}`}
+                  title={isDone ? `Change ${labels[i]}` : undefined}
+                >
                   {isDone ? <CheckCircle2 size={14} /> : <span className={styles.stepNum}>{i + 1}</span>}
                   <span>{labels[i]}</span>
-                </div>
+                </button>
                 {i < 2 && <div className={`${styles.stepLine} ${current > me ? styles.stepLineDone : ''}`} />}
               </div>
             );
@@ -1058,17 +1066,76 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {addrDisplay.address_1 && (
-                  <div className={styles.addrSummaryChip}>
-                    <MapPin size={13} className={styles.addrChipIcon} />
-                    <span className={styles.addrChipText}>
-                      Delivering to: {addrDisplay.first_name ? `${addrDisplay.first_name} ${addrDisplay.last_name || ''}`.trim() + ' • ' : ''}{addrDisplay.address_1}, {addrDisplay.city} — {addrDisplay.postcode}
-                    </span>
-                    <button type="button" className={styles.addrChipChange} onClick={() => setStep('address')}>
-                      Change
-                    </button>
+                {/* ── Verified Account & Delivery Details Review (Shows on both Mobile & Desktop) ── */}
+                <div className={styles.checkoutSummaryCard}>
+                  {/* Account Detail Row */}
+                  <div className={styles.summaryItemRow}>
+                    <div className={styles.summaryItemIconWrap}>
+                      <User size={15} className={styles.summaryItemIcon} />
+                    </div>
+                    <div className={styles.summaryItemContent}>
+                      <div className={styles.summaryItemLabelRow}>
+                        <span className={styles.summaryItemLabel}>Account Details</span>
+                        <button
+                          type="button"
+                          className={styles.summaryChangeBtn}
+                          onClick={() => setStep('auth')}
+                          title="Change account"
+                        >
+                          Change
+                        </button>
+                      </div>
+                      <p className={styles.summaryItemValue}>
+                        <strong>{user?.name || customer?.first_name || addrDisplay.first_name || 'Customer'}</strong>
+                        <span className={styles.summaryItemDivider}>•</span>
+                        <span>{user?.email || customer?.email || addrDisplay.email || 'guest@interestingstore.com'}</span>
+                      </p>
+                    </div>
                   </div>
-                )}
+
+                  <div className={styles.summaryCardDivider} />
+
+                  {/* Delivery Address Detail Row */}
+                  <div className={styles.summaryItemRow}>
+                    <div className={styles.summaryItemIconWrap}>
+                      <MapPin size={15} className={styles.summaryItemIcon} />
+                    </div>
+                    <div className={styles.summaryItemContent}>
+                      <div className={styles.summaryItemLabelRow}>
+                        <span className={styles.summaryItemLabel}>Delivery Address</span>
+                        <button
+                          type="button"
+                          className={styles.summaryChangeBtn}
+                          onClick={() => setStep('address')}
+                          title="Change delivery address"
+                        >
+                          Change
+                        </button>
+                      </div>
+                      <p className={styles.summaryItemValue}>
+                        <strong>
+                          {[addrDisplay.first_name, addrDisplay.last_name].filter(Boolean).join(' ') || 'Customer'}
+                        </strong>
+                        {addrDisplay.phone && (
+                          <>
+                            <span className={styles.summaryItemDivider}>•</span>
+                            <span>{addrDisplay.phone}</span>
+                          </>
+                        )}
+                      </p>
+                      <p className={styles.summaryAddressText}>
+                        {addrDisplay.address_1 ? (
+                          <>
+                            {addrDisplay.address_1}
+                            {addrDisplay.address_2 ? `, ${addrDisplay.address_2}` : ''}, {addrDisplay.city}, {addrDisplay.state} — {addrDisplay.postcode}
+                          </>
+                        ) : (
+                          <span style={{ color: '#ef4444' }}>Address not selected. Click Change to specify.</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 <div className={styles.paymentOptions}>
                   {[
