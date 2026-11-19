@@ -2119,7 +2119,7 @@
   
   ALL keyframes use absolute pixel values – never calc(%).
   Animations LOOP INFINITELY so Razorpay long payments keep animating.
-  Total loop period = 4.5s
+  Total loop period = 1.5s
 */
 
 .truckTrackPill {
@@ -2147,7 +2147,7 @@
   background-size: 14px 2px;
   background-repeat: repeat-x;
   opacity: 0;
-  animation: roadLoop 4.5s ease-in-out infinite;
+  animation: roadLoop 1.5s ease-in-out infinite;
 }
 
 @keyframes roadLoop {
@@ -2178,7 +2178,7 @@
   box-shadow: 0 2px 5px rgba(0,0,0,0.35), inset 0 -2px 0 rgba(146,64,14,0.4);
   z-index: 2; /* under truck (z:3), so slides BEHIND cargo wall */
   opacity: 0;
-  animation: packageLoop 4.5s ease-in-out infinite;
+  animation: packageLoop 1.5s ease-in-out infinite;
 }
 
 .truckTrackPill .package::before {
@@ -2200,7 +2200,7 @@
 }
 
 @keyframes packageLoop {
-  /* 0–28%: hidden while truck arrives and door opens (28% = 1.26s into loop) */
+  /* 0–28%: hidden while truck arrives and door opens */
   0%   { opacity: 0; transform: translate(0, -16px) scale(0.3); }
   28%  { opacity: 0; transform: translate(0, -16px) scale(0.3); }
   /* 32%: pop into view just outside cargo door */
@@ -2226,7 +2226,7 @@
   z-index: 3;
   /* Start off-screen left */
   transform: translateX(-105px);
-  animation: truckLoop 4.5s ease-in-out infinite;
+  animation: truckLoop 1.5s ease-in-out infinite;
 }
 
 @keyframes truckLoop {
@@ -2250,7 +2250,7 @@
 .truckTrackPill .truckBody {
   position: absolute;
   inset: 0;
-  animation: truckBodyLoop 4.5s ease-in-out infinite;
+  animation: truckBodyLoop 1.5s ease-in-out infinite;
 }
 
 @keyframes truckBodyLoop {
@@ -2284,7 +2284,7 @@
   display: grid;
   place-items: center;
   /* Spin continuously — truck is moving in both entry and exit phases */
-  animation: wheelSpin 0.45s linear infinite;
+  animation: wheelSpin 0.22s linear infinite;
 }
 
 @keyframes wheelSpin {
@@ -2328,7 +2328,7 @@
   background: #94a3b8;
   border-radius: 2px 0 0 2px;
   transform-origin: top left;
-  animation: cargoDoorLoop 4.5s ease-in-out infinite;
+  animation: cargoDoorLoop 1.5s ease-in-out infinite;
 }
 
 @keyframes cargoDoorLoop {
@@ -2358,7 +2358,7 @@
   clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 60%);
   opacity: 0;
   pointer-events: none;
-  animation: headlightLoop 4.5s ease-in-out infinite;
+  animation: headlightLoop 1.5s ease-in-out infinite;
 }
 
 @keyframes headlightLoop {
@@ -2376,7 +2376,7 @@
   width: 20px; height: 16px;
   opacity: 0;
   pointer-events: none;
-  animation: speedLoop 4.5s ease-in-out infinite;
+  animation: speedLoop 1.5s ease-in-out infinite;
 }
 
 .truckTrackPill .speedLines span {

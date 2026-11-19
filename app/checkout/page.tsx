@@ -600,7 +600,7 @@ export default function CheckoutPage() {
 
     // ── Show truck animation overlay IMMEDIATELY (replaces all loading states) ──
     setOrderFlowState('animating');
-    const MIN_ANIM_MS = 2500;
+    const MIN_ANIM_MS = 1500;
     const animStart = Date.now();
 
     /* ── Razorpay Online Payment Flow ── */
