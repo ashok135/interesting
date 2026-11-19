@@ -63,6 +63,8 @@ interface WooCommerceCoupon {
   date_expires?: string | null;
   usage_limit?: number | null;
   usage_count?: number;
+  exclude_sale_items?: boolean;
+  limit_usage_to_x_items?: number | null;
 }
 
 interface ConfirmedOrder {
@@ -315,13 +317,21 @@ export default function CheckoutPage() {
         .reduce((sum, it) => sum + (parseFloat(it.price) || 0) * it.quantity, 0);
       discount = Math.round((eligibleSubtotal * appliedCoupon.amount) / 100);
     } else if (appliedCoupon.discount_type === 'fixed_product') {
-      // Fixed product discount: applied per eligible item quantity in cart
+      // Fixed product discount: applied per eligible item quantity in cart (with optional max items limit)
+      const maxItems = appliedCoupon.limit_usage_to_x_items && appliedCoupon.limit_usage_to_x_items > 0
+        ? appliedCoupon.limit_usage_to_x_items
+        : Infinity;
+
+      let itemsDiscounted = 0;
       discount = items
         .filter(isItemEligible)
         .reduce((sum, it) => {
+          if (itemsDiscounted >= maxItems) return sum;
+          const qtyToDiscount = Math.min(it.quantity, maxItems - itemsDiscounted);
+          itemsDiscounted += qtyToDiscount;
           const itemPrice = parseFloat(it.price) || 0;
           const unitDiscount = Math.min(itemPrice, appliedCoupon.amount);
-          return sum + unitDiscount * it.quantity;
+          return sum + unitDiscount * qtyToDiscount;
         }, 0);
     } else {
       // Fixed cart discount
@@ -1775,9 +1785,14 @@ export default function CheckoutPage() {
                             type="button"
                             className={styles.couponHint}
                             onClick={() => applyCoupon(c.code)}
-                            title={c.description}
+                            title={`${c.code}: ${c.description}`}
                           >
-                            {c.code}
+                            <span>{c.code}</span>
+                            {c.description && (
+                              <span style={{ opacity: 0.85, fontSize: '0.64rem', marginLeft: '4px' }}>
+                                • {c.description}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>

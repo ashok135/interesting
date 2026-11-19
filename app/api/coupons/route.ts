@@ -15,6 +15,8 @@ export interface WooCouponItem {
   usage_limit?: number | null;
   usage_count?: number;
   free_shipping?: boolean;
+  exclude_sale_items?: boolean;
+  limit_usage_to_x_items?: number | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -54,6 +56,8 @@ export async function GET(req: NextRequest) {
           usage_limit: coupon.usage_limit ? Number(coupon.usage_limit) : null,
           usage_count: Number(coupon.usage_count) || 0,
           free_shipping: Boolean(coupon.free_shipping),
+          exclude_sale_items: Boolean(coupon.exclude_sale_items),
+          limit_usage_to_x_items: coupon.limit_usage_to_x_items ? Number(coupon.limit_usage_to_x_items) : null,
         },
       });
     }
@@ -97,6 +101,8 @@ export async function GET(req: NextRequest) {
         usage_limit: c.usage_limit ? Number(c.usage_limit) : null,
         usage_count: Number(c.usage_count) || 0,
         free_shipping: Boolean(c.free_shipping),
+        exclude_sale_items: Boolean(c.exclude_sale_items),
+        limit_usage_to_x_items: c.limit_usage_to_x_items ? Number(c.limit_usage_to_x_items) : null,
       }));
 
     return NextResponse.json({
