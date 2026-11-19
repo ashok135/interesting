@@ -2020,7 +2020,7 @@
   }
 }
 
-/* ── Centered Order Flow Micro-Interaction & Confirmation Modal ────────────── */
+/* ── Centered Order Flow Overlay ────────────────────────────────────────────── */
 .centerFlowOverlay {
   position: fixed;
   inset: 0;
@@ -2029,129 +2029,348 @@
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(10, 25, 17, 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  animation: overlayFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  background: rgba(5, 18, 10, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: overlayFadeIn 0.25s ease forwards;
 }
 
 @keyframes overlayFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .centerFlowCard {
   position: relative;
   width: 100%;
-  max-width: 420px;
-  background: var(--color-surface-1, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 28px;
-  padding: 2.25rem 1.75rem;
-  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.32),
-              0 10px 24px -4px rgba(0, 0, 0, 0.16);
-  animation: cardScaleIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  transition: max-width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-              padding 0.4s ease,
-              transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 380px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2rem 1.75rem;
+  box-shadow: 0 32px 72px -8px rgba(0, 0, 0, 0.38),
+              0 12px 28px -4px rgba(0, 0, 0, 0.18);
+  animation: cardIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   overflow: hidden;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0;
 }
 
+@keyframes cardIn {
+  0%   { opacity: 0; transform: scale(0.88) translateY(28px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Expanded state for confirmation ── */
 .centerFlowCardExpanded {
-  max-width: 490px;
-  padding: 2.25rem 2rem;
+  max-width: 460px;
 }
 
-@keyframes cardScaleIn {
-  0% {
-    opacity: 0;
-    transform: translateY(24px) scale(0.92);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
+/* ── Loading state: truck track stage ── */
 .centerAnimBox {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  gap: 1.25rem;
+  gap: 1.5rem;
   width: 100%;
 }
 
 .centerAnimBadge {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.35rem 0.95rem;
+  gap: 0.5rem;
+  padding: 0.3rem 0.9rem;
   border-radius: 999px;
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
   color: #166534;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 .centerPulseDot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background-color: #22c55e;
-  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-  animation: centerPulse 1.6s infinite cubic-bezier(0.4, 0, 0.6, 1);
+  background: #22c55e;
+  animation: pulseDot 1.5s ease-in-out infinite;
 }
 
-@keyframes centerPulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-  }
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.7); }
 }
 
-.centerTrackContainer {
-  width: 100%;
+/* ── The truck track pill inside the card ── */
+/* 
+  This is a self-contained 300px × 62px pill.
+  The truck starts at X = -105px (fully off-screen left),
+  drives to center (X = 109px so truck center aligns to pill center),
+  pauses to load package, then exits right (X = 320px).
+  All values are ABSOLUTE so animation is consistent regardless of parent width.
+*/
+.truckTrackPill {
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+  height: 62px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #15803d 0%, #0d3821 100%);
+  overflow: hidden;
+  box-shadow: 0 12px 28px -4px rgba(13, 56, 33, 0.45),
+              0 4px 10px -2px rgba(13, 56, 33, 0.25),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+/* Dashed road line inside the pill */
+.truckTrackPill .roadLine {
+  position: absolute;
+  bottom: 9px;
+  left: 18px;
+  right: 18px;
+  height: 2px;
+  background-image: linear-gradient(to right, rgba(255,255,255,0.4) 55%, transparent 55%);
+  background-size: 14px 2px;
+  background-repeat: repeat-x;
+  opacity: 0;
+  animation:
+    revealRoad 0.25s ease 0.2s forwards,
+    scrollRoad 0.4s linear 2.0s 4,
+    hideRoad   0.25s ease 2.8s forwards;
+}
+
+/* Package inside the pill */
+.truckTrackPill .package {
+  position: absolute;
+  /* Start at: truck-center minus cargo-left-offset.
+     Truck at X=109: cargo left edge = 109+2 = 111. Package left = 111+8 = 119px inside pill.
+     But we position from pill left, in absolute coords. */
+  top: 50%;
+  left: 119px;
+  width: 15px;
+  height: 15px;
+  margin-top: -11px;
+  background: linear-gradient(145deg, #fbbf24 0%, #f59e0b 55%, #d97706 100%);
+  border-radius: 2.5px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.35), inset 0 -2px 0 rgba(146,64,14,0.4);
+  opacity: 0;
+  transform: scale(0);
+  z-index: 2;
+  animation: loadPackagePill 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.95s forwards;
+}
+
+.truckTrackPill .package::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 50%;
+  width: 3px; height: 100%;
+  transform: translateX(-50%);
+  background: rgba(254,243,199,0.85);
+}
+
+/* Truck inside the pill — absolute pixel keyframes for 300px wide pill */
+.truckTrackPill .truck {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 82px;
+  height: 34px;
+  margin-top: -21px;
+  /* Start off-screen left */
+  transform: translateX(-105px);
+  z-index: 3;
+  animation: truckDrivePill 3.0s cubic-bezier(0.25, 0.1, 0.25, 1) 0.15s forwards;
+}
+
+/*
+  truckDrivePill keyframes for 300px pill:
+  - Center of pill = 150px
+  - Truck width = 82px, so to center truck: X = 150 - 41 = 109px
+  - Pull-back = 97px (small recoil)
+  - Exit = 320px (fully off right)
+*/
+@keyframes truckDrivePill {
+  0%   { transform: translateX(-105px); }                 /* Off screen left */
+  22%  { transform: translateX(109px);  }                 /* Glide to center — ease in */
+  58%  { transform: translateX(109px);  }                 /* Hold: loading package */
+  67%  { transform: translateX(97px);   }                 /* Pull-back: launch squat */
+  100% { transform: translateX(320px);  }                 /* Blast off right */
+}
+
+/* Truck body bounce while idling */
+.truckTrackPill .truckBody {
+  position: absolute;
+  inset: 0;
+  animation:
+    truckIdleBounce 0.18s ease-in-out 1.0s 5,
+    truckLaunchDip  0.6s ease-out 2.0s forwards;
+}
+
+@keyframes truckIdleBounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-1px); }
+}
+
+@keyframes truckLaunchDip {
+  0%   { transform: translateY(0) rotate(0deg); }
+  25%  { transform: translateY(1.5px) rotate(-1.5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* Wheels spin during entry & exit */
+.truckTrackPill .wheel {
+  position: absolute;
+  bottom: 0;
+  width: 13px;
+  height: 13px;
+  background: #090d16;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2.5px #1e293b, 0 1px 2px rgba(0,0,0,0.5);
+  display: grid;
+  place-items: center;
+}
+
+.truckTrackPill .wheel::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #cbd5e1 0deg 60deg, #64748b 60deg 120deg, #cbd5e1 120deg 180deg, #64748b 180deg 240deg, #cbd5e1 240deg 300deg, #64748b 300deg 360deg);
+}
+
+.truckTrackPill .wheel::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #0f172a;
+}
+
+.truckTrackPill .wheel {
+  animation:
+    wheelSpinEntry 0.65s linear 0.15s forwards,
+    wheelSpinExit  0.9s linear 2.0s forwards;
+}
+
+@keyframes wheelSpinEntry {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(600deg); }
+}
+
+@keyframes wheelSpinExit {
+  from { transform: rotate(600deg); }
+  to   { transform: rotate(1800deg); }
+}
+
+.truckTrackPill .wheelBack  { left: 13px; }
+.truckTrackPill .wheelFront { left: 56px; }
+
+/* Cargo door swings open during loading */
+.truckTrackPill .cargoDoor {
+  position: absolute;
+  left: 0; top: 1px;
+  width: 4px; height: 24px;
+  background: #94a3b8;
+  border-radius: 2px 0 0 2px;
+  transform-origin: top left;
+  animation: cargoDoorOpen 1.0s ease-in-out 0.9s forwards;
+}
+
+@keyframes cargoDoorOpen {
+  0%, 100% { transform: rotate(0deg); }
+  25%, 75%  { transform: rotate(-70deg); }
+}
+
+/* Headlights flick on before exit */
+.truckTrackPill .headlightBeam {
+  position: absolute;
+  left: 26px; bottom: -5px;
+  width: 58px; height: 22px;
+  background: linear-gradient(90deg, rgba(254,240,138,0.95) 0%, rgba(250,204,21,0.4) 55%, rgba(250,204,21,0) 100%);
+  clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 60%);
+  opacity: 0;
+  pointer-events: none;
+  animation: lightsOn 0.2s ease 1.9s forwards;
+}
+
+@keyframes lightsOn {
+  from { opacity: 0; transform: scaleX(0.4); transform-origin: left; }
+  to   { opacity: 1; transform: scaleX(1);   transform-origin: left; }
+}
+
+/* Speed lines on exit */
+.truckTrackPill .speedLines {
+  position: absolute;
+  left: -24px; top: 6px;
+  width: 20px; height: 16px;
+  opacity: 0;
+  pointer-events: none;
+  animation: speedLinesShow 0.6s ease 2.1s forwards;
+}
+
+.truckTrackPill .speedLines span {
+  position: absolute;
+  right: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65));
+}
+
+.truckTrackPill .speedLines span:nth-child(1) { top: 2px;  width: 16px; }
+.truckTrackPill .speedLines span:nth-child(2) { top: 8px;  width: 22px; }
+.truckTrackPill .speedLines span:nth-child(3) { top: 14px; width: 12px; }
+
+@keyframes speedLinesShow {
+  0%   { opacity: 0; transform: translateX(6px); }
+  40%  { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(-8px); }
+}
+
+/* "Order Placed ✓" text fades in after truck exits */
+.truckTrackPill .successText {
+  position: absolute;
+  inset: 0;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.5rem 0;
+  color: #86efac;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 18px rgba(74,222,128,0.4);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  animation: successTextReveal 0.4s cubic-bezier(0.22, 1, 0.36, 1) 2.95s forwards;
 }
 
-.centerTrackBtn {
-  width: 290px !important;
-  max-width: 100% !important;
-  height: 62px !important;
-  border-radius: 999px !important;
-  background: #14532d !important;
-  box-shadow: 0 16px 32px -6px rgba(20, 83, 45, 0.42),
-              0 6px 12px -2px rgba(20, 83, 45, 0.22) !important;
+@keyframes successTextReveal {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Package loading animation for the pill (absolute position within pill) */
+@keyframes loadPackagePill {
+  0%   { opacity: 0; transform: translate(-10px, -12px) scale(0.4); }
+  25%  { opacity: 1; transform: translate(0, 0) scale(1.08); }
+  45%  { opacity: 1; transform: translate(2px, 0) scale(1.0); }
+  82%  { opacity: 1; transform: translate(30px, 0) scale(0.9); }
+  100% { opacity: 0; transform: translate(38px, 0) scale(0.75); }
 }
 
 .centerAnimMsg {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  color: var(--color-text-muted, #64748b);
+  color: #64748b;
   margin: 0;
 }
 
+/* ── Confirmation state ── */
 .centerSuccessContent {
   display: flex;
   flex-direction: column;
@@ -2159,36 +2378,22 @@
   text-align: center;
   gap: 0.85rem;
   width: 100%;
-  animation: videoMorphReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: confirmReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes videoMorphReveal {
-  0% {
-    opacity: 0;
-    transform: scale(0.95) translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+@keyframes confirmReveal {
+  0%   { opacity: 0; transform: scale(0.94) translateY(12px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .centerSuccessContent .successCircle {
-  animation: circleSpring 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both;
+  animation: circleSpring 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.06s both;
 }
 
 @keyframes circleSpring {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  70% {
-    transform: scale(1.15);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-  }
+  0%   { transform: scale(0); opacity: 0; }
+  65%  { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); }
 }
 
 /* ── SIDEBAR ─────────────────────────────────────── */
@@ -3235,13 +3440,13 @@
 }
 
 [data-theme="dark"] .centerFlowOverlay {
-  background: rgba(3, 12, 7, 0.82);
+  background: rgba(3, 12, 7, 0.88);
 }
 
 [data-theme="dark"] .centerFlowCard {
   background: #111827;
-  border-color: #243048;
-  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.65);
+  border: 1px solid #243048;
+  box-shadow: 0 32px 72px -8px rgba(0, 0, 0, 0.75);
 }
 
 [data-theme="dark"] .centerAnimBadge {

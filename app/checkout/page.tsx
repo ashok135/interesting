@@ -1899,44 +1899,38 @@ export default function CheckoutPage() {
                   <span>Placing &amp; Confirming Order</span>
                 </div>
 
-                <div className={styles.centerTrackContainer}>
-                  <div className={`${styles.placeOrderBtn} ${styles.centerTrackBtn} ${styles.isAnimating}`}>
-                    {/* Micro-interaction Delivery Truck Driving Sequence */}
-                    <span className={styles.roadLine} aria-hidden="true" />
-                    <span className={styles.package} aria-hidden="true" />
+                {/* ── Self-contained truck track pill (absolute pixel animations) ── */}
+                <div className={styles.truckTrackPill}>
+                  <span className={styles.roadLine} aria-hidden="true" />
+                  <span className={styles.package} aria-hidden="true" />
 
-                    <span className={styles.truck} aria-hidden="true">
-                      <span className={styles.speedLines}>
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                      </span>
-
-                      <span className={styles.truckBody}>
-                        <span className={styles.truckCargo}>
-                          <span className={styles.cargoDoor} />
-                        </span>
-                        <span className={styles.truckCab}>
-                          <span className={styles.truckWindshield} />
-                          <span className={styles.truckHeadlight} />
-                          <span className={styles.truckBumper} />
-                          <span className={styles.headlightBeam} />
-                        </span>
-                        <span className={styles.truckChassis} />
-                      </span>
-
-                      <span className={`${styles.wheel} ${styles.wheelBack}`} />
-                      <span className={`${styles.wheel} ${styles.wheelFront}`} />
+                  <span className={styles.truck} aria-hidden="true">
+                    <span className={styles.speedLines}>
+                      <span /><span /><span />
                     </span>
-
-                    <span className={`${styles.btnText} ${styles.successText}`}>
-                      Order Placed ✓
+                    <span className={styles.truckBody}>
+                      <span className={styles.truckCargo}>
+                        <span className={styles.cargoDoor} />
+                      </span>
+                      <span className={styles.truckCab}>
+                        <span className={styles.truckWindshield} />
+                        <span className={styles.truckHeadlight} />
+                        <span className={styles.truckBumper} />
+                        <span className={styles.headlightBeam} />
+                      </span>
+                      <span className={styles.truckChassis} />
                     </span>
-                  </div>
+                    <span className={`${styles.wheel} ${styles.wheelBack}`} />
+                    <span className={`${styles.wheel} ${styles.wheelFront}`} />
+                  </span>
+
+                  <span className={styles.successText} aria-hidden="true">
+                    Order Placed ✓
+                  </span>
                 </div>
 
                 <p className={styles.centerAnimMsg}>
-                  Packing fresh gourmet treasures for swift dispatch...
+                  Packing your gourmet order for express dispatch...
                 </p>
               </div>
             ) : (
