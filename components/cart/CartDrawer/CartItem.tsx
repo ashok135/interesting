@@ -16,7 +16,11 @@ interface CartItemProps {
 export function CartItem({ item }: CartItemProps) {
   const { updateQuantity, removeItem, closeDrawer } = useCartContext();
   const subtotal = parseFloat(item.price) * item.quantity;
-  const productHref = item.slug ? `/product/${item.slug}` : `/shop`;
+  const productHref = item.slug
+    ? `/product/${item.slug}`
+    : item.productId
+    ? `/product/${item.productId}`
+    : `/shop`;
 
   return (
     <div className={styles.item}>

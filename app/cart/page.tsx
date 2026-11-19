@@ -42,35 +42,42 @@ export default function CartPage() {
               </button>
             </div>
 
-            {items.map((item) => (
-              <div key={item.productId} className={styles.item}>
-                <Link href={`/product/${item.slug}`} className={styles.itemImage} title={item.name}>
-                  {item.image ? (
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      width={80}
-                      height={80}
-                      className={styles.img}
-                    />
-                  ) : (
-                    <div className={styles.imgPlaceholder} />
-                  )}
-                </Link>
+            {items.map((item) => {
+              const productHref = item.slug
+                ? `/product/${item.slug}`
+                : item.productId
+                ? `/product/${item.productId}`
+                : `/shop`;
 
-                <div className={styles.itemDetails}>
-                  <Link href={`/product/${item.slug}`} className={styles.itemName}>
-                    {item.name}
+              return (
+                <div key={item.productId} className={styles.item}>
+                  <Link href={productHref} className={styles.itemImage} title={item.name}>
+                    {item.image ? (
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        width={80}
+                        height={80}
+                        className={styles.img}
+                      />
+                    ) : (
+                      <div className={styles.imgPlaceholder} />
+                    )}
                   </Link>
-                  <p className={styles.itemPrice}>{formatPrice(item.price)} each</p>
-                  <div className={styles.itemQuantityWrap}>
-                    <QuantitySelector
-                      quantity={item.quantity}
-                      onIncrease={() => updateQuantity(item.productId, item.quantity + 1)}
-                      onDecrease={() => updateQuantity(item.productId, item.quantity - 1)}
-                    />
+
+                  <div className={styles.itemDetails}>
+                    <Link href={productHref} className={styles.itemName} title={item.name}>
+                      {item.name}
+                    </Link>
+                    <p className={styles.itemPrice}>{formatPrice(item.price)} each</p>
+                    <div className={styles.itemQuantityWrap}>
+                      <QuantitySelector
+                        quantity={item.quantity}
+                        onIncrease={() => updateQuantity(item.productId, item.quantity + 1)}
+                        onDecrease={() => updateQuantity(item.productId, item.quantity - 1)}
+                      />
+                    </div>
                   </div>
-                </div>
 
                 <div className={styles.itemRight}>
                   <p className={styles.itemSubtotal}>
@@ -85,7 +92,8 @@ export default function CartPage() {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
 
           {/* Summary sidebar */}

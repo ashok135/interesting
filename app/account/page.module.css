@@ -1179,12 +1179,56 @@
   min-width: 0;
 }
 
+.itemTitleLink {
+  text-decoration: none;
+  display: inline-block;
+  color: inherit;
+}
+
+.itemTitleLink:hover .itemTitle {
+  color: var(--color-brand-green, #15803d);
+}
+
 .itemTitle {
   font-size: 0.95rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 0.3rem;
   line-height: 1.35;
+  transition: color 0.15s ease;
+}
+
+.itemThumbWrap {
+  text-decoration: none;
+  cursor: pointer;
+  display: block;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.itemThumbWrap:hover {
+  opacity: 0.92;
+  transform: scale(1.03);
+}
+
+.orderItemThumb {
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.orderItemThumb:hover {
+  opacity: 0.92;
+  transform: scale(1.05);
+}
+
+.orderItemNameLink {
+  text-decoration: none;
+  display: inline-block;
+  color: inherit;
+}
+
+.orderItemNameLink:hover .orderItemName {
+  color: var(--color-brand-green, #15803d);
 }
 
 .itemMeta {

@@ -1145,6 +1145,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  margin-bottom: 0.85rem;
 }
 
 .paymentOpt {
@@ -1288,6 +1289,8 @@
   background: var(--color-surface, #ffffff);
   border: 1.5px solid #c7d2fe;
   border-radius: 14px;
+  margin-top: 0.85rem;
+  margin-bottom: 1.25rem;
 }
 
 .upiHeader {
@@ -1422,14 +1425,17 @@
 
 .codNote {
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 0.8rem;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
   color: #15803d;
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-top: 0.85rem;
+  margin-bottom: 1.25rem;
 }
 
 /* ── Place order CTA (with Delivery Truck Micro-Interaction) ─────────────────── */

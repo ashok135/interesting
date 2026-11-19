@@ -84,6 +84,14 @@ function getItemImageUrl(item?: { name?: string; image?: { src?: string }; produ
   return '';
 }
 
+function getItemProductUrl(item?: { name?: string; product_id?: number; slug?: string } | null): string {
+  if (!item) return '/shop';
+  if (item.slug) return `/product/${item.slug}`;
+  if (item.product_id) return `/product/${item.product_id}`;
+  const slugFromName = (item.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return slugFromName ? `/product/${slugFromName}` : '/shop';
+}
+
 function formatPaymentMethod(title?: string, method?: string): string {
   const t = (title || '').toLowerCase();
   const m = (method || '').toLowerCase();
@@ -850,7 +858,12 @@ function AccountContent() {
                 {selectedOrder.line_items.map((item) => (
                   <div key={item.id} className={styles.orderItemRow}>
                     <div className={styles.orderItemLeft}>
-                      <div className={styles.orderItemThumb}>
+                      <Link
+                        href={getItemProductUrl(item)}
+                        className={styles.orderItemThumb}
+                        title={`View ${item.name}`}
+                        onClick={() => setSelectedOrder(null)}
+                      >
                         <Image
                           src={getItemImageUrl(item)}
                           alt={item.name}
@@ -859,9 +872,16 @@ function AccountContent() {
                           style={{ objectFit: 'cover' }}
                           unoptimized
                         />
-                      </div>
+                      </Link>
                       <div className={styles.orderItemDetails}>
-                        <span className={styles.orderItemName}>{item.name}</span>
+                        <Link
+                          href={getItemProductUrl(item)}
+                          className={styles.orderItemNameLink}
+                          title={`View ${item.name}`}
+                          onClick={() => setSelectedOrder(null)}
+                        >
+                          <span className={styles.orderItemName}>{item.name}</span>
+                        </Link>
                         <span className={styles.orderItemQty}>Qty: {item.quantity}</span>
                         {(selectedOrder.status || '').toLowerCase() === 'completed' && (
                           <button
@@ -1410,7 +1430,11 @@ function AccountContent() {
                         <div className={styles.cardItemsList}>
                           {order.line_items.map((item) => (
                             <div key={item.id} className={styles.amazonItemRow}>
-                              <div className={styles.itemThumbWrap}>
+                              <Link
+                                href={getItemProductUrl(item)}
+                                className={styles.itemThumbWrap}
+                                title={`View ${item.name}`}
+                              >
                                 <Image
                                   src={getItemImageUrl(item)}
                                   alt={item.name}
@@ -1419,9 +1443,15 @@ function AccountContent() {
                                   className={styles.itemThumbImg}
                                   unoptimized
                                 />
-                              </div>
+                              </Link>
                               <div className={styles.itemInfoCol}>
-                                <h4 className={styles.itemTitle}>{item.name}</h4>
+                                <Link
+                                  href={getItemProductUrl(item)}
+                                  className={styles.itemTitleLink}
+                                  title={`View ${item.name}`}
+                                >
+                                  <h4 className={styles.itemTitle}>{item.name}</h4>
+                                </Link>
                                 <p className={styles.itemMeta}>
                                   Quantity: <strong>{item.quantity}</strong> • {formatPrice(item.total)}
                                 </p>
