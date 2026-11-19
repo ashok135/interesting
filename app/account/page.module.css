@@ -4117,3 +4117,349 @@
   background: #0d1321;
   border-top-color: #243048;
 }
+
+/* ── Order Help & Support Center Modal ── */
+.helpModalCard {
+  max-width: 520px;
+  width: 100%;
+}
+
+.helpModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.15rem 1.35rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.helpModalHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.helpModalIconBox {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(20, 83, 45, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.helpModalTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.helpModalSubtitle {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.helpModalBody {
+  padding: 1.25rem 1.35rem;
+  max-height: calc(85vh - 80px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.helpOrderSnapshot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.95rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  gap: 0.75rem;
+}
+
+.helpOrderSnapshotLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.helpItemThumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+}
+
+.helpOrderSnapshotInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.helpOrderItemsSummary {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.helpOrderDest {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.helpTopicsHeading {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #334155;
+  margin: 0.25rem 0 0;
+}
+
+.helpTopicsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.helpTopicItem {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.helpTopicItemActive {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.helpTopicTrigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 0.95rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #1e293b;
+  gap: 0.5rem;
+}
+
+.helpTopicTriggerLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.helpTopicContent {
+  padding: 0 0.95rem 0.9rem;
+  border-top: 1px solid #f1f5f9;
+  background: #fafafa;
+}
+
+.helpTopicContent p {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #475569;
+  margin: 0.65rem 0 0.75rem;
+}
+
+.helpTopicActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.helpInlineActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #ffffff;
+  color: #14532d;
+  border: 1px solid rgba(20, 83, 45, 0.3);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.helpInlineActionBtn:hover {
+  background: #f0fdf4;
+  border-color: #14532d;
+}
+
+.helpCancelActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.helpCancelActionBtn:hover {
+  background: #fee2e2;
+}
+
+.helpFallbackCard {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.helpFallbackHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.helpFallbackTitle {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #166534;
+}
+
+.helpFallbackSub {
+  font-size: 0.78rem;
+  color: #15803d;
+}
+
+.helpWhatsAppBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: 10px;
+  background: #25d366;
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(37, 211, 102, 0.3);
+  transition: all 0.2s ease;
+}
+
+.helpWhatsAppBtn:hover {
+  background: #20bd5a;
+  transform: translateY(-1px);
+}
+
+/* Dark Theme Overrides for Help Modal */
+[data-theme="dark"] .helpModalCard {
+  background: #111827;
+}
+
+[data-theme="dark"] .helpModalHeader {
+  border-bottom-color: #1f2937;
+}
+
+[data-theme="dark"] .helpModalIconBox {
+  background: rgba(34, 197, 94, 0.15);
+}
+
+[data-theme="dark"] .helpModalTitle {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .helpModalSubtitle {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .helpOrderSnapshot {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .helpOrderItemsSummary {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .helpTopicsHeading {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .helpTopicItem {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .helpTopicItemActive {
+  border-color: #475569;
+}
+
+[data-theme="dark"] .helpTopicTrigger {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .helpTopicContent {
+  background: #162032;
+  border-top-color: #243048;
+}
+
+[data-theme="dark"] .helpTopicContent p {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .helpInlineActionBtn {
+  background: #1e293b;
+  color: #86efac;
+  border-color: #166534;
+}
+
+[data-theme="dark"] .helpInlineActionBtn:hover {
+  background: #166534;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .helpCancelActionBtn {
+  background: #450a0a;
+  color: #f87171;
+  border-color: #7f1d1d;
+}
+
+[data-theme="dark"] .helpCancelActionBtn:hover {
+  background: #7f1d1d;
+}
+
+[data-theme="dark"] .helpFallbackCard {
+  background: #064e3b;
+  border-color: #047857;
+}
+
+[data-theme="dark"] .helpFallbackTitle {
+  color: #a7f3d0;
+}
+
+[data-theme="dark"] .helpFallbackSub {
+  color: #6ee7b7;
+}
