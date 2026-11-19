@@ -106,7 +106,8 @@ async function generateAllRoundIcons() {
   ]);
 
   fs.writeFileSync('public/favicon.ico', fullIco);
-  console.log(`✓ Saved multi-resolution public/favicon.ico (${fullIco.length} bytes)`);
+  fs.writeFileSync('app/favicon.ico', fullIco);
+  console.log(`✓ Saved multi-resolution public/favicon.ico and app/favicon.ico (${fullIco.length} bytes)`);
 }
 
 generateAllRoundIcons();
