@@ -57,6 +57,12 @@ interface WooCommerceCoupon {
   description: string;
   minimum_amount: number;
   maximum_amount: number;
+  product_ids?: number[];
+  excluded_product_ids?: number[];
+  free_shipping?: boolean;
+  date_expires?: string | null;
+  usage_limit?: number | null;
+  usage_count?: number;
 }
 
 interface ConfirmedOrder {
@@ -283,15 +289,59 @@ export default function CheckoutPage() {
     }
   }, [step, confirmedOrder]);
 
-  /* ── Pricing ── */
+  /* ── Pricing & WooCommerce Multi-Rule Coupon Calculation ── */
   const subtotal = parseFloat(total) || 0;
-  const delivery = subtotal >= 499 ? 0 : 49;
-  const discount = appliedCoupon
-    ? appliedCoupon.discount_type === 'percent'
-      ? Math.round((subtotal * appliedCoupon.amount) / 100)
-      : appliedCoupon.amount
-    : 0;
+  const isFreeShippingByCoupon = Boolean(appliedCoupon?.free_shipping);
+  const delivery = (subtotal >= 499 || isFreeShippingByCoupon) ? 0 : 49;
+
+  let discount = 0;
+  if (appliedCoupon) {
+    const hasProductFilter = Array.isArray(appliedCoupon.product_ids) && appliedCoupon.product_ids.length > 0;
+    const hasExcludedFilter = Array.isArray(appliedCoupon.excluded_product_ids) && appliedCoupon.excluded_product_ids.length > 0;
+
+    const isItemEligible = (item: { productId: number; price: string; quantity: number }) => {
+      if (hasProductFilter && !appliedCoupon.product_ids!.includes(item.productId)) {
+        return false;
+      }
+      if (hasExcludedFilter && appliedCoupon.excluded_product_ids!.includes(item.productId)) {
+        return false;
+      }
+      return true;
+    };
+
+    if (appliedCoupon.discount_type === 'percent') {
+      const eligibleSubtotal = items
+        .filter(isItemEligible)
+        .reduce((sum, it) => sum + (parseFloat(it.price) || 0) * it.quantity, 0);
+      discount = Math.round((eligibleSubtotal * appliedCoupon.amount) / 100);
+    } else if (appliedCoupon.discount_type === 'fixed_product') {
+      // Fixed product discount: applied per eligible item quantity in cart
+      discount = items
+        .filter(isItemEligible)
+        .reduce((sum, it) => {
+          const itemPrice = parseFloat(it.price) || 0;
+          const unitDiscount = Math.min(itemPrice, appliedCoupon.amount);
+          return sum + unitDiscount * it.quantity;
+        }, 0);
+    } else {
+      // Fixed cart discount
+      discount = Math.min(subtotal, appliedCoupon.amount);
+    }
+  }
+
   const grandTotal = Math.max(0, subtotal + delivery - discount);
+
+  /* ── Auto-revalidate applied coupon on cart updates ── */
+  useEffect(() => {
+    if (!appliedCoupon) return;
+    if (appliedCoupon.minimum_amount > 0 && subtotal < appliedCoupon.minimum_amount) {
+      setCouponError(`Coupon "${appliedCoupon.code}" removed: Minimum order value of ₹${appliedCoupon.minimum_amount} required.`);
+      setAppliedCoupon(null);
+    } else if (appliedCoupon.maximum_amount > 0 && subtotal > appliedCoupon.maximum_amount) {
+      setCouponError(`Coupon "${appliedCoupon.code}" removed: Maximum order value of ₹${appliedCoupon.maximum_amount} exceeded.`);
+      setAppliedCoupon(null);
+    }
+  }, [subtotal, appliedCoupon]);
 
   /* ── Saved address ── */
   const hasSaved = savedAddresses.length > 0 || !!(customer?.shipping?.address_1 || customer?.billing?.address_1);
@@ -374,10 +424,49 @@ export default function CheckoutPage() {
         return;
       }
       const c: WooCommerceCoupon = data.coupon;
+
+      // 1. Expiration check
+      if (c.date_expires && new Date(c.date_expires).getTime() < Date.now()) {
+        setCouponError(`Coupon "${code}" has expired.`);
+        return;
+      }
+
+      // 2. Usage limit check
+      if (c.usage_limit && c.usage_limit > 0 && (c.usage_count || 0) >= c.usage_limit) {
+        setCouponError(`Coupon "${code}" usage limit has been reached.`);
+        return;
+      }
+
+      // 3. Minimum spend check
       if (c.minimum_amount > 0 && subtotal < c.minimum_amount) {
         setCouponError(`Minimum order value of ₹${c.minimum_amount} required for this coupon.`);
         return;
       }
+
+      // 4. Maximum spend check
+      if (c.maximum_amount > 0 && subtotal > c.maximum_amount) {
+        setCouponError(`Maximum order value for this coupon is ₹${c.maximum_amount}.`);
+        return;
+      }
+
+      // 5. Product inclusion restrictions
+      if (Array.isArray(c.product_ids) && c.product_ids.length > 0) {
+        const hasMatchingProduct = items.some((it) => c.product_ids!.includes(it.productId));
+        if (!hasMatchingProduct) {
+          setCouponError('This coupon is only valid for specific products that are not in your cart.');
+          return;
+        }
+      }
+
+      // 6. Product exclusion restrictions
+      if (Array.isArray(c.excluded_product_ids) && c.excluded_product_ids.length > 0) {
+        const allExcluded = items.every((it) => c.excluded_product_ids!.includes(it.productId));
+        if (allExcluded) {
+          setCouponError('This coupon cannot be applied to the products in your cart.');
+          return;
+        }
+      }
+
       setAppliedCoupon(c);
       setCouponOpen(false);
       setCouponInput('');
@@ -1642,7 +1731,9 @@ export default function CheckoutPage() {
                   <div className={styles.appliedCoupon}>
                     <Tag size={14} />
                     <span className={styles.couponCode}>{appliedCoupon.code}</span>
-                    <span className={styles.couponSaving}>−{formatPrice(discount)} saved</span>
+                    <span className={styles.couponSaving}>
+                      {discount > 0 ? `−${formatPrice(discount)} saved` : isFreeShippingByCoupon ? 'Free Shipping Applied' : 'Coupon Applied'}
+                    </span>
                     <button type="button" onClick={() => { setAppliedCoupon(null); setCouponError(''); }} className={styles.removeCoupon}>
                       <X size={14} />
                     </button>
@@ -1715,7 +1806,9 @@ export default function CheckoutPage() {
                 <div className={delivery === 0 ? styles.freeDeliveryNote : styles.deliveryUpgrade}>
                   <Truck size={12} />
                   {delivery === 0
-                    ? ' Free delivery on orders above ₹499'
+                    ? isFreeShippingByCoupon
+                      ? ' 🎁 Free delivery unlocked by coupon!'
+                      : ' Free delivery on orders above ₹499'
                     : ` Add ${formatPrice(499 - subtotal)} more for free delivery`}
                 </div>
               </div>
