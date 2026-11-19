@@ -55,9 +55,9 @@ function buildUrl(endpoint: string, params?: Record<string, string | number | bo
   return url.toString();
 }
 
-// In-memory cache for fast dev/SSR queries
+// In-memory cache for fast dev/SSR queries (short TTL for real-time WordPress database synchronization)
 const memoryCache = new Map<string, { data: unknown; expires: number }>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 15 * 1000; // 15 seconds
 
 export async function wcFetch<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, params, cache = 'default', revalidate = 300 } = options;

@@ -1,38 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
+import { clearWcCache } from '@/lib/api/client';
 import crypto from 'crypto';
-import path from 'path';
-import fs from 'fs';
-import sharp from 'sharp';
 
 export const dynamic = 'force-dynamic';
-
-const LOCAL_PRODUCTS_DIR = path.join(process.cwd(), 'public', 'images', 'products');
-
-async function syncProductImages(images: Array<{ src: string }>) {
-  if (!Array.isArray(images) || images.length === 0) return;
-  for (const img of images) {
-    if (!img.src) continue;
-    try {
-      const filename = path.basename(img.src.split('?')[0]);
-      const basename = filename.replace(/\.[^.]+$/, '');
-      const res = await fetch(img.src);
-      if (res.ok) {
-        const buf = Buffer.from(await res.arrayBuffer());
-        const webpBuf = await sharp(buf)
-          .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
-          .webp({ quality: 82, effort: 5 })
-          .toBuffer();
-        if (!fs.existsSync(LOCAL_PRODUCTS_DIR)) {
-          fs.mkdirSync(LOCAL_PRODUCTS_DIR, { recursive: true });
-        }
-        fs.writeFileSync(path.join(LOCAL_PRODUCTS_DIR, `${basename}.webp`), webpBuf);
-        console.log(`[WooCommerce Product Webhook] Auto-compressed & updated image: ${basename}.webp`);
-      }
-    } catch (e) {
-      console.warn(`[WooCommerce Product Webhook] Failed to auto-sync image ${img.src}:`, e);
-    }
-  }
-}
 
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_EMBED_URL = process.env.NVIDIA_EMBED_URL || 'https://integrate.api.nvidia.com/v1/embeddings';
@@ -217,9 +188,17 @@ export async function POST(req: NextRequest) {
 
     console.log(`[WooCommerce Product Webhook] Successfully indexed Product #${productId} (${productName}) in Qdrant.`);
 
-    // 6. Automatically download and compress any new or updated product images
-    if (Array.isArray(productData.images) && productData.images.length > 0) {
-      await syncProductImages(productData.images);
+    // 6. Instantly clear memory cache and revalidate frontend pages so updated images reflect live
+    try {
+      clearWcCache();
+      revalidatePath('/', 'page');
+      revalidatePath('/shop', 'page');
+      if (productSlug) {
+        revalidatePath(`/product/${productSlug}`, 'page');
+      }
+      console.log(`[WooCommerce Product Webhook] Cleared cache and revalidated for Product #${productId} (${productSlug})`);
+    } catch (revalErr) {
+      console.warn('[WooCommerce Product Webhook] Cache revalidation warning:', revalErr);
     }
 
     return NextResponse.json({

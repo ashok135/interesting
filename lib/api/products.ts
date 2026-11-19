@@ -69,7 +69,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Woo
 
   const products = await wcFetch<WooProduct[]>('products', {
     params,
-    revalidate: 60, // ISR: revalidate every 60 seconds
+    revalidate: 30, // ISR: revalidate every 30 seconds for real-time WordPress updates
   });
   return (Array.isArray(products) ? products : []).map(normalizeProduct);
 }
