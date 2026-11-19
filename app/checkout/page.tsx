@@ -44,7 +44,6 @@ import {
 } from 'lucide-react';
 import type { OrderBilling, OrderPayload } from '@/types';
 import { GoogleLoader } from '@/components/ui';
-import TruckOrderLoader from '@/components/checkout/TruckOrderLoader';
 import styles from './page.module.css';
 
 type CheckoutStep = 'auth' | 'address' | 'payment' | 'success';
@@ -168,6 +167,7 @@ export default function CheckoutPage() {
   const [upiRef, setUpiRef] = useState('');
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [placing, setPlacing] = useState(false);
+  const [isAnimatingOrder, setIsAnimatingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [addrError, setAddrError] = useState('');
   const [orderId, setOrderId] = useState<number | null>(null);
@@ -665,10 +665,11 @@ export default function CheckoutPage() {
           },
           handler: async function (response: any) {
             setPlacing(true);
+            setIsAnimatingOrder(true);
             setOrderError('');
             try {
               // 3. Cryptographically verify payment on server & confirm order
-              const verifyRes = await fetch('/api/payment/verify', {
+              const verifyPromise = fetch('/api/payment/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -677,10 +678,14 @@ export default function CheckoutPage() {
                   razorpay_signature: response.razorpay_signature,
                   orderData: currentOrderPayload,
                 }),
-              });
+              }).then((r) => r.json());
 
-              const verifyJson = await verifyRes.json();
-              if (!verifyRes.ok || !verifyJson.success) {
+              const [verifyJson] = await Promise.all([
+                verifyPromise,
+                new Promise((res) => setTimeout(res, 2900)),
+              ]);
+
+              if (!verifyJson.success) {
                 throw new Error(verifyJson.error || 'Payment verification failed. Please contact support.');
               }
 
@@ -695,14 +700,17 @@ export default function CheckoutPage() {
               clearCart();
               refresh?.();
             } catch (vErr: any) {
+              setIsAnimatingOrder(false);
               setOrderError(vErr.message || 'Payment confirmation error.');
             } finally {
               setPlacing(false);
+              setIsAnimatingOrder(false);
             }
           },
           modal: {
             ondismiss: function () {
               setPlacing(false);
+              setIsAnimatingOrder(false);
             },
           },
         };
@@ -736,8 +744,11 @@ export default function CheckoutPage() {
       }
     }
 
+    // COD & Direct UPI: Trigger the in-button truck drive micro-interaction immediately!
+    setIsAnimatingOrder(true);
+
     try {
-      const order = await createOrder({
+      const orderPromise = createOrder({
         customer_id: user?.id,
         payment_method: payMethod === 'cod' ? 'cod' : 'bacs',
         payment_method_title: orderPaymentTitle,
@@ -756,7 +767,13 @@ export default function CheckoutPage() {
         ],
       });
 
-      // Save confirmed order snapshot first so the success screen displays immediately
+      const [order] = await Promise.all([
+        orderPromise,
+        // Wait 2900ms so the truck drives across the button, loads package, speeds off right, and "Order Placed ✓" appears!
+        new Promise((res) => setTimeout(res, 2900)),
+      ]);
+
+      // Save confirmed order snapshot first so the success screen displays immediately right on the same page
       setConfirmedOrder({
         id: order.id,
         total: orderGrandTotal,
@@ -770,9 +787,11 @@ export default function CheckoutPage() {
       clearCart();
       refresh?.();
     } catch (err) {
+      setIsAnimatingOrder(false);
       setOrderError(err instanceof Error ? err.message : 'Failed to place order. Please try again.');
     } finally {
       setPlacing(false);
+      setIsAnimatingOrder(false);
     }
   }
 
@@ -1679,16 +1698,54 @@ export default function CheckoutPage() {
                   <div className={styles.errorBox}><TriangleAlert size={14} /> {orderError}</div>
                 )}
 
-                <button type="button" className={styles.placeOrderBtn} onClick={placeOrder} disabled={placing}>
-                  {placing ? (
-                    <><span className={styles.btnSpinner} /> {payMethod === 'razorpay' ? 'Opening Razorpay…' : 'Placing Order…'}</>
-                  ) : payMethod === 'razorpay' ? (
-                    <><RazorpayIcon size={18} /> Pay {formatPrice(grandTotal)} via Razorpay</>
-                  ) : payMethod === 'cod' ? (
-                    <><ShieldCheck size={17} /> Place Order • {formatPrice(grandTotal)}</>
-                  ) : (
-                    <><CheckCircle2 size={17} /> Confirm UPI Order — {formatPrice(grandTotal)}</>
-                  )}
+                <button
+                  type="button"
+                  className={`${styles.placeOrderBtn} ${isAnimatingOrder ? styles.isAnimating : ''}`}
+                  onClick={placeOrder}
+                  disabled={placing}
+                  aria-label="Complete Order"
+                >
+                  <span className={`${styles.btnText} ${styles.defaultText}`}>
+                    {payMethod === 'razorpay' ? (
+                      <><RazorpayIcon size={18} /> Pay {formatPrice(grandTotal)} via Razorpay</>
+                    ) : payMethod === 'cod' ? (
+                      <><ShieldCheck size={17} /> Place Order • {formatPrice(grandTotal)}</>
+                    ) : (
+                      <><CheckCircle2 size={17} /> Confirm UPI Order — {formatPrice(grandTotal)}</>
+                    )}
+                  </span>
+
+                  {/* Micro-interaction Delivery Truck Driving Sequence */}
+                  <span className={styles.roadLine} aria-hidden="true" />
+                  <span className={styles.package} aria-hidden="true" />
+
+                  <span className={styles.truck} aria-hidden="true">
+                    <span className={styles.speedLines}>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </span>
+
+                    <span className={styles.truckBody}>
+                      <span className={styles.truckCargo}>
+                        <span className={styles.cargoDoor} />
+                      </span>
+                      <span className={styles.truckCab}>
+                        <span className={styles.truckWindshield} />
+                        <span className={styles.truckHeadlight} />
+                        <span className={styles.truckBumper} />
+                        <span className={styles.headlightBeam} />
+                      </span>
+                      <span className={styles.truckChassis} />
+                    </span>
+
+                    <span className={`${styles.wheel} ${styles.wheelBack}`} />
+                    <span className={`${styles.wheel} ${styles.wheelFront}`} />
+                  </span>
+
+                  <span className={`${styles.btnText} ${styles.successText}`}>
+                    Order Placed ✓
+                  </span>
                 </button>
                 </div>
               </div>
@@ -1854,13 +1911,6 @@ export default function CheckoutPage() {
           </aside>
         </div>
       </div>
-
-      {/* Express Delivery Truck Order Placing Animation */}
-      <TruckOrderLoader
-        isOpen={placing}
-        payMethod={payMethod}
-        totalAmount={formatPrice(grandTotal)}
-      />
     </div>
   );
 }
