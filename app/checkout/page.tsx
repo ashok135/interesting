@@ -808,73 +808,105 @@ export default function CheckoutPage() {
     );
   }
 
-  /* ── Success screen fallback (direct load or refresh) ── */
-  if ((step === 'success' || confirmedOrder) && orderFlowState === 'idle') {
+  /* ── Single White Page for Order Processing & Confirmation Flow ── */
+  if (orderFlowState !== 'idle' || step === 'success' || confirmedOrder) {
     const oId = confirmedOrder?.id || orderId;
     const oTotal = confirmedOrder?.total ?? grandTotal;
     const oItems = confirmedOrder?.itemCount ?? (items.length || 1);
     const oPay = confirmedOrder?.paymentTitle ?? (payMethod === 'cod' ? 'Cash on Delivery' : 'Direct UPI Transfer');
 
     return (
-      <div className={styles.successPage}>
+      <div className={styles.orderFlowPage}>
         <div
-          id="order-success-card"
+          id="order-flow-card"
           tabIndex={-1}
           style={{ outline: 'none' }}
-          className={styles.successCard}
+          className={`${styles.orderFlowCard} ${orderFlowState === 'confirmed' || step === 'success' || confirmedOrder ? styles.orderFlowCardConfirmed : ''}`}
         >
-          <div className={styles.successCircle}>
-            <CheckCircle2 size={40} strokeWidth={2} />
-          </div>
-          <h1 className={styles.successTitle}>Order Placed! 🎉</h1>
-          <p className={styles.successOrderNum}>Order #{oId}</p>
-          <p className={styles.successMsg}>
-            Your farm-fresh gourmet items are confirmed and being packed with care.
-            Expected delivery in <strong>3–5 business days</strong>.
-          </p>
-          <div className={styles.successSummaryBox}>
-            <div className={styles.successSummaryRow}>
-              <span>Items</span>
-              <span>{oItems} {oItems === 1 ? 'item' : 'items'}</span>
+          {orderFlowState === 'animating' ? (
+            <div className={styles.centerAnimBox}>
+              {/* ── Self-contained truck track pill (looping payment loader) ── */}
+              <div className={styles.truckTrackPill} role="status" aria-label="Processing order">
+                <span className={styles.roadLine} aria-hidden="true" />
+                <span className={styles.package} aria-hidden="true" />
+
+                <span className={styles.truck} aria-hidden="true">
+                  <span className={styles.speedLines}>
+                    <span /><span /><span />
+                  </span>
+                  <span className={styles.truckBody}>
+                    <span className={styles.truckCargo}>
+                      <span className={styles.cargoDoor} />
+                    </span>
+                    <span className={styles.truckCab}>
+                      <span className={styles.truckWindshield} />
+                      <span className={styles.truckHeadlight} />
+                      <span className={styles.truckBumper} />
+                      <span className={styles.headlightBeam} />
+                    </span>
+                    <span className={styles.truckChassis} />
+                  </span>
+                  <span className={`${styles.wheel} ${styles.wheelBack}`} />
+                  <span className={`${styles.wheel} ${styles.wheelFront}`} />
+                </span>
+              </div>
             </div>
-            <div className={styles.successSummaryRow}>
-              <span>Amount</span>
-              <span className={styles.successAmount}>{formatPrice(oTotal)}</span>
+          ) : (
+            <div className={styles.centerSuccessContent}>
+              <div className={styles.successCircle}>
+                <CheckCircle2 size={42} strokeWidth={2.2} />
+              </div>
+              <h1 className={styles.successTitle}>Order Placed! 🎉</h1>
+              <p className={styles.successOrderNum}>Order #{oId}</p>
+              <p className={styles.successMsg}>
+                Your farm-fresh gourmet items are confirmed and being packed with care.
+                Expected delivery in <strong>3–5 business days</strong>.
+              </p>
+              <div className={styles.successSummaryBox}>
+                <div className={styles.successSummaryRow}>
+                  <span>Items</span>
+                  <span>{oItems} {oItems === 1 ? 'item' : 'items'}</span>
+                </div>
+                <div className={styles.successSummaryRow}>
+                  <span>Amount</span>
+                  <span className={styles.successAmount}>{formatPrice(oTotal)}</span>
+                </div>
+                <div className={styles.successSummaryRow}>
+                  <span>Payment</span>
+                  <span>{oPay}</span>
+                </div>
+                <div className={styles.successSummaryRow}>
+                  <span>Order Status</span>
+                  <span style={{ color: '#16a34a', fontWeight: 700 }}>Confirmed &amp; Processing</span>
+                </div>
+              </div>
+              {isGuest && (
+                <p style={{ fontSize: '0.82rem', color: '#475569', textAlign: 'center', margin: '0.5rem 0 0.85rem', padding: '0.65rem 0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                  📱 Order updates and real-time dispatch tracking will be sent directly via SMS to your mobile.
+                </p>
+              )}
+              <div className={styles.successActions}>
+                {oId && (
+                  <a
+                    href={`/api/invoice/${oId}/download`}
+                    download={`Invoice-INTERSTING-${oId}.pdf`}
+                    className={styles.successInvoiceBtn}
+                    title="Download official tax invoice (PDF)"
+                  >
+                    <FileText size={16} /> Download Tax Invoice (PDF)
+                  </a>
+                )}
+                <div className={styles.successSubActions}>
+                  <Link href={user ? "/account" : "/shop"} className={styles.successTrackBtn}>
+                    <Package size={16} /> {user ? "Track Order" : "View More Products"}
+                  </Link>
+                  <Link href="/shop" className={styles.successShopBtn}>
+                    Continue Shopping <ArrowRight size={15} />
+                  </Link>
+                </div>
+              </div>
             </div>
-            <div className={styles.successSummaryRow}>
-              <span>Payment</span>
-              <span>{oPay}</span>
-            </div>
-            <div className={styles.successSummaryRow}>
-              <span>Order Status</span>
-              <span style={{ color: '#16a34a', fontWeight: 700 }}>Confirmed &amp; Processing</span>
-            </div>
-          </div>
-          {isGuest && (
-            <p style={{ fontSize: '0.82rem', color: '#475569', textAlign: 'center', margin: '0.75rem 0 1rem', padding: '0.65rem 0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-              📱 Order updates and real-time dispatch tracking will be sent directly via SMS to your mobile.
-            </p>
           )}
-          <div className={styles.successActions}>
-            {oId && (
-              <a
-                href={`/api/invoice/${oId}/download`}
-                download={`Invoice-INTERSTING-${oId}.pdf`}
-                className={styles.successInvoiceBtn}
-                title="Download official tax invoice (PDF)"
-              >
-                <FileText size={16} /> Download Tax Invoice (PDF)
-              </a>
-            )}
-            <div className={styles.successSubActions}>
-              <Link href={user ? "/account" : "/shop"} className={styles.successTrackBtn}>
-                <Package size={16} /> {user ? "Track Order" : "View More Products"}
-              </Link>
-              <Link href="/shop" className={styles.successShopBtn}>
-                Continue Shopping <ArrowRight size={15} />
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -1885,119 +1917,6 @@ export default function CheckoutPage() {
           </aside>
         </div>
       </div>
-
-      {/* ── Seamless Centered Order Micro-Interaction & Confirmation Overlay ── */}
-      {orderFlowState !== 'idle' && (
-        <div className={styles.centerFlowOverlay} role="dialog" aria-modal="true" aria-label="Order Status">
-          <div
-            className={`${styles.centerFlowCard} ${
-              orderFlowState === 'confirmed' ? styles.centerFlowCardExpanded : ''
-            }`}
-          >
-            {orderFlowState === 'animating' ? (
-              <div className={styles.centerAnimBox}>
-                {/* ── Self-contained truck track pill (looping payment loader) ── */}
-                <div className={styles.truckTrackPill} role="status" aria-label="Processing order">
-                  <span className={styles.roadLine} aria-hidden="true" />
-                  <span className={styles.package} aria-hidden="true" />
-
-                  <span className={styles.truck} aria-hidden="true">
-                    <span className={styles.speedLines}>
-                      <span /><span /><span />
-                    </span>
-                    <span className={styles.truckBody}>
-                      <span className={styles.truckCargo}>
-                        <span className={styles.cargoDoor} />
-                      </span>
-                      <span className={styles.truckCab}>
-                        <span className={styles.truckWindshield} />
-                        <span className={styles.truckHeadlight} />
-                        <span className={styles.truckBumper} />
-                        <span className={styles.headlightBeam} />
-                      </span>
-                      <span className={styles.truckChassis} />
-                    </span>
-                    <span className={`${styles.wheel} ${styles.wheelBack}`} />
-                    <span className={`${styles.wheel} ${styles.wheelFront}`} />
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className={styles.centerSuccessContent}>
-                <div className={styles.successCircle}>
-                  <CheckCircle2 size={42} strokeWidth={2.2} />
-                </div>
-
-                <h2 className={styles.successTitle}>Order Placed! 🎉</h2>
-                <p className={styles.successOrderNum}>
-                  Order #{confirmedOrder?.id || orderId}
-                </p>
-
-                <p className={styles.successMsg}>
-                  Your farm-fresh gourmet items are confirmed and being packed with care.
-                  Expected delivery in <strong>3–5 business days</strong>.
-                </p>
-
-                <div className={styles.successSummaryBox}>
-                  <div className={styles.successSummaryRow}>
-                    <span>Items</span>
-                    <span>
-                      {confirmedOrder?.itemCount ?? (items.length || 1)}{' '}
-                      {(confirmedOrder?.itemCount ?? (items.length || 1)) === 1 ? 'item' : 'items'}
-                    </span>
-                  </div>
-                  <div className={styles.successSummaryRow}>
-                    <span>Total Amount</span>
-                    <span className={styles.successAmount}>
-                      {formatPrice(confirmedOrder?.total ?? grandTotal)}
-                    </span>
-                  </div>
-                  <div className={styles.successSummaryRow}>
-                    <span>Payment Method</span>
-                    <span>
-                      {confirmedOrder?.paymentTitle ??
-                        (payMethod === 'cod' ? 'Cash on Delivery' : 'Direct UPI Transfer')}
-                    </span>
-                  </div>
-                  <div className={styles.successSummaryRow}>
-                    <span>Status</span>
-                    <span style={{ color: '#16a34a', fontWeight: 700 }}>
-                      Confirmed &amp; Processing
-                    </span>
-                  </div>
-                </div>
-
-                {isGuest && (
-                  <p style={{ fontSize: '0.82rem', color: '#475569', textAlign: 'center', margin: '0.5rem 0 0.85rem', padding: '0.65rem 0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                    📱 Order updates and real-time dispatch tracking will be sent directly via SMS to your mobile.
-                  </p>
-                )}
-
-                <div className={styles.successActions}>
-                  {(confirmedOrder?.id || orderId) && (
-                    <a
-                      href={`/api/invoice/${confirmedOrder?.id || orderId}/download`}
-                      download={`Invoice-INTERSTING-${confirmedOrder?.id || orderId}.pdf`}
-                      className={styles.successInvoiceBtn}
-                      title="Download official tax invoice (PDF)"
-                    >
-                      <FileText size={16} /> Download Tax Invoice (PDF)
-                    </a>
-                  )}
-                  <div className={styles.successSubActions}>
-                    <Link href={user ? "/account" : "/shop"} className={styles.successTrackBtn}>
-                      <Package size={16} /> {user ? "Track Order" : "View More Products"}
-                    </Link>
-                    <Link href="/shop" className={styles.successShopBtn}>
-                      Continue Shopping <ArrowRight size={15} />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
