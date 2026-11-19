@@ -34,12 +34,33 @@ export interface RagContext {
   suggestions?: string[];
 }
 
-export type QueryIntent = 'contact' | 'order_tracking' | 'policy' | 'product_search' | 'greeting';
+export type QueryIntent =
+  | 'contact'
+  | 'order_tracking'
+  | 'policy'
+  | 'product_search'
+  | 'hybrid_product_policy'
+  | 'greeting';
 
 interface QueryClassification {
   intent: QueryIntent;
   maxBudget: number | null;
+  expandedQuery: string;
 }
+
+const PHONETIC_SYNONYMS: Record<string, string> = {
+  kaju: 'cashew',
+  badam: 'almond',
+  akhrot: 'walnut',
+  kishmish: 'raisin',
+  pista: 'pistachio',
+  khajoor: 'dates',
+  khajur: 'dates',
+  anjeer: 'figs',
+  makhana: 'lotus seeds makhana',
+  chikki: 'chikki brittle',
+  mamra: 'mamra badam almond',
+};
 
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_EMBED_URL = process.env.NVIDIA_EMBED_URL || 'https://integrate.api.nvidia.com/v1/embeddings';
@@ -103,10 +124,80 @@ function stripHtml(html?: string): string {
 }
 
 /**
- * Classifies customer query using priority intent hierarchy
+ * 10/10 OPTIMIZATION: Contextualizes follow-up queries using conversation history
+ * (e.g. Turn 1: "Show me cashews" -> Turn 2: "Which one is under 600?" -> effectively "cashews under 600")
+ */
+function contextualizeQuery(
+  userQuery: string,
+  history?: Array<{ role?: string; content?: string }>
+): string {
+  if (!history || history.length === 0) return userQuery;
+  const q = userQuery.toLowerCase().trim();
+
+  const isFollowUp =
+    q.startsWith('which') ||
+    q.startsWith('what about') ||
+    q.startsWith('how about') ||
+    q.startsWith('is it') ||
+    q.startsWith('is that') ||
+    q.startsWith('are they') ||
+    q.startsWith('do you have') ||
+    q.startsWith('under') ||
+    q.startsWith('below') ||
+    q.includes('cheaper') ||
+    q.includes('cost') ||
+    q.includes('in stock') ||
+    q.includes('smaller') ||
+    q.includes('bigger') ||
+    q.includes('more like') ||
+    q.split(' ').length <= 3;
+
+  if (!isFollowUp) return userQuery;
+
+  const productKeywords = [
+    'cashew', 'kaju', 'almond', 'badam', 'walnut', 'akhrot',
+    'raisin', 'kishmish', 'date', 'khajoor', 'pista', 'pistachio',
+    'seed', 'hamper', 'gift', 'makhana', 'chikki', 'anjeer', 'fig'
+  ];
+
+  for (let i = history.length - 1; i >= 0; i--) {
+    const prev = (history[i]?.content || '').toLowerCase();
+    for (const kw of productKeywords) {
+      if (prev.includes(kw) && !q.includes(kw)) {
+        return `${userQuery} ${kw}`;
+      }
+    }
+  }
+
+  return userQuery;
+}
+
+/**
+ * 10/10 OPTIMIZATION: Normalizes query with Indian dry fruit phonetics & expands synonyms
+ */
+function expandQuerySynonyms(userQuery: string): string {
+  const words = userQuery.toLowerCase().split(/\s+/);
+  const expansions: string[] = [];
+
+  for (const w of words) {
+    const cleanW = w.replace(/[^a-z0-9]/g, '');
+    if (PHONETIC_SYNONYMS[cleanW]) {
+      expansions.push(PHONETIC_SYNONYMS[cleanW]);
+    }
+  }
+
+  if (expansions.length > 0) {
+    return `${userQuery} ${expansions.join(' ')}`;
+  }
+  return userQuery;
+}
+
+/**
+ * 10/10 Classifies customer query using priority intent hierarchy with Hybrid Intent Blending
  */
 function classifyQuery(userQuery: string): QueryClassification {
   const q = userQuery.toLowerCase().trim();
+  const expandedQuery = expandQuerySynonyms(userQuery);
 
   // 1. Extract budget filter (e.g. "under 500", "below 1000", "less than 400")
   let maxBudget: number | null = null;
@@ -128,7 +219,7 @@ function classifyQuery(userQuery: string): QueryClassification {
     q.includes('email') ||
     q.includes('reach');
 
-  if (isContactQuery) return { intent: 'contact', maxBudget };
+  if (isContactQuery) return { intent: 'contact', maxBudget, expandedQuery };
 
   // 3. Priority 2: Order tracking / account status
   const isOrderQuery =
@@ -139,9 +230,22 @@ function classifyQuery(userQuery: string): QueryClassification {
     q.includes('my purchase') ||
     q.includes('courier');
 
-  if (isOrderQuery) return { intent: 'order_tracking', maxBudget };
+  const hasProductMention =
+    q.includes('cashew') ||
+    q.includes('kaju') ||
+    q.includes('almond') ||
+    q.includes('badam') ||
+    q.includes('walnut') ||
+    q.includes('nut') ||
+    q.includes('seed') ||
+    q.includes('hamper') ||
+    q.includes('box');
 
-  // 4. Priority 3: Store Policies — specific phrases only to avoid false matches
+  if (isOrderQuery && !hasProductMention) {
+    return { intent: 'order_tracking', maxBudget, expandedQuery };
+  }
+
+  // 4. Policy check
   const isPolicyQuery =
     q.includes('return policy') ||
     q.includes('refund') ||
@@ -171,18 +275,10 @@ function classifyQuery(userQuery: string): QueryClassification {
     q.includes('terms') ||
     q.includes('privacy');
 
-  if (isPolicyQuery) return { intent: 'policy', maxBudget };
-
-  // 5. Priority 4: Product Search / Nutrition / Food Recommendation
+  // 5. Product check
   const isProductQuery =
     maxBudget !== null ||
-    q.includes('seed') ||
-    q.includes('nut') ||
-    q.includes('cashew') ||
-    q.includes('kaju') ||
-    q.includes('almond') ||
-    q.includes('badam') ||
-    q.includes('walnut') ||
+    hasProductMention ||
     q.includes('akhrot') ||
     q.includes('raisin') ||
     q.includes('kishmish') ||
@@ -196,8 +292,6 @@ function classifyQuery(userQuery: string): QueryClassification {
     q.includes('snack') ||
     q.includes('laddu') ||
     q.includes('katli') ||
-    q.includes('hamper') ||
-    q.includes('box') ||
     q.includes('gift') ||
     q.includes('gifting') ||
     q.includes('protein') ||
@@ -219,10 +313,17 @@ function classifyQuery(userQuery: string): QueryClassification {
     q.includes('cheap') ||
     q.includes('best');
 
-  if (isProductQuery) return { intent: 'product_search', maxBudget };
+  // 10/10: HYBRID INTENT BLENDING
+  // If user asks: "Do you offer COD for Cashews?" or "What is shipping charge on gift hampers?"
+  if (isPolicyQuery && isProductQuery) {
+    return { intent: 'hybrid_product_policy', maxBudget, expandedQuery };
+  }
+
+  if (isPolicyQuery) return { intent: 'policy', maxBudget, expandedQuery };
+  if (isProductQuery) return { intent: 'product_search', maxBudget, expandedQuery };
 
   // 6. Default: Greeting / Small Talk
-  return { intent: 'greeting', maxBudget: null };
+  return { intent: 'greeting', maxBudget: null, expandedQuery };
 }
 
 /**
@@ -290,7 +391,7 @@ interface QdrantSearchHit {
 }
 
 /**
- * Searches Qdrant collection for semantic policy & product matches
+ * 10/10 OPTIMIZATION: Searches Qdrant collection with score threshold to eliminate hallucinations
  */
 async function searchQdrant(vector: number[]): Promise<QdrantSearchHit[]> {
   try {
@@ -301,6 +402,7 @@ async function searchQdrant(vector: number[]): Promise<QdrantSearchHit[]> {
         vector,
         limit: 6,
         with_payload: true,
+        score_threshold: 0.52, // Vector similarity cutoff to drop irrelevant noise
       }),
       signal: AbortSignal.timeout(3500),
     });
@@ -311,7 +413,8 @@ async function searchQdrant(vector: number[]): Promise<QdrantSearchHit[]> {
     }
 
     const data = await res.json();
-    return Array.isArray(data?.result) ? data.result : [];
+    const hits: QdrantSearchHit[] = Array.isArray(data?.result) ? data.result : [];
+    return hits.filter((h) => typeof h.score !== 'number' || h.score >= 0.50);
   } catch (err) {
     console.warn('[Qdrant Search] Search fetch error:', err);
     return [];
@@ -347,8 +450,13 @@ async function fetchProductsCached(matchedIds: number[], searchTerm: string): Pr
   return products;
 }
 
-export async function retrieveRagContext(userQuery: string): Promise<RagContext> {
-  const { intent, maxBudget } = classifyQuery(userQuery);
+export async function retrieveRagContext(
+  userQuery: string,
+  history?: Array<{ role?: string; content?: string }>
+): Promise<RagContext> {
+  const contextualQuery = contextualizeQuery(userQuery, history);
+  const { intent, maxBudget, expandedQuery } = classifyQuery(contextualQuery);
+  const effectiveSearchQuery = expandedQuery;
 
   // =========================================================================
   // FAST PATH: CONTACT — 0 DB calls
@@ -392,7 +500,7 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
       ],
       formattedContext: [
         '### Context: Friendly Greeting / Concierge Small Talk',
-        '• Role: Tara, AI Concierge for Interesting pantry.',
+        '• Role: Chappie, AI Concierge for Interesting gourmet dry fruits pantry.',
         '• CRITICAL INSTRUCTION: Reply in ONLY 1 or 2 crisp, warm sentences (MAX 25 words!).',
         '• Do NOT write long paragraphs. Quick action cards are already provided below for the customer to tap.',
       ].join('\n'),
@@ -426,10 +534,95 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
   }
 
   // =========================================================================
+  // 10/10 HYBRID PATH: Product Interest + Store Policy/Delivery (Blended Grounding)
+  // =========================================================================
+  if (intent === 'hybrid_product_policy') {
+    const queryVector = await generateQueryVector(effectiveSearchQuery);
+    const [hits, keywordProducts] = await Promise.all([
+      queryVector ? searchQdrant(queryVector) : Promise.resolve([] as QdrantSearchHit[]),
+      fetchProductsCached([], effectiveSearchQuery),
+    ]);
+
+    // Extract policies
+    const policyHits = hits.filter((h) => h.payload?.type === 'policy');
+    const retrievedPolicies: string[] = [];
+    for (const hit of policyHits) {
+      if (hit.payload?.passage) retrievedPolicies.push(hit.payload.passage);
+    }
+    if (retrievedPolicies.length === 0) {
+      retrievedPolicies.push(
+        'Delivery: Free express shipping on orders above ₹499 across India. Orders dispatch within 24 hours.',
+        'Payment: Cash on Delivery (COD) and Direct Instant UPI (Google Pay, PhonePe, Paytm) are accepted.',
+        'Returns: 7-Day Hassle-Free Replacement for damaged or unsealed pantry packages.'
+      );
+    }
+
+    // Extract products
+    const productHits = hits.filter((h) => h.payload?.type === 'product');
+    const matchedIds = productHits
+      .map((h) => Number(h.payload?.id || h.id))
+      .filter((id) => !isNaN(id) && id > 0);
+
+    let liveProducts = matchedIds.length > 0
+      ? await fetchProductsCached(matchedIds, effectiveSearchQuery)
+      : keywordProducts;
+
+    if (maxBudget !== null) {
+      const budgeted = liveProducts.filter((p) => {
+        const priceNum = parseFloat(String(p.price).replace(/[^0-9.]/g, ''));
+        return !isNaN(priceNum) && priceNum <= maxBudget;
+      });
+      if (budgeted.length > 0) liveProducts = budgeted;
+    }
+
+    const retrievedProducts: RetrievedProduct[] = liveProducts.slice(0, 4).map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      price: p.price,
+      regular_price: p.regular_price || p.price,
+      image: Array.isArray(p.images) && p.images[0]?.src ? p.images[0].src : '/images/categories/nuts.jpg',
+      category: Array.isArray(p.categories) && p.categories[0]?.name ? p.categories[0].name : 'Farm-Fresh Dry Fruits',
+      description: stripHtml(p.short_description || p.description || '').slice(0, 180),
+      stock_status: p.stock_status,
+    }));
+
+    const productContextText =
+      retrievedProducts.length > 0
+        ? retrievedProducts
+            .map(
+              (p, i) =>
+                `${i + 1}. **${p.name}** — ₹${p.price} | Link: [${p.name}](/product/${p.slug}) (${p.stock_status === 'instock' ? 'In Stock' : 'Out of Stock'})`
+            )
+            .join('\n')
+        : 'Relevant store items available in shop.';
+
+    return {
+      products: retrievedProducts,
+      policies: retrievedPolicies,
+      suggestions: [
+        '📦 Track My Order',
+        '💳 Payment & COD Terms',
+        '🚚 Check Delivery Pin Code',
+      ],
+      formattedContext: [
+        '### Customer Intent: Hybrid Inquiry (Product Interest + Store Policy / Delivery)',
+        '### Verified Store Policy:',
+        ...retrievedPolicies.map((p) => `• ${p}`),
+        '',
+        '### Live Matching Products in Store:',
+        productContextText,
+        '',
+        'CRITICAL INSTRUCTION: In 2 concise sentences, directly answer their policy/COD/delivery question AND confirm they can order the products displayed below. Interactive product cards appear below automatically — do NOT list products in text.',
+      ].join('\n'),
+    };
+  }
+
+  // =========================================================================
   // POLICY PATH — Qdrant only (embed cached)
   // =========================================================================
   if (intent === 'policy') {
-    const queryVector = await generateQueryVector(userQuery);
+    const queryVector = await generateQueryVector(effectiveSearchQuery);
     const hits = queryVector ? await searchQdrant(queryVector) : [];
     const policyHits = hits.filter((h) => h.payload?.type === 'policy');
 
@@ -477,11 +670,11 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
   // Start BOTH in parallel immediately
   const [qdrantResult, keywordProducts] = await Promise.all([
     // Branch A: embed the query → search Qdrant (cached embed saves ~500ms on repeat)
-    generateQueryVector(userQuery).then((vector) =>
+    generateQueryVector(effectiveSearchQuery).then((vector) =>
       vector ? searchQdrant(vector) : Promise.resolve([] as QdrantSearchHit[])
     ),
     // Branch B: WooCommerce keyword prefetch in parallel (cached result saves ~400ms on repeat)
-    fetchProductsCached([], userQuery),
+    fetchProductsCached([], effectiveSearchQuery),
   ]);
 
   // Extract product IDs from Qdrant hits
@@ -492,7 +685,7 @@ export async function retrieveRagContext(userQuery: string): Promise<RagContext>
 
   // If Qdrant found specific product IDs, fetch those (cached); otherwise use the parallel keyword results
   let liveProducts: WooProduct[] = matchedIds.length > 0
-    ? await fetchProductsCached(matchedIds, userQuery)
+    ? await fetchProductsCached(matchedIds, effectiveSearchQuery)
     : keywordProducts;
 
   // Apply budget filter

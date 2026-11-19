@@ -59,8 +59,22 @@ export async function POST(req: NextRequest) {
 
     const cleanQuery = message.trim();
 
-    // 1. RAG Retrieval Step: Vector search in Qdrant + live inventory grounding (RIG)
-    const ragContext = await retrieveRagContext(cleanQuery);
+    // 1. Prepare message chain for LLM (last 4 turns for multi-turn conversational awareness)
+    const formattedHistory = Array.isArray(history)
+      ? history
+          .slice(-4)
+          .filter(
+            (msg: { role?: string; content?: string }) =>
+              msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')
+          )
+          .map((msg: { role: 'user' | 'assistant'; content: string }) => ({
+            role: msg.role,
+            content: msg.content,
+          }))
+      : [];
+
+    // 2. 10/10 RAG Retrieval Step: Vector search in Qdrant + live inventory grounding (RIG) + Multi-Turn Contextualization
+    const ragContext = await retrieveRagContext(cleanQuery, formattedHistory);
 
     let orderContextPrompt = '';
     if (order && order.id) {
@@ -79,7 +93,7 @@ GUIDELINES FOR THIS ORDER:
 `;
     }
 
-    // 2. Tight System Prompt — grounded, concise, secure
+    // 3. Tight System Prompt — grounded, concise, secure
     const systemPrompt = `You are "Chappie", AI Concierge for "Interesting" — a luxury farm-fresh dry fruits, nuts & artisanal hampers store in India.
 ${orderContextPrompt}
 RULES:
@@ -89,20 +103,6 @@ RULES:
 - Always use markdown links exactly as provided in context (e.g. [Track Your Order](/account), [Return Policy](/returns)).
 
 ${ragContext.formattedContext}`;
-
-    // 3. Prepare message chain for LLM
-    const formattedHistory = Array.isArray(history)
-      ? history
-          .slice(-4)
-          .filter(
-            (msg: { role?: string; content?: string }) =>
-              msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')
-          )
-          .map((msg: { role: 'user' | 'assistant'; content: string }) => ({
-            role: msg.role,
-            content: msg.content,
-          }))
-      : [];
 
     // 4. Generation Step via NVIDIA NIM
     const completion = await nvidiaClient.chat.completions.create({
@@ -118,6 +118,9 @@ ${ragContext.formattedContext}`;
 
     const choice = completion.choices[0];
     let replyText = choice?.message?.content || '';
+
+    // 10/10: Cleanly strip <think>...</think> reasoning tags if emitted by reasoning-capable models
+    replyText = replyText.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
     // Intent-aware fallback if content was empty or contained only reasoning
     if (!replyText.trim()) {
