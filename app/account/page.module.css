@@ -732,6 +732,108 @@
   margin-left: auto;
 }
 
+.totalAndInvoiceWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.headerInvoicePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #ffffff;
+  color: var(--color-brand-green, #14532d);
+  border: 1px solid rgba(20, 83, 45, 0.3);
+  text-decoration: none;
+  line-height: 1.2;
+  transition: all 0.2s ease;
+}
+
+.headerInvoicePill:hover {
+  background: rgba(20, 83, 45, 0.08);
+  border-color: var(--color-brand-green, #14532d);
+}
+
+.orderMenuWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.orderMenuTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.orderMenuTrigger:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.orderMenuDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  min-width: 175px;
+  z-index: 50;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.orderMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.orderMenuItem:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.orderMenuItemDanger {
+  color: #dc2626;
+}
+
+.orderMenuItemDanger:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .stripLabel {
   font-size: 0.68rem;
   font-weight: 700;
@@ -1115,16 +1217,119 @@
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
 }
 
-/* 5. Card Footer Actions */
+/* 5. Review Section: Interactive 5-Star Rating upon Delivery */
+.orderRatingSection {
+  padding: 0.85rem 1.25rem;
+  background: #fffdf5;
+  border-top: 1px dashed #fde68a;
+  border-bottom: 1px dashed #fde68a;
+}
+
+.ratingPromptRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.ratingPromptText {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.quickStarsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.quickStarBtn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: transform 0.15s ease;
+}
+
+.quickStarBtn:hover {
+  transform: scale(1.3);
+}
+
+.ratingCompletedBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #166534;
+}
+
+/* 6. Card Footer Actions: Top 1 (Primary) + Bottom 2 (Clean & Normal) */
 .cardFooterActions {
   padding: 0.85rem 1.25rem;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.viewOrderDetailsPrimaryBtn {
+  width: 100%;
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.65rem;
-  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 9px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #ffffff;
+  color: var(--color-brand-green, #14532d);
+  border: 1.5px solid var(--color-brand-green, #14532d);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewOrderDetailsPrimaryBtn:hover {
+  background: rgba(20, 83, 45, 0.08);
+  border-color: #166534;
+  color: #166534;
+}
+
+.bottomTwoBtnRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.bottomBuyAgainBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: #ffffff;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bottomBuyAgainBtn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .trackPackageBtn {
@@ -1446,26 +1651,74 @@
   }
 
   .cardFooterActions {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.45rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
     padding: 0.75rem 0.85rem;
   }
 
+  .viewOrderDetailsPrimaryBtn {
+    width: 100%;
+    height: 42px;
+    padding: 0.65rem 1rem;
+    font-size: 0.84rem;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bottomTwoBtnRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+    width: 100%;
+  }
+
   .trackPackageBtn,
-  .viewOrderDetailsBtn,
+  .bottomBuyAgainBtn,
   .cancelOrderBtn,
-  .writeReviewOrderBtn,
-  .reviewSubmittedBtn,
   .helpBtn {
     width: 100%;
     justify-content: center;
-    padding: 0.55rem 0.35rem;
-    font-size: 0.74rem;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    border-radius: 8px;
-    height: 38px;
+    border-radius: 9px;
+    height: 40px;
     white-space: nowrap;
+  }
+}
+
+@media (min-width: 641px) {
+  .cardFooterActions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .viewOrderDetailsPrimaryBtn {
+    width: auto;
+    height: auto;
+    padding: 0.55rem 1.15rem;
+    font-size: 0.82rem;
+  }
+
+  .bottomTwoBtnRow {
+    display: flex;
+    align-items: center;
+    width: auto;
+    gap: 0.65rem;
+  }
+
+  .bottomBuyAgainBtn,
+  .trackPackageBtn,
+  .cancelOrderBtn,
+  .helpBtn {
+    width: auto;
+    height: auto;
+    padding: 0.55rem 1rem;
+    font-size: 0.82rem;
   }
 }
 
@@ -3252,6 +3505,61 @@
 
 [data-theme="dark"] .helpBtn:hover {
   background: #1e3a8a;
+}
+
+[data-theme="dark"] .viewOrderDetailsPrimaryBtn {
+  background: #14532d;
+  border-color: #22c55e;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .viewOrderDetailsPrimaryBtn:hover {
+  background: #166534;
+}
+
+[data-theme="dark"] .bottomBuyAgainBtn {
+  background: #1a2438;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .bottomBuyAgainBtn:hover {
+  background: #243048;
+}
+
+[data-theme="dark"] .headerInvoicePill {
+  background: #14532d;
+  border-color: #22c55e;
+  color: #86efac;
+}
+
+[data-theme="dark"] .orderMenuTrigger {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .orderMenuDropdown {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .orderMenuItem {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .orderMenuItem:hover {
+  background: #334155;
+}
+
+[data-theme="dark"] .orderRatingSection {
+  background: #1c1917;
+  border-color: #78350f;
+}
+
+[data-theme="dark"] .ratingPromptText {
+  color: #fde68a;
 }
 
 /* Dark mode for mobile pill sidebar */

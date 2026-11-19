@@ -32,6 +32,7 @@ import {
   AlertTriangle,
   Star,
   FileText,
+  MoreVertical,
 } from 'lucide-react';
 import { useAuth } from '@/store/AuthContext';
 import { useToast } from '@/store/ToastContext';
@@ -107,6 +108,20 @@ function AccountContent() {
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewedKeys, setReviewedKeys] = useState<string[]>([]);
+  const [openMenuOrderId, setOpenMenuOrderId] = useState<number | null>(null);
+
+  // Close 3-dot order menu when clicking outside
+  useEffect(() => {
+    function handleGlobalClick(e: MouseEvent) {
+      if (!(e.target as HTMLElement)?.closest('[data-order-menu]')) {
+        setOpenMenuOrderId(null);
+      }
+    }
+    if (openMenuOrderId !== null) {
+      document.addEventListener('click', handleGlobalClick);
+      return () => document.removeEventListener('click', handleGlobalClick);
+    }
+  }, [openMenuOrderId]);
 
   // Auto-detect ?order=ID from SMS tracking link and open modal immediately
   useEffect(() => {
@@ -1106,7 +1121,17 @@ function AccountContent() {
                           </div>
                           <div className={styles.stripCol}>
                             <span className={styles.stripLabel}>TOTAL</span>
-                            <span className={styles.stripValueBold}>{formatPrice(order.total)}</span>
+                            <div className={styles.totalAndInvoiceWrap}>
+                              <span className={styles.stripValueBold}>{formatPrice(order.total)}</span>
+                              <a
+                                href={`/api/invoice/${order.id}/download`}
+                                download={`Invoice-INTERSTING-${order.id}.pdf`}
+                                className={styles.headerInvoicePill}
+                                title="Download Tax Invoice (PDF)"
+                              >
+                                <FileText size={11} /> Invoice
+                              </a>
+                            </div>
                           </div>
                           <div className={styles.stripCol}>
                             <span className={styles.stripLabel}>SHIP TO</span>
@@ -1121,6 +1146,57 @@ function AccountContent() {
                             <span className={`${styles.statusChip} ${statusChipClass}`}>
                               {statusLabel}
                             </span>
+
+                            {/* 3-Dot More Actions Menu */}
+                            <div className={styles.orderMenuWrap} data-order-menu>
+                              <button
+                                type="button"
+                                className={styles.orderMenuTrigger}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenMenuOrderId(openMenuOrderId === order.id ? null : order.id);
+                                }}
+                                title="More actions"
+                                aria-label="More actions"
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+                              {openMenuOrderId === order.id && (
+                                <div className={styles.orderMenuDropdown}>
+                                  <button
+                                    type="button"
+                                    className={styles.orderMenuItem}
+                                    onClick={() => {
+                                      setOpenMenuOrderId(null);
+                                      const msg = `Hi, I need assistance with Order #${order.id} placed on Interesting.`;
+                                      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                                    }}
+                                  >
+                                    <HelpCircle size={14} /> Need Help?
+                                  </button>
+                                  <a
+                                    href={`/api/invoice/${order.id}/download`}
+                                    download={`Invoice-INTERSTING-${order.id}.pdf`}
+                                    className={styles.orderMenuItem}
+                                    onClick={() => setOpenMenuOrderId(null)}
+                                  >
+                                    <FileText size={14} /> Download Invoice
+                                  </a>
+                                  {canCancel && (
+                                    <button
+                                      type="button"
+                                      className={`${styles.orderMenuItem} ${styles.orderMenuItemDanger}`}
+                                      onClick={() => {
+                                        setOpenMenuOrderId(null);
+                                        setCancellingOrder(order);
+                                      }}
+                                    >
+                                      <XCircle size={14} /> Cancel Order
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -1329,67 +1405,94 @@ function AccountContent() {
                           ))}
                         </div>
 
-                        {/* ── 5. Action Buttons: Clean 3-Card Bottom Row (Details, Review/Cancel, Help) ── */}
+                        {/* ── 5. Review Section: Interactive 5-Star Rating upon Delivery ── */}
+                        {isCompleted && (
+                          <div className={styles.orderRatingSection}>
+                            {reviewedKeys.some((k) => k.startsWith(`${order.id}-`)) ? (
+                              <div className={styles.ratingCompletedBadge}>
+                                <CheckCircle2 size={15} color="#16a34a" />
+                                <span>Verified Review Submitted • Thank you for your feedback!</span>
+                              </div>
+                            ) : (
+                              <div className={styles.ratingPromptRow}>
+                                <span className={styles.ratingPromptText}>How was your order? Rate it:</span>
+                                <div className={styles.quickStarsRow}>
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      className={styles.quickStarBtn}
+                                      onClick={() => {
+                                        const itemToReview = order.line_items[0];
+                                        setReviewModalItem({ item: itemToReview, orderId: order.id });
+                                        setReviewRating(star);
+                                        setReviewHeadline('');
+                                        setReviewComment('');
+                                      }}
+                                      title={`Rate ${star} star`}
+                                      aria-label={`Rate ${star} star`}
+                                    >
+                                      <Star size={18} fill="#f59e0b" color="#f59e0b" />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── 6. Clean Card Actions: Top 1 (Primary) + Bottom 2 (Clean & Normal) ── */}
                         <div className={styles.cardFooterActions}>
+                          {/* Top 1 Primary Button: Full Width on Mobile */}
                           <button
                             type="button"
                             onClick={() => setSelectedOrder(order)}
-                            className={styles.viewOrderDetailsBtn}
+                            className={styles.viewOrderDetailsPrimaryBtn}
                           >
-                            <Package size={14} /> View Details
+                            <Package size={15} /> View Order Details
                           </button>
-                          <a
-                            href={`/api/invoice/${order.id}/download`}
-                            download={`Invoice-INTERSTING-${order.id}.pdf`}
-                            className={styles.orderInvoiceBtn}
-                            title="Download Tax Invoice (PDF)"
-                          >
-                            <FileText size={13} /> Invoice
-                          </a>
-                          {isCompleted ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const itemToReview = order.line_items[0];
-                                setReviewModalItem({ item: itemToReview, orderId: order.id });
-                                setReviewRating(5);
-                                setReviewHeadline('');
-                                setReviewComment('');
-                              }}
-                              className={reviewedKeys.some((k) => k.startsWith(`${order.id}-`)) ? styles.reviewSubmittedBtn : styles.writeReviewOrderBtn}
-                              disabled={reviewedKeys.some((k) => k.startsWith(`${order.id}-`))}
-                              title="Write a verified customer review"
-                            >
-                              <Star size={13} fill={reviewedKeys.some((k) => k.startsWith(`${order.id}-`)) ? '#10b981' : '#f59e0b'} color={reviewedKeys.some((k) => k.startsWith(`${order.id}-`)) ? '#10b981' : '#f59e0b'} />
-                              {reviewedKeys.some((k) => k.startsWith(`${order.id}-`)) ? 'Reviewed' : 'Review'}
-                            </button>
-                          ) : canCancel ? (
-                            <button
-                              type="button"
-                              onClick={() => setCancellingOrder(order)}
-                              className={styles.cancelOrderBtn}
-                            >
-                              <XCircle size={14} /> Cancel
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedOrder(order)}
-                              className={styles.trackPackageBtn}
-                            >
-                              <Truck size={14} /> Track
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const msg = `Hi, I need assistance with Order #${order.id} placed on Interesting.`;
-                              window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-                            }}
-                            className={styles.helpBtn}
-                          >
-                            <HelpCircle size={14} /> Help
-                          </button>
+
+                          {/* Bottom 2 Clean & Normal Buttons */}
+                          <div className={styles.bottomTwoBtnRow}>
+                            {!isCompleted && !isCancelled && !isFailed ? (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedOrder(order)}
+                                className={styles.trackPackageBtn}
+                              >
+                                <Truck size={14} /> Track Order
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => order.line_items[0] && handleBuyAgain(order.line_items[0])}
+                                className={styles.bottomBuyAgainBtn}
+                              >
+                                <ShoppingBag size={14} /> Buy Again
+                              </button>
+                            )}
+
+                            {canCancel ? (
+                              <button
+                                type="button"
+                                onClick={() => setCancellingOrder(order)}
+                                className={styles.cancelOrderBtn}
+                              >
+                                <XCircle size={14} /> Cancel Order
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const msg = `Hi, I need assistance with Order #${order.id} placed on Interesting.`;
+                                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                                }}
+                                className={styles.helpBtn}
+                              >
+                                <HelpCircle size={14} /> Need Help?
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
