@@ -1606,19 +1606,32 @@
 
 /* Mobile Responsiveness for Amazon Card */
 @media (max-width: 640px) {
+  .ordersSection {
+    gap: 1.5rem;
+  }
+
+  .amazonOrderCard {
+    margin-bottom: 0.5rem;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+  }
+
   .cardHeaderStrip {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    padding: 0.85rem 1rem;
+    gap: 0.85rem;
+    padding: 1.15rem 1.15rem 1rem;
   }
 
   .stripColRight {
     grid-column: 1 / -1;
     justify-content: space-between;
     margin-left: 0;
-    padding-top: 0.5rem;
+    padding-top: 0.65rem;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .statusHighlightBar {
+    padding: 0.95rem 1.15rem;
   }
 
   .miniTracker {
@@ -1635,6 +1648,15 @@
 
   .trackerLine {
     margin-bottom: 1.1rem;
+  }
+
+  .cardItemsList {
+    padding: 1.1rem 1.15rem;
+    gap: 1rem;
+  }
+
+  .orderRatingSection {
+    padding: 1rem 1.15rem;
   }
 
   .page {
@@ -1665,16 +1687,16 @@
   .cardFooterActions {
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
-    padding: 0.75rem 0.85rem;
+    gap: 0.65rem;
+    padding: 1.1rem 1.15rem 1.25rem;
   }
 
   .viewOrderDetailsPrimaryBtn {
     width: 100%;
-    height: 42px;
-    padding: 0.65rem 1rem;
-    font-size: 0.84rem;
-    border-radius: 9px;
+    height: 44px;
+    padding: 0.7rem 1rem;
+    font-size: 0.86rem;
+    border-radius: 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1683,7 +1705,7 @@
   .bottomTwoBtnRow {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.55rem;
+    gap: 0.65rem;
     width: 100%;
   }
 
@@ -1693,11 +1715,11 @@
   .helpBtn {
     width: 100%;
     justify-content: center;
-    padding: 0.55rem 0.65rem;
-    font-size: 0.8rem;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.82rem;
     font-weight: 700;
-    border-radius: 9px;
-    height: 40px;
+    border-radius: 10px;
+    height: 42px;
     white-space: nowrap;
   }
 }

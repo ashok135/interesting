@@ -83,6 +83,21 @@ function getItemImageUrl(item?: { name?: string; image?: { src?: string }; produ
   return '';
 }
 
+function formatPaymentMethod(title?: string, method?: string): string {
+  const t = (title || '').toLowerCase();
+  const m = (method || '').toLowerCase();
+  if (t.includes('pay on delivery') || t.includes('cash on delivery') || m === 'cod') {
+    return 'Cash on Delivery';
+  }
+  if (t.includes('razorpay') || t.includes('online')) {
+    return 'Online Payment';
+  }
+  if (t.includes('upi') || m === 'bacs') {
+    return 'Direct UPI Transfer';
+  }
+  return title || 'Cash on Delivery';
+}
+
 function AccountContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -790,7 +805,7 @@ function AccountContent() {
                   <div>
                     <span style={{ color: '#64748b' }}>Method: </span>
                     <strong style={{ color: '#0f172a' }}>
-                      {selectedOrder.payment_method_title || selectedOrder.payment_method || 'Cash on Delivery'}
+                      {formatPaymentMethod(selectedOrder.payment_method_title, selectedOrder.payment_method)}
                     </strong>
                   </div>
                   <div>
@@ -1565,7 +1580,7 @@ function AccountContent() {
                             )}
                           </div>
                           <span className={styles.paymentMethodTag}>
-                            {order.payment_method_title || (order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online Payment')}
+                            {formatPaymentMethod(order.payment_method_title, order.payment_method)}
                           </span>
                         </div>
 

@@ -593,7 +593,7 @@ export default function CheckoutPage() {
     const orderPaymentTitle = payMethod === 'razorpay'
       ? 'Online Payment (UPI / Cards / Netbanking via Razorpay)'
       : payMethod === 'cod'
-      ? 'Pay on Delivery (Cash / UPI)'
+      ? 'Cash on Delivery'
       : 'Direct UPI Transfer';
 
     /* ── Razorpay Online Payment Flow ── */
@@ -789,7 +789,7 @@ export default function CheckoutPage() {
     const oId = confirmedOrder?.id || orderId;
     const oTotal = confirmedOrder?.total ?? grandTotal;
     const oItems = confirmedOrder?.itemCount ?? (items.length || 1);
-    const oPay = confirmedOrder?.paymentTitle ?? (payMethod === 'cod' ? 'Pay on Delivery (Cash / UPI)' : 'Direct UPI Transfer');
+    const oPay = confirmedOrder?.paymentTitle ?? (payMethod === 'cod' ? 'Cash on Delivery' : 'Direct UPI Transfer');
 
     return (
       <div className={styles.successPage}>
@@ -1550,9 +1550,9 @@ export default function CheckoutPage() {
                     {
                       id: 'cod',
                       Icon: Banknote,
-                      label: 'Pay on Delivery',
+                      label: 'Cash on Delivery',
                       sub: 'Pay at your doorstep via Cash or scan delivery partner UPI QR upon arrival',
-                      badge: 'Cash / UPI',
+                      badge: 'COD',
                     },
                     {
                       id: 'upi',
@@ -1684,7 +1684,7 @@ export default function CheckoutPage() {
                   ) : payMethod === 'razorpay' ? (
                     <><RazorpayIcon size={18} /> Pay {formatPrice(grandTotal)} via Razorpay</>
                   ) : payMethod === 'cod' ? (
-                    <><ShieldCheck size={17} /> Place Order (Pay on Delivery) — {formatPrice(grandTotal)}</>
+                    <><ShieldCheck size={17} /> Place Order • {formatPrice(grandTotal)}</>
                   ) : (
                     <><CheckCircle2 size={17} /> Confirm UPI Order — {formatPrice(grandTotal)}</>
                   )}
