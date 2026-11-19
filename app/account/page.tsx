@@ -1119,23 +1119,11 @@ function AccountContent() {
                               })}
                             </span>
                           </div>
-                          <div className={styles.stripCol}>
-                            <span className={styles.stripLabel}>TOTAL</span>
-                            <span className={styles.stripValueBold}>{formatPrice(order.total)}</span>
-                          </div>
-                          <div className={styles.stripCol}>
-                            <span className={styles.stripLabel}>SHIP TO</span>
-                            <span className={styles.stripValue}>
-                              {order.shipping?.first_name || order.billing.first_name || 'Customer'}{' '}
-                              {order.shipping?.last_name || order.billing.last_name || ''}
-                              {order.shipping?.city ? ` (${order.shipping.city})` : ''}
-                            </span>
-                          </div>
-                          <div className={styles.stripColRight}>
-                            <span className={styles.orderIdBadge}>ORDER #{order.id}</span>
-                            <span className={`${styles.statusChip} ${statusChipClass}`}>
-                              {statusLabel}
-                            </span>
+                          <div className={styles.stripColTotalWithMenu}>
+                            <div className={styles.stripCol}>
+                              <span className={styles.stripLabel}>TOTAL</span>
+                              <span className={styles.stripValueBold}>{formatPrice(order.total)}</span>
+                            </div>
 
                             {/* 3-Dot More Actions Menu */}
                             <div className={styles.orderMenuWrap} data-order-menu>
@@ -1153,17 +1141,6 @@ function AccountContent() {
                               </button>
                               {openMenuOrderId === order.id && (
                                 <div className={styles.orderMenuDropdown}>
-                                  <button
-                                    type="button"
-                                    className={styles.orderMenuItem}
-                                    onClick={() => {
-                                      setOpenMenuOrderId(null);
-                                      const msg = `Hi, I need assistance with Order #${order.id} placed on Interesting.`;
-                                      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-                                    }}
-                                  >
-                                    <HelpCircle size={14} /> Need Help?
-                                  </button>
                                   <a
                                     href={`/api/invoice/${order.id}/download`}
                                     download={`Invoice-INTERSTING-${order.id}.pdf`}
@@ -1184,9 +1161,34 @@ function AccountContent() {
                                       <XCircle size={14} /> Cancel Order
                                     </button>
                                   )}
+                                  <button
+                                    type="button"
+                                    className={styles.orderMenuItem}
+                                    onClick={() => {
+                                      setOpenMenuOrderId(null);
+                                      const msg = `Hi, I need assistance with Order #${order.id} placed on Interesting.`;
+                                      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                                    }}
+                                  >
+                                    <HelpCircle size={14} /> Need Help?
+                                  </button>
                                 </div>
                               )}
                             </div>
+                          </div>
+                          <div className={styles.stripCol}>
+                            <span className={styles.stripLabel}>SHIP TO</span>
+                            <span className={styles.stripValue}>
+                              {order.shipping?.first_name || order.billing.first_name || 'Customer'}{' '}
+                              {order.shipping?.last_name || order.billing.last_name || ''}
+                              {order.shipping?.city ? ` (${order.shipping.city})` : ''}
+                            </span>
+                          </div>
+                          <div className={styles.stripColRight}>
+                            <span className={styles.orderIdBadge}>ORDER #{order.id}</span>
+                            <span className={`${styles.statusChip} ${statusChipClass}`}>
+                              {statusLabel}
+                            </span>
                           </div>
                         </div>
 
