@@ -2020,6 +2020,177 @@
   }
 }
 
+/* ── Centered Order Flow Micro-Interaction & Confirmation Modal ────────────── */
+.centerFlowOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(10, 25, 17, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: overlayFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.centerFlowCard {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface-1, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 28px;
+  padding: 2.25rem 1.75rem;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.32),
+              0 10px 24px -4px rgba(0, 0, 0, 0.16);
+  animation: cardScaleIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: max-width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.4s ease,
+              transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.centerFlowCardExpanded {
+  max-width: 490px;
+  padding: 2.25rem 2rem;
+}
+
+@keyframes cardScaleIn {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.centerAnimBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.centerAnimBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.95rem;
+  border-radius: 999px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.centerPulseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  animation: centerPulse 1.6s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes centerPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.centerTrackContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.centerTrackBtn {
+  width: 290px !important;
+  max-width: 100% !important;
+  height: 62px !important;
+  border-radius: 999px !important;
+  background: #14532d !important;
+  box-shadow: 0 16px 32px -6px rgba(20, 83, 45, 0.42),
+              0 6px 12px -2px rgba(20, 83, 45, 0.22) !important;
+}
+
+.centerAnimMsg {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--color-text-muted, #64748b);
+  margin: 0;
+}
+
+.centerSuccessContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.85rem;
+  width: 100%;
+  animation: videoMorphReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes videoMorphReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.centerSuccessContent .successCircle {
+  animation: circleSpring 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both;
+}
+
+@keyframes circleSpring {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* ── SIDEBAR ─────────────────────────────────────── */
 .sideCol {
   position: sticky;
@@ -3061,6 +3232,26 @@
   border-color: #22c55e;
   background: rgba(34, 197, 94, 0.08);
   color: #4ade80;
+}
+
+[data-theme="dark"] .centerFlowOverlay {
+  background: rgba(3, 12, 7, 0.82);
+}
+
+[data-theme="dark"] .centerFlowCard {
+  background: #111827;
+  border-color: #243048;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.65);
+}
+
+[data-theme="dark"] .centerAnimBadge {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+[data-theme="dark"] .centerAnimMsg {
+  color: #94a3b8;
 }
 
 /* ── Responsive ─────────────────────────────────── */

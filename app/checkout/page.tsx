@@ -167,7 +167,7 @@ export default function CheckoutPage() {
   const [upiRef, setUpiRef] = useState('');
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [placing, setPlacing] = useState(false);
-  const [isAnimatingOrder, setIsAnimatingOrder] = useState(false);
+  const [orderFlowState, setOrderFlowState] = useState<'idle' | 'animating' | 'confirmed'>('idle');
   const [orderError, setOrderError] = useState('');
   const [addrError, setAddrError] = useState('');
   const [orderId, setOrderId] = useState<number | null>(null);
@@ -665,7 +665,7 @@ export default function CheckoutPage() {
           },
           handler: async function (response: any) {
             setPlacing(true);
-            setIsAnimatingOrder(true);
+            setOrderFlowState('animating');
             setOrderError('');
             try {
               // 3. Cryptographically verify payment on server & confirm order
@@ -682,7 +682,7 @@ export default function CheckoutPage() {
 
               const [verifyJson] = await Promise.all([
                 verifyPromise,
-                new Promise((res) => setTimeout(res, 2900)),
+                new Promise((res) => setTimeout(res, 3000)),
               ]);
 
               if (!verifyJson.success) {
@@ -696,21 +696,21 @@ export default function CheckoutPage() {
                 paymentTitle: `Online Paid (Razorpay: ${response.razorpay_payment_id})`,
               });
               setOrderId(verifyJson.order.id);
+              setOrderFlowState('confirmed');
               setStep('success');
               clearCart();
               refresh?.();
             } catch (vErr: any) {
-              setIsAnimatingOrder(false);
+              setOrderFlowState('idle');
               setOrderError(vErr.message || 'Payment confirmation error.');
             } finally {
               setPlacing(false);
-              setIsAnimatingOrder(false);
             }
           },
           modal: {
             ondismiss: function () {
               setPlacing(false);
-              setIsAnimatingOrder(false);
+              setOrderFlowState('idle');
             },
           },
         };
@@ -744,8 +744,10 @@ export default function CheckoutPage() {
       }
     }
 
-    // COD & Direct UPI: Trigger the in-button truck drive micro-interaction immediately!
-    setIsAnimatingOrder(true);
+    // COD & Direct UPI: Trigger the centered truck drive micro-interaction immediately!
+    setPlacing(true);
+    setOrderFlowState('animating');
+    setOrderError('');
 
     try {
       const orderPromise = createOrder({
@@ -769,8 +771,8 @@ export default function CheckoutPage() {
 
       const [order] = await Promise.all([
         orderPromise,
-        // Wait 2900ms so the truck drives across the button, loads package, speeds off right, and "Order Placed ✓" appears!
-        new Promise((res) => setTimeout(res, 2900)),
+        // Wait 3000ms so the truck drives across, loads package, speeds off right, and "Order Placed ✓" appears!
+        new Promise((res) => setTimeout(res, 3000)),
       ]);
 
       // Save confirmed order snapshot first so the success screen displays immediately right on the same page
@@ -781,17 +783,17 @@ export default function CheckoutPage() {
         paymentTitle: orderPaymentTitle,
       });
       setOrderId(order.id);
+      setOrderFlowState('confirmed');
       setStep('success');
 
       // Now clear the cart and refresh auth orders in the background
       clearCart();
       refresh?.();
     } catch (err) {
-      setIsAnimatingOrder(false);
+      setOrderFlowState('idle');
       setOrderError(err instanceof Error ? err.message : 'Failed to place order. Please try again.');
     } finally {
       setPlacing(false);
-      setIsAnimatingOrder(false);
     }
   }
 
@@ -804,8 +806,8 @@ export default function CheckoutPage() {
     );
   }
 
-  /* ── Success screen ── */
-  if (step === 'success' || confirmedOrder) {
+  /* ── Success screen fallback (direct load or refresh) ── */
+  if ((step === 'success' || confirmedOrder) && orderFlowState === 'idle') {
     const oId = confirmedOrder?.id || orderId;
     const oTotal = confirmedOrder?.total ?? grandTotal;
     const oItems = confirmedOrder?.itemCount ?? (items.length || 1);
@@ -1700,51 +1702,21 @@ export default function CheckoutPage() {
 
                 <button
                   type="button"
-                  className={`${styles.placeOrderBtn} ${isAnimatingOrder ? styles.isAnimating : ''}`}
+                  className={styles.placeOrderBtn}
                   onClick={placeOrder}
-                  disabled={placing}
+                  disabled={placing || orderFlowState !== 'idle'}
                   aria-label="Complete Order"
                 >
                   <span className={`${styles.btnText} ${styles.defaultText}`}>
-                    {payMethod === 'razorpay' ? (
+                    {placing || orderFlowState !== 'idle' ? (
+                      <><CheckCircle2 size={17} /> Placing Order...</>
+                    ) : payMethod === 'razorpay' ? (
                       <><RazorpayIcon size={18} /> Pay {formatPrice(grandTotal)} via Razorpay</>
                     ) : payMethod === 'cod' ? (
                       <><ShieldCheck size={17} /> Place Order • {formatPrice(grandTotal)}</>
                     ) : (
                       <><CheckCircle2 size={17} /> Confirm UPI Order — {formatPrice(grandTotal)}</>
                     )}
-                  </span>
-
-                  {/* Micro-interaction Delivery Truck Driving Sequence */}
-                  <span className={styles.roadLine} aria-hidden="true" />
-                  <span className={styles.package} aria-hidden="true" />
-
-                  <span className={styles.truck} aria-hidden="true">
-                    <span className={styles.speedLines}>
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </span>
-
-                    <span className={styles.truckBody}>
-                      <span className={styles.truckCargo}>
-                        <span className={styles.cargoDoor} />
-                      </span>
-                      <span className={styles.truckCab}>
-                        <span className={styles.truckWindshield} />
-                        <span className={styles.truckHeadlight} />
-                        <span className={styles.truckBumper} />
-                        <span className={styles.headlightBeam} />
-                      </span>
-                      <span className={styles.truckChassis} />
-                    </span>
-
-                    <span className={`${styles.wheel} ${styles.wheelBack}`} />
-                    <span className={`${styles.wheel} ${styles.wheelFront}`} />
-                  </span>
-
-                  <span className={`${styles.btnText} ${styles.successText}`}>
-                    Order Placed ✓
                   </span>
                 </button>
                 </div>
@@ -1911,6 +1883,138 @@ export default function CheckoutPage() {
           </aside>
         </div>
       </div>
+
+      {/* ── Seamless Centered Order Micro-Interaction & Confirmation Overlay ── */}
+      {orderFlowState !== 'idle' && (
+        <div className={styles.centerFlowOverlay} role="dialog" aria-modal="true" aria-label="Order Status">
+          <div
+            className={`${styles.centerFlowCard} ${
+              orderFlowState === 'confirmed' ? styles.centerFlowCardExpanded : ''
+            }`}
+          >
+            {orderFlowState === 'animating' ? (
+              <div className={styles.centerAnimBox}>
+                <div className={styles.centerAnimBadge}>
+                  <span className={styles.centerPulseDot} />
+                  <span>Placing &amp; Confirming Order</span>
+                </div>
+
+                <div className={styles.centerTrackContainer}>
+                  <div className={`${styles.placeOrderBtn} ${styles.centerTrackBtn} ${styles.isAnimating}`}>
+                    {/* Micro-interaction Delivery Truck Driving Sequence */}
+                    <span className={styles.roadLine} aria-hidden="true" />
+                    <span className={styles.package} aria-hidden="true" />
+
+                    <span className={styles.truck} aria-hidden="true">
+                      <span className={styles.speedLines}>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </span>
+
+                      <span className={styles.truckBody}>
+                        <span className={styles.truckCargo}>
+                          <span className={styles.cargoDoor} />
+                        </span>
+                        <span className={styles.truckCab}>
+                          <span className={styles.truckWindshield} />
+                          <span className={styles.truckHeadlight} />
+                          <span className={styles.truckBumper} />
+                          <span className={styles.headlightBeam} />
+                        </span>
+                        <span className={styles.truckChassis} />
+                      </span>
+
+                      <span className={`${styles.wheel} ${styles.wheelBack}`} />
+                      <span className={`${styles.wheel} ${styles.wheelFront}`} />
+                    </span>
+
+                    <span className={`${styles.btnText} ${styles.successText}`}>
+                      Order Placed ✓
+                    </span>
+                  </div>
+                </div>
+
+                <p className={styles.centerAnimMsg}>
+                  Packing fresh gourmet treasures for swift dispatch...
+                </p>
+              </div>
+            ) : (
+              <div className={styles.centerSuccessContent}>
+                <div className={styles.successCircle}>
+                  <CheckCircle2 size={42} strokeWidth={2.2} />
+                </div>
+
+                <h2 className={styles.successTitle}>Order Placed! 🎉</h2>
+                <p className={styles.successOrderNum}>
+                  Order #{confirmedOrder?.id || orderId}
+                </p>
+
+                <p className={styles.successMsg}>
+                  Your farm-fresh gourmet items are confirmed and being packed with care.
+                  Expected delivery in <strong>3–5 business days</strong>.
+                </p>
+
+                <div className={styles.successSummaryBox}>
+                  <div className={styles.successSummaryRow}>
+                    <span>Items</span>
+                    <span>
+                      {confirmedOrder?.itemCount ?? (items.length || 1)}{' '}
+                      {(confirmedOrder?.itemCount ?? (items.length || 1)) === 1 ? 'item' : 'items'}
+                    </span>
+                  </div>
+                  <div className={styles.successSummaryRow}>
+                    <span>Total Amount</span>
+                    <span className={styles.successAmount}>
+                      {formatPrice(confirmedOrder?.total ?? grandTotal)}
+                    </span>
+                  </div>
+                  <div className={styles.successSummaryRow}>
+                    <span>Payment Method</span>
+                    <span>
+                      {confirmedOrder?.paymentTitle ??
+                        (payMethod === 'cod' ? 'Cash on Delivery' : 'Direct UPI Transfer')}
+                    </span>
+                  </div>
+                  <div className={styles.successSummaryRow}>
+                    <span>Status</span>
+                    <span style={{ color: '#16a34a', fontWeight: 700 }}>
+                      Confirmed &amp; Processing
+                    </span>
+                  </div>
+                </div>
+
+                {isGuest && (
+                  <p style={{ fontSize: '0.82rem', color: '#475569', textAlign: 'center', margin: '0.5rem 0 0.85rem', padding: '0.65rem 0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                    📱 Order updates and real-time dispatch tracking will be sent directly via SMS to your mobile.
+                  </p>
+                )}
+
+                <div className={styles.successActions}>
+                  {(confirmedOrder?.id || orderId) && (
+                    <a
+                      href={`/api/invoice/${confirmedOrder?.id || orderId}/download`}
+                      download={`Invoice-INTERSTING-${confirmedOrder?.id || orderId}.pdf`}
+                      className={styles.successInvoiceBtn}
+                      title="Download official tax invoice (PDF)"
+                    >
+                      <FileText size={16} /> Download Tax Invoice (PDF)
+                    </a>
+                  )}
+                  <div className={styles.successSubActions}>
+                    <Link href={user ? "/account" : "/shop"} className={styles.successTrackBtn}>
+                      <Package size={16} /> {user ? "Track Order" : "View More Products"}
+                    </Link>
+                    <Link href="/shop" className={styles.successShopBtn}>
+                      Continue Shopping <ArrowRight size={15} />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
