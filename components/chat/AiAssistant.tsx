@@ -21,6 +21,14 @@ interface ChatMessage {
   suggestions?: string[];
 }
 
+export interface OrderContext {
+  id: number;
+  status: string;
+  total: string;
+  itemCount?: number;
+  items?: string;
+}
+
 const STARTER_PROMPTS = [
   '📦 Where is my order?',
   '🌰 Best seeds under ₹500',
@@ -131,6 +139,7 @@ export default function AiAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [addedIds, setAddedIds] = useState<number[]>([]);
+  const [currentOrderContext, setCurrentOrderContext] = useState<OrderContext | null>(null);
 
   // Hold-to-Dismiss Session State
   const [isDismissed, setIsDismissed] = useState(false);
@@ -299,7 +308,7 @@ export default function AiAssistant() {
     }
   }, [messages, isLoading, isOpen]);
 
-  const handleSendMessage = async (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string, orderOverride?: OrderContext | null) => {
     const text = (textToSend || input).trim();
     if (!text || isLoading) return;
 
@@ -313,6 +322,8 @@ export default function AiAssistant() {
     setInput('');
     setIsLoading(true);
 
+    const activeOrder = orderOverride !== undefined ? orderOverride : currentOrderContext;
+
     try {
       const historyPayload = messages.slice(-4).map((m) => ({
         role: m.role,
@@ -325,6 +336,7 @@ export default function AiAssistant() {
         body: JSON.stringify({
           message: text,
           history: historyPayload,
+          order: activeOrder || undefined,
         }),
       });
 
@@ -355,6 +367,46 @@ export default function AiAssistant() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSendMessageRef = useRef(handleSendMessage);
+  useEffect(() => {
+    handleSendMessageRef.current = handleSendMessage;
+  });
+
+  // Support remote activation from "Need Help?" in My Orders or Order Details
+  useEffect(() => {
+    const handleOpenAssistant = (e: Event) => {
+      const customEvent = e as CustomEvent<{ prompt?: string; order?: OrderContext }>;
+      const detail = customEvent.detail;
+      setIsOpen(true);
+      setIsDismissed(false);
+      if (detail?.order) {
+        setCurrentOrderContext(detail.order);
+      }
+      if (detail?.prompt) {
+        setTimeout(() => {
+          handleSendMessageRef.current(detail.prompt, detail.order || null);
+        }, 60);
+      }
+    };
+
+    window.addEventListener('open-ai-assistant', handleOpenAssistant);
+    return () => {
+      window.removeEventListener('open-ai-assistant', handleOpenAssistant);
+    };
+  }, []);
+
+  const handleSuggestionClick = (actionText: string) => {
+    if (actionText.toLowerCase().includes('whatsapp')) {
+      const orderRef = currentOrderContext ? `Order #${currentOrderContext.id}` : 'my order';
+      const waText = encodeURIComponent(
+        `Hi Interesting Support, I need assistance with ${orderRef}. Could you please connect me with a concierge?`
+      );
+      window.open(`https://wa.me/919994847167?text=${waText}`, '_blank');
+      return;
+    }
+    handleSendMessage(actionText.replace(/^[^\w]+/, '').trim());
   };
 
   const handleAddToCart = (product: RetrievedProduct, e?: React.MouseEvent) => {
@@ -491,6 +543,29 @@ export default function AiAssistant() {
             </button>
           </div>
 
+          {/* Active Order Context Banner */}
+          {currentOrderContext && (
+            <div className={styles.chatOrderContextBar}>
+              <div className={styles.chatOrderContextInfo}>
+                <Package size={14} className={styles.chatOrderContextIcon} />
+                <span className={styles.chatOrderContextId}>Order #{currentOrderContext.id}</span>
+                <span className={styles.chatOrderContextBadge}>{currentOrderContext.status}</span>
+                <span className={styles.chatOrderContextTotal}>{currentOrderContext.total}</span>
+              </div>
+              <a
+                href={`https://wa.me/919994847167?text=${encodeURIComponent(
+                  `Hi Interesting Support, I need help with Order #${currentOrderContext.id} (${currentOrderContext.status}, ${currentOrderContext.total}).`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.chatOrderContextWhatsApp}
+                title="Connect on WhatsApp"
+              >
+                <PhoneCall size={12} /> WhatsApp
+              </a>
+            </div>
+          )}
+
           {/* Messages Body */}
           <div className={styles.messagesList}>
             {/* Welcome Greeting */}
@@ -532,12 +607,34 @@ export default function AiAssistant() {
                           <button
                             key={actionText}
                             type="button"
-                            onClick={() => handleSendMessage(actionText.replace(/^[^\w]+/, '').trim())}
+                            onClick={() => handleSuggestionClick(actionText)}
                             className={styles.actionCardBtn}
                           >
                             {actionText}
                           </button>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Escalate to WhatsApp if order query isn't resolved */}
+                    {currentOrderContext && (
+                      <div className={styles.chatEscalateCard}>
+                        <div className={styles.chatEscalateContent}>
+                          <span className={styles.chatEscalateTitle}>Still need assistance?</span>
+                          <span className={styles.chatEscalateDesc}>
+                            If our automated concierge didn&apos;t fully answer your question, connect directly with our support team on WhatsApp.
+                          </span>
+                        </div>
+                        <a
+                          href={`https://wa.me/919994847167?text=${encodeURIComponent(
+                            `Hi Interesting Support, I need human assistance regarding Order #${currentOrderContext.id} (${currentOrderContext.status}, ${currentOrderContext.total}).`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.chatEscalateWhatsAppBtn}
+                        >
+                          <PhoneCall size={13} /> Chat on WhatsApp
+                        </a>
                       </div>
                     )}
 

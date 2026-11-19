@@ -831,3 +831,144 @@
   border-color: #334155;
   color: #f8fafc;
 }
+
+/* Order Context Bar */
+.chatOrderContextBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.95rem;
+  background: #f0fdf4;
+  border-bottom: 1px solid #bbf7d0;
+  gap: 0.5rem;
+}
+
+.chatOrderContextInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.chatOrderContextIcon {
+  color: #16a34a;
+}
+
+.chatOrderContextId {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #14532d;
+}
+
+.chatOrderContextBadge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  background: #dcfce7;
+  color: #15803d;
+  letter-spacing: 0.02em;
+}
+
+.chatOrderContextTotal {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.chatOrderContextWhatsApp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #16a34a;
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.chatOrderContextWhatsApp:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+/* Escalation Card when query is unresolved */
+.chatEscalateCard {
+  margin-top: 0.5rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chatEscalateContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.chatEscalateTitle {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.chatEscalateDesc {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.chatEscalateWhatsAppBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: #16a34a;
+  color: #ffffff !important;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
+}
+
+.chatEscalateWhatsAppBtn:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .chatOrderContextBar {
+  background: #064e3b;
+  border-bottom-color: #047857;
+}
+
+[data-theme="dark"] .chatOrderContextId {
+  color: #a7f3d0;
+}
+
+[data-theme="dark"] .chatOrderContextTotal {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .chatEscalateCard {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .chatEscalateTitle {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .chatEscalateDesc {
+  color: #94a3b8;
+}

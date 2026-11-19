@@ -127,8 +127,23 @@ function AccountContent() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewedKeys, setReviewedKeys] = useState<string[]>([]);
   const [openMenuOrderId, setOpenMenuOrderId] = useState<number | null>(null);
-  const [helpModalOrder, setHelpModalOrder] = useState<WooOrder | null>(null);
-  const [helpActiveTopic, setHelpActiveTopic] = useState<string>('delivery');
+
+  const handleOpenAiForOrder = (order: WooOrder) => {
+    window.dispatchEvent(
+      new CustomEvent('open-ai-assistant', {
+        detail: {
+          prompt: `I need help with my Order #${order.id}`,
+          order: {
+            id: order.id,
+            status: (order.status || 'CONFIRMED').toUpperCase(),
+            total: formatPrice(order.total),
+            itemCount: order.line_items?.length || 1,
+            items: (order.line_items || []).map((i) => `${i.name} (x${i.quantity})`).join(', '),
+          },
+        },
+      })
+    );
+  };
 
   // Close 3-dot order menu when clicking outside
   useEffect(() => {
@@ -888,8 +903,7 @@ function AccountContent() {
                   onClick={() => {
                     const ord = selectedOrder;
                     setSelectedOrder(null);
-                    setHelpModalOrder(ord);
-                    setHelpActiveTopic('delivery');
+                    if (ord) handleOpenAiForOrder(ord);
                   }}
                   className={styles.helpActionBtn}
                 >
@@ -917,294 +931,7 @@ function AccountContent() {
     );
   };
 
-  const renderHelpModal = () => {
-    if (!helpModalOrder) return null;
-
-    const status = (helpModalOrder.status || '').toLowerCase();
-    const isCompleted = status === 'completed';
-    const isShipped = status === 'shipped' || status === 'in-transit';
-    const isProcessing = status === 'processing';
-    const isCancelled = status === 'cancelled';
-    const canCancel = ['pending', 'processing', 'on-hold'].includes(status);
-    const shippingAddr = helpModalOrder.shipping?.address_1 ? helpModalOrder.shipping : helpModalOrder.billing;
-    const firstItem = helpModalOrder.line_items?.[0];
-
-    const waPrefill = encodeURIComponent(
-      `Hi Interesting Support, I need assistance with Order #${helpModalOrder.id} (${helpModalOrder.line_items.length} item${helpModalOrder.line_items.length > 1 ? 's' : ''}, ${formatPrice(helpModalOrder.total)}).`
-    );
-
-    return (
-      <div className={styles.modalOverlay} onClick={() => setHelpModalOrder(null)}>
-        <div
-          className={`${styles.modal} ${styles.helpModalCard}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Modal Header */}
-          <div className={styles.helpModalHeader}>
-            <div className={styles.helpModalHeaderLeft}>
-              <div className={styles.helpModalIconBox}>
-                <HelpCircle size={20} color="#14532d" />
-              </div>
-              <div>
-                <h3 className={styles.helpModalTitle}>Order Help &amp; Support</h3>
-                <span className={styles.helpModalSubtitle}>
-                  Order #{helpModalOrder.id} • {formatPrice(helpModalOrder.total)}
-                </span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setHelpModalOrder(null)}
-              className={styles.orderDetailCloseBtn}
-              aria-label="Close modal"
-            >
-              <X size={18} strokeWidth={2.5} />
-            </button>
-          </div>
-
-          <div className={styles.helpModalBody}>
-            {/* Order Mini Snapshot */}
-            <div className={styles.helpOrderSnapshot}>
-              <div className={styles.helpOrderSnapshotLeft}>
-                {firstItem && (
-                  <div className={styles.helpItemThumb}>
-                    <Image
-                      src={getItemImageUrl(firstItem)}
-                      alt={firstItem.name}
-                      fill
-                      sizes="40px"
-                      style={{ objectFit: 'cover' }}
-                      unoptimized
-                    />
-                  </div>
-                )}
-                <div className={styles.helpOrderSnapshotInfo}>
-                  <span className={styles.helpOrderItemsSummary}>
-                    {firstItem?.name}
-                    {helpModalOrder.line_items.length > 1 ? ` +${helpModalOrder.line_items.length - 1} more` : ''}
-                  </span>
-                  <span className={styles.helpOrderDest}>
-                    Ship to: {shippingAddr?.city || 'India'}
-                  </span>
-                </div>
-              </div>
-              <span
-                className={`${styles.statusChip} ${
-                  isCompleted
-                    ? styles.statusChipCompleted
-                    : isShipped
-                    ? styles.statusChipShipped
-                    : isCancelled
-                    ? styles.statusChipCancelled
-                    : styles.statusChipProcessing
-                }`}
-              >
-                {isCompleted ? 'DELIVERED' : isShipped ? 'OUT FOR DELIVERY' : isCancelled ? 'CANCELLED' : 'CONFIRMED'}
-              </span>
-            </div>
-
-            <h4 className={styles.helpTopicsHeading}>Select what you need help with:</h4>
-
-            {/* Accordion FAQ / Resolution Topics */}
-            <div className={styles.helpTopicsList}>
-              {/* 1. Delivery & Tracking */}
-              <div className={`${styles.helpTopicItem} ${helpActiveTopic === 'delivery' ? styles.helpTopicItemActive : ''}`}>
-                <button
-                  type="button"
-                  className={styles.helpTopicTrigger}
-                  onClick={() => setHelpActiveTopic(helpActiveTopic === 'delivery' ? '' : 'delivery')}
-                >
-                  <span className={styles.helpTopicTriggerLabel}>
-                    <Truck size={16} color="#0284c7" /> Where is my order &amp; delivery timeline?
-                  </span>
-                  {helpActiveTopic === 'delivery' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
-                {helpActiveTopic === 'delivery' && (
-                  <div className={styles.helpTopicContent}>
-                    <p>
-                      {isCompleted
-                        ? `Your package was marked delivered on ${new Date(helpModalOrder.date_created).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}. If you did not receive it or it was received by security/neighbor, please chat with us below.`
-                        : isShipped
-                        ? `Your package is out for delivery with our express courier partner in ${shippingAddr?.city || 'your city'}. Arrival is expected shortly.`
-                        : `Your order is confirmed and being packed fresh with airtight seal. Express delivery arrives within 3–5 business days.`}
-                    </p>
-                    <div className={styles.helpTopicActions}>
-                      <button
-                        type="button"
-                        className={styles.helpInlineActionBtn}
-                        onClick={() => {
-                          setSelectedOrder(helpModalOrder);
-                          setHelpModalOrder(null);
-                        }}
-                      >
-                        <Package size={14} /> View Live Tracking Journey
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 2. Returns, Damaged items or Replacements */}
-              <div className={`${styles.helpTopicItem} ${helpActiveTopic === 'returns' ? styles.helpTopicItemActive : ''}`}>
-                <button
-                  type="button"
-                  className={styles.helpTopicTrigger}
-                  onClick={() => setHelpActiveTopic(helpActiveTopic === 'returns' ? '' : 'returns')}
-                >
-                  <span className={styles.helpTopicTriggerLabel}>
-                    <RotateCcw size={16} color="#16a34a" /> Return, replacement, or quality issue?
-                  </span>
-                  {helpActiveTopic === 'returns' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
-                {helpActiveTopic === 'returns' && (
-                  <div className={styles.helpTopicContent}>
-                    <p>
-                      All Interesting harvest nuts &amp; treats are covered by our <strong>7-Day Freshness Guarantee</strong>. If anything arrived damaged, unsealed, or you are not completely satisfied with the taste or quality, we will arrange a free doorstep replacement or instant refund.
-                    </p>
-                    <div className={styles.helpTopicActions}>
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(`Hi Interesting, I want to report a quality/replacement issue with Order #${helpModalOrder.id}.`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.helpInlineActionBtn}
-                      >
-                        <MessageCircle size={14} /> Report Issue on WhatsApp
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 3. Change Address / Contact */}
-              <div className={`${styles.helpTopicItem} ${helpActiveTopic === 'address' ? styles.helpTopicItemActive : ''}`}>
-                <button
-                  type="button"
-                  className={styles.helpTopicTrigger}
-                  onClick={() => setHelpActiveTopic(helpActiveTopic === 'address' ? '' : 'address')}
-                >
-                  <span className={styles.helpTopicTriggerLabel}>
-                    <MapPin size={16} color="#d97706" /> Change delivery address or phone number?
-                  </span>
-                  {helpActiveTopic === 'address' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
-                {helpActiveTopic === 'address' && (
-                  <div className={styles.helpTopicContent}>
-                    <p>
-                      {isShipped || isCompleted
-                        ? `Since this package has already been dispatched with the courier, addresses cannot be modified online. However, our team can contact the courier dispatch hub to assist.`
-                        : `If your order has not left our pantry yet, our customer advisory team can update your delivery address or contact number immediately before courier handover.`}
-                    </p>
-                    <div className={styles.helpTopicActions}>
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(`Hi, I need to update my shipping address for Order #${helpModalOrder.id}. My new address is: `)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.helpInlineActionBtn}
-                      >
-                        <MapPin size={14} /> Request Address Change via WhatsApp
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 4. Invoice & Payment */}
-              <div className={`${styles.helpTopicItem} ${helpActiveTopic === 'invoice' ? styles.helpTopicItemActive : ''}`}>
-                <button
-                  type="button"
-                  className={styles.helpTopicTrigger}
-                  onClick={() => setHelpActiveTopic(helpActiveTopic === 'invoice' ? '' : 'invoice')}
-                >
-                  <span className={styles.helpTopicTriggerLabel}>
-                    <FileText size={16} color="#6366f1" /> Download Tax Invoice or GST query?
-                  </span>
-                  {helpActiveTopic === 'invoice' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
-                {helpActiveTopic === 'invoice' && (
-                  <div className={styles.helpTopicContent}>
-                    <p>
-                      Your official GST Tax Invoice containing complete itemization, HSN codes, and registered business details is ready for download.
-                    </p>
-                    <div className={styles.helpTopicActions}>
-                      <a
-                        href={`/api/invoice/${helpModalOrder.id}/download`}
-                        download={`Invoice-INTERSTING-${helpModalOrder.id}.pdf`}
-                        className={styles.helpInlineActionBtn}
-                      >
-                        <FileText size={14} /> Download Tax Invoice (PDF)
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 5. Cancel Order */}
-              <div className={`${styles.helpTopicItem} ${helpActiveTopic === 'cancel' ? styles.helpTopicItemActive : ''}`}>
-                <button
-                  type="button"
-                  className={styles.helpTopicTrigger}
-                  onClick={() => setHelpActiveTopic(helpActiveTopic === 'cancel' ? '' : 'cancel')}
-                >
-                  <span className={styles.helpTopicTriggerLabel}>
-                    <XCircle size={16} color="#dc2626" /> Cancel this order?
-                  </span>
-                  {helpActiveTopic === 'cancel' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
-                {helpActiveTopic === 'cancel' && (
-                  <div className={styles.helpTopicContent}>
-                    {canCancel ? (
-                      <>
-                        <p>
-                          This order is still being prepared and has not been dispatched yet. You can cancel it directly now.
-                        </p>
-                        <div className={styles.helpTopicActions}>
-                          <button
-                            type="button"
-                            className={styles.helpCancelActionBtn}
-                            onClick={() => {
-                              const ord = helpModalOrder;
-                              setHelpModalOrder(null);
-                              setCancellingOrder(ord);
-                            }}
-                          >
-                            <XCircle size={14} /> Cancel Order #{helpModalOrder.id}
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <p>
-                        {isCompleted
-                          ? `This order has already been delivered. Cancellation is no longer applicable, but you can request an easy 7-day return or replacement above.`
-                          : `This package is already in transit with our courier partner. You may politely refuse delivery at your doorstep when the courier partner arrives.`}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ── Cannot Resolve? Drop Message to WhatsApp ── */}
-            <div className={styles.helpFallbackCard}>
-              <div className={styles.helpFallbackHeader}>
-                <span className={styles.helpFallbackTitle}>Still can&apos;t resolve your query?</span>
-                <span className={styles.helpFallbackSub}>
-                  Drop a message to our customer care team on WhatsApp. We are online Mon–Sat.
-                </span>
-              </div>
-              <a
-                href={`https://wa.me/?text=${waPrefill}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.helpWhatsAppBtn}
-              >
-                <MessageCircle size={18} /> Chat with Support on WhatsApp
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const renderHelpModal = () => null;
 
   if (loading) {
     return (
@@ -1484,8 +1211,7 @@ function AccountContent() {
                                     className={styles.orderMenuItem}
                                     onClick={() => {
                                       setOpenMenuOrderId(null);
-                                      setHelpModalOrder(order);
-                                      setHelpActiveTopic('delivery');
+                                      handleOpenAiForOrder(order);
                                     }}
                                   >
                                     <HelpCircle size={14} /> Need Help?
@@ -1774,10 +1500,7 @@ function AccountContent() {
 
                             <button
                               type="button"
-                              onClick={() => {
-                                setHelpModalOrder(order);
-                                setHelpActiveTopic('delivery');
-                              }}
+                              onClick={() => handleOpenAiForOrder(order)}
                               className={styles.helpBtn}
                             >
                               <HelpCircle size={14} /> Need Help?
