@@ -340,41 +340,20 @@ export function generateInvoiceHtml(data: InvoiceData): string {
       </div>
     </div>
   </div>
-
-  <script>
-    // Auto-trigger print if requested via query param
-    if (window.location.search.includes('print=true')) {
-      window.onload = function() {
-        setTimeout(function() { window.print(); }, 400);
-      };
-    }
-  </script>
 </body>
 </html>`;
 }
 
 /**
- * Triggers a direct print/download of the invoice in the client's browser.
+ * Triggers a direct download of the PDF invoice in the client's browser.
  */
 export function printOrDownloadInvoice(data: InvoiceData): void {
   if (typeof window === 'undefined') return;
-
-  const html = generateInvoiceHtml(data);
-  const printWindow = window.open('', '_blank', 'width=850,height=900');
-  if (printWindow) {
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      try {
-        printWindow.print();
-      } catch (e) {
-        console.warn('Print trigger error:', e);
-      }
-    }, 350);
-  } else {
-    // Fallback: direct window location
-    window.location.href = `/invoice/${data.orderId}?print=true`;
-  }
+  const downloadUrl = `/api/invoice/${data.orderId}/download`;
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.setAttribute('download', `Invoice-INTERSTING-${data.orderId}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }

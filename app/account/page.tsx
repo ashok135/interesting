@@ -839,11 +839,10 @@ function AccountContent() {
             {/* Footer Actions */}
             <div className={styles.orderDetailFooter}>
               <a
-                href={`/invoice/${selectedOrder.id}?print=true`}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`/api/invoice/${selectedOrder.id}/download`}
+                download={`Invoice-INTERSTING-${selectedOrder.id}.pdf`}
                 className={styles.invoiceActionBtn}
-                title="Download or print official tax invoice (PDF)"
+                title="Download official tax invoice (PDF)"
               >
                 <FileText size={16} /> Download Invoice
               </a>
@@ -1340,9 +1339,8 @@ function AccountContent() {
                             <Package size={14} /> View Details
                           </button>
                           <a
-                            href={`/invoice/${order.id}?print=true`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`/api/invoice/${order.id}/download`}
+                            download={`Invoice-INTERSTING-${order.id}.pdf`}
                             className={styles.orderInvoiceBtn}
                             title="Download Tax Invoice (PDF)"
                           >

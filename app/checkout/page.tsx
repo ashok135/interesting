@@ -834,11 +834,10 @@ export default function CheckoutPage() {
           <div className={styles.successActions}>
             {oId && (
               <a
-                href={`/invoice/${oId}?print=true`}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`/api/invoice/${oId}/download`}
+                download={`Invoice-INTERSTING-${oId}.pdf`}
                 className={styles.successInvoiceBtn}
-                title="Download or print official tax invoice"
+                title="Download official tax invoice (PDF)"
               >
                 <FileText size={16} /> Download Tax Invoice (PDF)
               </a>
