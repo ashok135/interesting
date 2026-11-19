@@ -667,9 +667,11 @@ export default function CheckoutPage() {
             setPlacing(true);
             setOrderFlowState('animating');
             setOrderError('');
+            const MIN_ANIM_MS = 4500;
+            const animStart = Date.now();
             try {
-              // 3. Cryptographically verify payment on server & confirm order
-              const verifyPromise = fetch('/api/payment/verify', {
+              // Cryptographically verify payment on server & confirm order
+              const verifyJson = await fetch('/api/payment/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -680,13 +682,14 @@ export default function CheckoutPage() {
                 }),
               }).then((r) => r.json());
 
-              const [verifyJson] = await Promise.all([
-                verifyPromise,
-                new Promise((res) => setTimeout(res, 3000)),
-              ]);
-
               if (!verifyJson.success) {
                 throw new Error(verifyJson.error || 'Payment verification failed. Please contact support.');
+              }
+
+              // Ensure animation runs at least MIN_ANIM_MS before showing confirmation
+              const elapsed = Date.now() - animStart;
+              if (elapsed < MIN_ANIM_MS) {
+                await new Promise((res) => setTimeout(res, MIN_ANIM_MS - elapsed));
               }
 
               setConfirmedOrder({
@@ -744,13 +747,18 @@ export default function CheckoutPage() {
       }
     }
 
-    // COD & Direct UPI: Trigger the centered truck drive micro-interaction immediately!
+    // COD & Direct UPI: Show centered truck loader immediately
     setPlacing(true);
     setOrderFlowState('animating');
     setOrderError('');
 
+    // Minimum animation display: 1 full truck loop = 4.5s
+    // Keeps the animation meaningful even if the API responds in <1s
+    const MIN_ANIM_MS = 4500;
+    const animStart = Date.now();
+
     try {
-      const orderPromise = createOrder({
+      const order = await createOrder({
         customer_id: user?.id,
         payment_method: payMethod === 'cod' ? 'cod' : 'bacs',
         payment_method_title: orderPaymentTitle,
@@ -769,13 +777,12 @@ export default function CheckoutPage() {
         ],
       });
 
-      const [order] = await Promise.all([
-        orderPromise,
-        // Wait 3000ms so the truck drives across, loads package, speeds off right, and "Order Placed ✓" appears!
-        new Promise((res) => setTimeout(res, 3000)),
-      ]);
+      // Ensure animation runs for at least MIN_ANIM_MS from when it started
+      const elapsed = Date.now() - animStart;
+      if (elapsed < MIN_ANIM_MS) {
+        await new Promise((res) => setTimeout(res, MIN_ANIM_MS - elapsed));
+      }
 
-      // Save confirmed order snapshot first so the success screen displays immediately right on the same page
       setConfirmedOrder({
         id: order.id,
         total: orderGrandTotal,
@@ -786,7 +793,6 @@ export default function CheckoutPage() {
       setOrderFlowState('confirmed');
       setStep('success');
 
-      // Now clear the cart and refresh auth orders in the background
       clearCart();
       refresh?.();
     } catch (err) {
@@ -1899,8 +1905,8 @@ export default function CheckoutPage() {
                   <span>Placing &amp; Confirming Order</span>
                 </div>
 
-                {/* ── Self-contained truck track pill (absolute pixel animations) ── */}
-                <div className={styles.truckTrackPill}>
+                {/* ── Self-contained truck track pill (looping payment loader) ── */}
+                <div className={styles.truckTrackPill} role="status" aria-label="Processing order">
                   <span className={styles.roadLine} aria-hidden="true" />
                   <span className={styles.package} aria-hidden="true" />
 
@@ -1922,10 +1928,6 @@ export default function CheckoutPage() {
                     </span>
                     <span className={`${styles.wheel} ${styles.wheelBack}`} />
                     <span className={`${styles.wheel} ${styles.wheelFront}`} />
-                  </span>
-
-                  <span className={styles.successText} aria-hidden="true">
-                    Order Placed ✓
                   </span>
                 </div>
 
