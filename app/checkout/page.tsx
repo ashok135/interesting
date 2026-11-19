@@ -598,6 +598,11 @@ export default function CheckoutPage() {
       ? 'Cash on Delivery'
       : 'Direct UPI Transfer';
 
+    // ── Show truck animation overlay IMMEDIATELY (replaces all loading states) ──
+    setOrderFlowState('animating');
+    const MIN_ANIM_MS = 2500;
+    const animStart = Date.now();
+
     /* ── Razorpay Online Payment Flow ── */
     if (payMethod === 'razorpay') {
       try {
@@ -642,7 +647,7 @@ export default function CheckoutPage() {
           throw new Error(rzpOrder.error || 'Failed to initialize payment gateway order.');
         }
 
-        // 2. Open Razorpay Checkout Modal
+        // 3. Open Razorpay Checkout Modal (truck overlay stays visible underneath)
         const options = {
           key: rzpOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_U1ADQmS0qOpccj',
           amount: rzpOrder.amount,
@@ -661,16 +666,11 @@ export default function CheckoutPage() {
             pincode: finalBilling.postcode,
           },
           theme: {
-            color: '#0d3821', // Forest Green
+            color: '#0d3821',
           },
           handler: async function (response: any) {
-            setPlacing(true);
-            setOrderFlowState('animating');
-            setOrderError('');
-            const MIN_ANIM_MS = 2500;
-            const animStart = Date.now();
+            // Truck overlay already visible — just verify payment
             try {
-              // Cryptographically verify payment on server & confirm order
               const verifyJson = await fetch('/api/payment/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -686,7 +686,7 @@ export default function CheckoutPage() {
                 throw new Error(verifyJson.error || 'Payment verification failed. Please contact support.');
               }
 
-              // Ensure animation runs at least MIN_ANIM_MS before showing confirmation
+              // Ensure animation shows minimum time
               const elapsed = Date.now() - animStart;
               if (elapsed < MIN_ANIM_MS) {
                 await new Promise((res) => setTimeout(res, MIN_ANIM_MS - elapsed));
@@ -712,6 +712,7 @@ export default function CheckoutPage() {
           },
           modal: {
             ondismiss: function () {
+              // User closed Razorpay without paying — reset
               setPlacing(false);
               setOrderFlowState('idle');
             },
@@ -723,12 +724,14 @@ export default function CheckoutPage() {
           console.error('[Razorpay] Payment failed:', resp.error);
           setOrderError(resp.error?.description || 'Payment was declined or cancelled. Please try again.');
           setPlacing(false);
+          setOrderFlowState('idle');
         });
         rzp.open();
         return;
       } catch (err: any) {
         setOrderError(err.message || 'Failed to open Razorpay payment window.');
         setPlacing(false);
+        setOrderFlowState('idle');
         return;
       }
     }
@@ -738,25 +741,18 @@ export default function CheckoutPage() {
       if (!cleanRef) {
         setOrderError('Please enter your 12-digit UPI Reference / UTR Number to confirm your payment.');
         setPlacing(false);
+        setOrderFlowState('idle');
         return;
       }
       if (cleanRef.length < 6) {
         setOrderError('Please enter a valid UPI Reference / UTR Number from your payment app.');
         setPlacing(false);
+        setOrderFlowState('idle');
         return;
       }
     }
 
-    // COD & Direct UPI: Show centered truck loader immediately
-    setPlacing(true);
-    setOrderFlowState('animating');
-    setOrderError('');
-
-    // Minimum animation display: 1 full truck loop = 4.5s
-    // Keeps the animation meaningful even if the API responds in <1s
-    const MIN_ANIM_MS = 2500;
-    const animStart = Date.now();
-
+    // COD & Direct UPI: overlay already showing, place the order
     try {
       const order = await createOrder({
         customer_id: user?.id,
@@ -777,7 +773,7 @@ export default function CheckoutPage() {
         ],
       });
 
-      // Ensure animation runs for at least MIN_ANIM_MS from when it started
+      // Ensure animation shows minimum time
       const elapsed = Date.now() - animStart;
       if (elapsed < MIN_ANIM_MS) {
         await new Promise((res) => setTimeout(res, MIN_ANIM_MS - elapsed));
@@ -803,8 +799,8 @@ export default function CheckoutPage() {
     }
   }
 
-  /* ── Loading ── */
-  if (authLoading) {
+  /* ── Loading (only initial load, never during order animation or confirmation) ── */
+  if (authLoading && !user && !isGuest && orderFlowState === 'idle' && !confirmedOrder) {
     return (
       <div className={styles.loadingState}>
         <GoogleLoader size={46} text="Loading checkout…" />
