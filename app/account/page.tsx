@@ -859,29 +859,35 @@ function AccountContent() {
                 className={styles.invoiceActionBtn}
                 title="Download official tax invoice (PDF)"
               >
-                <FileText size={16} /> Download Invoice
+                <FileText size={16} /> Download Tax Invoice (PDF)
               </a>
 
-              <Link
-                href="/faq"
-                className={styles.helpActionBtn}
-              >
-                <HelpCircle size={16} /> Need Help?
-              </Link>
-
-              {canCancel && (
+              <div className={styles.modalSecondaryBtnRow}>
                 <button
                   type="button"
                   onClick={() => {
-                    const orderToCancel = selectedOrder;
-                    setSelectedOrder(null);
-                    setCancellingOrder(orderToCancel);
+                    const msg = `Hi, I need assistance with Order #${selectedOrder.id} placed on Interesting.`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
                   }}
-                  className={styles.cancelActionBtn}
+                  className={styles.helpActionBtn}
                 >
-                  <XCircle size={16} /> Cancel Order
+                  <HelpCircle size={15} /> Need Help?
                 </button>
-              )}
+
+                {canCancel && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const orderToCancel = selectedOrder;
+                      setSelectedOrder(null);
+                      setCancellingOrder(orderToCancel);
+                    }}
+                    className={styles.cancelActionBtn}
+                  >
+                    <XCircle size={15} /> Cancel Order
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1340,7 +1346,7 @@ function AccountContent() {
                             </div>
                           </div>
                         ) : (
-                          <div className={styles.miniTracker}>
+                          <div className={`${styles.miniTracker} ${isCompleted ? styles.miniTrackerCompleted : ''}`}>
                             <div className={`${styles.trackerStep} ${styles.trackerStepDone}`}>
                               <span className={styles.trackerDot} />
                               <span className={styles.trackerLabel}>Confirmed</span>
