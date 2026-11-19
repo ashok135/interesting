@@ -59,37 +59,8 @@ interface SavedAddress {
   isDefault?: boolean;
 }
 
-const ITEM_FALLBACK_IMAGES: Record<string, string> = {
-  gond: '/images/products/royal-gond-laddu.webp',
-  laddu: '/images/products/royal-gond-laddu.webp',
-  chikki: '/images/products/artisanal-nut-chikki.webp',
-  'energy crunch': '/images/products/energy-crunch-trail.webp',
-  'omega 3': '/images/products/omega3-vitality-trail.webp',
-  pistachio: '/images/products/california-pistachios.webp',
-  pista: '/images/products/california-pistachios.webp',
-  makhana: '/images/products/pink-salt-makhana.webp',
-  almond: '/images/products/nuts-almonds.webp',
-  cashew: '/images/products/nuts-cashews-1.webp',
-  kaju: '/images/products/trad-kajukatli-1.webp',
-  walnut: '/images/products/nuts-walnuts-1.webp',
-  seed: '/images/products/seeds-mix-1.webp',
-  millet: '/images/categories/millets.jpg',
-  snack: '/images/products/roasted-chana-1.webp',
-  crisp: '/images/products/roasted-chana-1.webp',
-  trail: '/images/products/omega3-vitality-trail.webp',
-  gift: '/images/products/hamper-gold.webp',
-};
-
 function getItemImageUrl(item?: { name?: string; image?: { src?: string }; product_id?: number; id?: number } | null): string {
-  if (!item) return '/images/categories/nuts.jpg';
-
-  const lower = (item.name || '').toLowerCase();
-  if (lower.includes('gond') || lower.includes('laddu')) return '/images/products/royal-gond-laddu.webp';
-  if (lower.includes('chikki')) return '/images/products/artisanal-nut-chikki.webp';
-  if (lower.includes('energy crunch')) return '/images/products/energy-crunch-trail.webp';
-  if (lower.includes('omega 3') || lower.includes('vitality trail')) return '/images/products/omega3-vitality-trail.webp';
-  if (lower.includes('pistachio')) return '/images/products/california-pistachios.webp';
-  if (lower.includes('pink salt') || (lower.includes('makhana') && !lower.includes('peri peri'))) return '/images/products/pink-salt-makhana.webp';
+  if (!item) return '';
 
   const src = item.image?.src;
   if (src) {
@@ -100,12 +71,12 @@ function getItemImageUrl(item?: { name?: string; image?: { src?: string }; produ
     if (src.startsWith('/api/media/')) {
       return `https://intersting.duckdns.org/wp-content/uploads/${src.replace('/api/media/', '')}`;
     }
+    if (src.startsWith('/wp-content/uploads/')) {
+      return `https://intersting.duckdns.org${src}`;
+    }
     return src;
   }
-  for (const [kw, url] of Object.entries(ITEM_FALLBACK_IMAGES)) {
-    if (lower.includes(kw)) return url;
-  }
-  return '/images/categories/nuts.jpg';
+  return '';
 }
 
 function AccountContent() {

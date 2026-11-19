@@ -9,7 +9,7 @@ interface HeroBannerProps {
 
 export function HeroBanner({ product }: HeroBannerProps) {
   const productSlug = product?.slug ? `/product/${product.slug}` : '/shop';
-  const heroImage = product?.images?.[0]?.src || 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=800&auto=format&fit=crop&q=80';
+  const heroImage = product?.images?.[0]?.src || '';
 
   return (
     <section className={styles.heroGrid} aria-label="Hero Highlights">

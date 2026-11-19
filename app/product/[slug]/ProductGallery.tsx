@@ -29,27 +29,14 @@ export function ProductGallery({
     setIsMainLoaded(false);
   }, [selectedIndex]);
 
-  // Guarantee at least 3 high quality images like Amazon & Flipkart
   const safeImages = useMemo(() => {
-    const cleanImages = (images || []).map((img) => ({
-      ...img,
-      src: normalizeImageUrl(img.src),
-    }));
-
-    if (cleanImages.length >= 3) return cleanImages;
-    if (cleanImages.length > 0) {
-      const fallbackAngles = [
-        { id: 1001, src: '/images/products/packaging-tin-seal-1.webp', alt: `${productName} Airtight Vacuum Tin Packaging` },
-        { id: 1002, src: '/images/products/purity-quality-seal-1.webp', alt: `${productName} 100% Farm-Fresh Purity Harvest` },
-      ];
-      return [...cleanImages, ...fallbackAngles].slice(0, 3);
-    }
-    return [
-      { id: 1000, src: '/images/products/nuts-cashews-1.webp', alt: productName },
-      { id: 1001, src: '/images/products/packaging-tin-seal-1.webp', alt: `${productName} Airtight Vacuum Tin Packaging` },
-      { id: 1002, src: '/images/products/purity-quality-seal-1.webp', alt: `${productName} 100% Farm-Fresh Purity Harvest` },
-    ];
-  }, [images, productName]);
+    return (images || [])
+      .map((img) => ({
+        ...img,
+        src: normalizeImageUrl(img.src),
+      }))
+      .filter((img) => Boolean(img.src));
+  }, [images]);
 
   const activeImage = safeImages[selectedIndex] || safeImages[0];
   const hasMultipleImages = safeImages.length > 1;

@@ -76,95 +76,31 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Woo
 
 const PROD_WC_URL = (process.env.NEXT_PUBLIC_WC_URL || process.env.WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
 
-// Locally pre-optimized high-efficiency WebP product images
-const OPTIMIZED_PRODUCTS = new Set([
-  'hamper-casket-1',
-  'packaging-tin-seal-1',
-  'purity-quality-seal-1',
-  'hamper-gold',
-  'dryfruit-chikki',
-  'gourmet-laddu',
-  'trad-kajukatli-1',
-  'trail-mix-omega',
-  'dryfruit-berries',
-  'nuts-pistachios',
-  'nuts-almonds',
-  'nuts-cashews-1',
-  'makhana-roasted',
-  'roasted-chana-1',
-  'dryfruit-raisins-1',
-  'dryfruit-dates-1',
-  'dryfruit-anjeer',
-  'seeds-mix-1',
-  'seeds-pumpkin-1',
-  'seeds-chia-1',
-  'nuts-walnuts-1',
-  'royal-gond-laddu',
-  'artisanal-nut-chikki',
-  'energy-crunch-trail',
-  'omega3-vitality-trail',
-  'california-pistachios',
-  'pink-salt-makhana',
-]);
-
-// Dedicated 1-to-1 high-res photography for individual products (replaces shared/generic placeholders)
-const DEDICATED_PRODUCT_IMAGES: Record<string, string> = {
-  'royal-gond-dry-fruit-nutri-laddu': '/images/products/royal-gond-laddu.webp',
-  'jaggery-crushed-nut-artisanal-chikki': '/images/products/artisanal-nut-chikki.webp',
-  'energy-crunch-pre-workout-trail': '/images/products/energy-crunch-trail.webp',
-  'gourmet-omega-3-vitality-trail-mix': '/images/products/omega3-vitality-trail.webp',
-  'lightly-salted-california-pistachios': '/images/products/california-pistachios.webp',
-  'himalayan-pink-salt-popped-makhana': '/images/products/pink-salt-makhana.webp',
-};
-
-const DEDICATED_PRODUCT_ID_IMAGES: Record<number, string> = {
-  54: '/images/products/royal-gond-laddu.webp',
-  55: '/images/products/artisanal-nut-chikki.webp',
-  51: '/images/products/energy-crunch-trail.webp',
-  49: '/images/products/omega3-vitality-trail.webp',
-  48: '/images/products/california-pistachios.webp',
-  42: '/images/products/pink-salt-makhana.webp',
-};
-
 export function normalizeImageUrl(url?: string | null): string {
   if (!url) return '';
-  const cleanUrl = url.trim();
+  let cleanUrl = url.trim();
 
-  // Already a local path
-  if (cleanUrl.startsWith('/images/products/')) {
-    return cleanUrl;
+  // Rewrite legacy local or tunnel domains to authoritative production host
+  if (cleanUrl.includes('interesting.local') || cleanUrl.includes('localsite.io')) {
+    const m = cleanUrl.match(/\/wp-content\/uploads\/(.+)$/);
+    if (m) {
+      cleanUrl = `${PROD_WC_URL}/wp-content/uploads/${m[1]}`;
+    }
   }
 
-  // Match /wp-content/uploads/ or /api/media/
-  const match = cleanUrl.match(/(?:\/wp-content\/uploads\/|\/api\/media\/)(?:.*\/)?([^/]+)\.(?:jpe?g|png|webp)$/i);
-  if (match) {
-    const basename = match[1];
-    // If it is in our pre-compressed local WebP library, serve static asset instantly from server
-    if (OPTIMIZED_PRODUCTS.has(basename)) {
-      return `/images/products/${basename}.webp`;
-    }
-    // Otherwise route through our server media compression endpoint
-    const relativePath = cleanUrl
-      .replace(/^https?:\/\/[^/]+\/wp-content\/uploads\//, '')
-      .replace(/^\/wp-content\/uploads\//, '')
-      .replace(/^\/api\/media\//, '');
-    return `/api/media/${relativePath}`;
+  // Ensure https for authoritative duckdns domain
+  if (cleanUrl.includes('intersting.duckdns.org') && cleanUrl.startsWith('http://')) {
+    cleanUrl = cleanUrl.replace('http://', 'https://');
   }
 
-  // If already a full URL
-  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-    // Rewrite old local or tunnel domains
-    if (cleanUrl.includes('interesting.local') || cleanUrl.includes('localsite.io')) {
-      const m = cleanUrl.match(/\/wp-content\/uploads\/(.+)$/);
-      if (m) {
-        return `${PROD_WC_URL}/wp-content/uploads/${m[1]}`;
-      }
-    }
-    // Ensure https for our domain
-    if (cleanUrl.includes('intersting.duckdns.org') && cleanUrl.startsWith('http://')) {
-      return cleanUrl.replace('http://', 'https://');
-    }
-    return cleanUrl;
+  // Handle relative wp-content/uploads paths
+  if (cleanUrl.startsWith('/wp-content/uploads/')) {
+    cleanUrl = `${PROD_WC_URL}${cleanUrl}`;
+  }
+
+  // Handle legacy /api/media/ routes by directing to WordPress media
+  if (cleanUrl.startsWith('/api/media/')) {
+    cleanUrl = `${PROD_WC_URL}/wp-content/uploads/${cleanUrl.replace('/api/media/', '')}`;
   }
 
   return cleanUrl;
@@ -173,22 +109,7 @@ export function normalizeImageUrl(url?: string | null): string {
 function normalizeProduct(p: WooProduct): WooProduct {
   if (!p) return p;
 
-  const dedicatedSrc = (p.slug && DEDICATED_PRODUCT_IMAGES[p.slug]) || (p.id && DEDICATED_PRODUCT_ID_IMAGES[p.id]);
-
-  if (dedicatedSrc) {
-    const existingOtherImages = Array.isArray(p.images)
-      ? p.images.slice(1).map((img) => ({ ...img, src: normalizeImageUrl(img.src) }))
-      : [];
-    p.images = [
-      {
-        id: p.id || 0,
-        src: dedicatedSrc,
-        name: p.name || '',
-        alt: p.name || '',
-      },
-      ...existingOtherImages,
-    ];
-  } else if (p.images && Array.isArray(p.images)) {
+  if (p.images && Array.isArray(p.images)) {
     p.images = p.images.map((img) => ({
       ...img,
       src: normalizeImageUrl(img.src),
