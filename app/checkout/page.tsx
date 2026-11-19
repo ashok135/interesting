@@ -167,7 +167,7 @@ export default function CheckoutPage() {
   const [upiRef, setUpiRef] = useState('');
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [placing, setPlacing] = useState(false);
-  const [orderFlowState, setOrderFlowState] = useState<'idle' | 'animating' | 'confirmed'>('idle');
+  const [orderFlowState, setOrderFlowState] = useState<'idle' | 'processing' | 'delivering' | 'confirmed'>('idle');
   const [orderError, setOrderError] = useState('');
   const [addrError, setAddrError] = useState('');
   const [orderId, setOrderId] = useState<number | null>(null);
@@ -278,20 +278,22 @@ export default function CheckoutPage() {
     }
   }, [items.length, orderId, confirmedOrder, step, authLoading, router]);
 
-  /* ── Auto-scroll to top and focus celebration card when order is placed ── */
+  /* ── Auto-scroll to top when entering order flow (processing/delivering/confirmed) ── */
   useEffect(() => {
-    if (step === 'success' || confirmedOrder) {
+    if (orderFlowState !== 'idle' || step === 'success' || confirmedOrder) {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
-      const t = setTimeout(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-        const el = document.getElementById('order-success-card');
-        if (el) {
-          el.focus({ preventScroll: true });
-        }
-      }, 60);
-      return () => clearTimeout(t);
+      if (orderFlowState === 'confirmed' || step === 'success' || confirmedOrder) {
+        const t = setTimeout(() => {
+          window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+          const el = document.getElementById('order-flow-card');
+          if (el) {
+            el.focus({ preventScroll: true });
+          }
+        }, 50);
+        return () => clearTimeout(t);
+      }
     }
-  }, [step, confirmedOrder]);
+  }, [orderFlowState, step, confirmedOrder]);
 
   /* ── Pricing & WooCommerce Multi-Rule Coupon Calculation ── */
   const subtotal = parseFloat(total) || 0;
@@ -598,8 +600,9 @@ export default function CheckoutPage() {
       ? 'Cash on Delivery'
       : 'Direct UPI Transfer';
 
-    // ── Show truck animation overlay IMMEDIATELY (replaces all loading states) ──
-    setOrderFlowState('animating');
+    // ── Instant scroll to top & show truck animation (replaces all loading states) ──
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    setOrderFlowState('processing');
     const MIN_ANIM_MS = 1500;
     const animStart = Date.now();
 
@@ -686,11 +689,15 @@ export default function CheckoutPage() {
                 throw new Error(verifyJson.error || 'Payment verification failed. Please contact support.');
               }
 
-              // Ensure animation shows minimum time
+              // Ensure truck waited at center minimum time
               const elapsed = Date.now() - animStart;
               if (elapsed < MIN_ANIM_MS) {
                 await new Promise((res) => setTimeout(res, MIN_ANIM_MS - elapsed));
               }
+
+              // Order verified! Truck drives off to right ONE TIME
+              setOrderFlowState('delivering');
+              await new Promise((res) => setTimeout(res, 700));
 
               setConfirmedOrder({
                 id: verifyJson.order.id,
@@ -773,11 +780,15 @@ export default function CheckoutPage() {
         ],
       });
 
-      // Ensure animation shows minimum time
+      // Ensure truck waited at center minimum time
       const elapsed = Date.now() - animStart;
       if (elapsed < MIN_ANIM_MS) {
         await new Promise((res) => setTimeout(res, MIN_ANIM_MS - elapsed));
       }
+
+      // Order created! Truck drives off to right ONE TIME
+      setOrderFlowState('delivering');
+      await new Promise((res) => setTimeout(res, 700));
 
       setConfirmedOrder({
         id: order.id,
@@ -814,6 +825,7 @@ export default function CheckoutPage() {
     const oTotal = confirmedOrder?.total ?? grandTotal;
     const oItems = confirmedOrder?.itemCount ?? (items.length || 1);
     const oPay = confirmedOrder?.paymentTitle ?? (payMethod === 'cod' ? 'Cash on Delivery' : 'Direct UPI Transfer');
+    const isConfirmed = orderFlowState === 'confirmed' || step === 'success' || !!confirmedOrder;
 
     return (
       <div className={styles.orderFlowPage}>
@@ -821,12 +833,16 @@ export default function CheckoutPage() {
           id="order-flow-card"
           tabIndex={-1}
           style={{ outline: 'none' }}
-          className={`${styles.orderFlowCard} ${orderFlowState === 'confirmed' || step === 'success' || confirmedOrder ? styles.orderFlowCardConfirmed : ''}`}
+          className={`${styles.orderFlowCard} ${isConfirmed ? styles.orderFlowCardConfirmed : styles.orderFlowCardLoading}`}
         >
-          {orderFlowState === 'animating' ? (
+          {!isConfirmed ? (
             <div className={styles.centerAnimBox}>
-              {/* ── Self-contained truck track pill (looping payment loader) ── */}
-              <div className={styles.truckTrackPill} role="status" aria-label="Processing order">
+              {/* ── Non-looping truck track pill: enters & waits, then blasts off on confirmation ── */}
+              <div
+                className={`${styles.truckTrackPill} ${orderFlowState === 'delivering' ? styles.pillDelivering : styles.pillProcessing}`}
+                role="status"
+                aria-label={orderFlowState === 'delivering' ? 'Order confirmed! Dispatching…' : 'Processing order…'}
+              >
                 <span className={styles.roadLine} aria-hidden="true" />
                 <span className={styles.package} aria-hidden="true" />
 

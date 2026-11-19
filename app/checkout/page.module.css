@@ -8,7 +8,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 70vh;
+  min-height: calc(100vh - 120px);
+  min-height: calc(100dvh - 120px);
+  padding: 2rem 1rem;
+  margin: auto;
   gap: 1rem;
   color: var(--color-text-muted, #64748b);
   font-size: 0.9rem;
@@ -2022,85 +2025,79 @@
 
 /* ── Single White Page for Order Processing & Confirmation Flow ─────────────── */
 .orderFlowPage {
-  min-height: 85vh;
+  min-height: calc(100vh - 120px);
+  min-height: calc(100dvh - 120px);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem 1.25rem 4rem;
+  padding: 2rem 1.25rem;
   background: var(--color-surface-1, #ffffff);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .orderFlowCard {
   width: 100%;
-  max-width: 440px;
-  background: var(--color-surface-1, #ffffff);
-  border: 1px solid var(--color-border, #e8edf2);
-  border-radius: 24px;
-  padding: 2.75rem 2rem;
-  text-align: center;
+  max-width: 480px;
+  margin: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+  justify-content: center;
+  text-align: center;
   transition: all 0.35s ease;
+}
+
+.orderFlowCardLoading {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 .orderFlowCardConfirmed {
   max-width: 480px;
+  background: var(--color-surface-1, #ffffff);
+  border: 1px solid var(--color-border, #e8edf2);
+  border-radius: 24px;
+  padding: 2.75rem 2rem;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
 }
 
-/* ── Loading state: truck track stage ── */
+/* ── Loading state: truck track stage (dead-center, clean white page) ── */
 .centerAnimBox {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: center;
   width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.centerAnimBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.3rem 0.9rem;
-  border-radius: 999px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-
-.centerPulseDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #22c55e;
-  animation: pulseDot 1.5s ease-in-out infinite;
-}
-
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.7); }
-}
-
-/* ── The truck track pill inside the card ── */
 /*
-  COORDINATE SYSTEM (pill = 300px wide, 62px tall):
-  ─────────────────────────────────────────────────
-  Truck is 82px wide.  
-  To horizontally center truck inside pill: X = (300 - 82) / 2 = 109px  
-  Cargo box: left=2px relative to truck  → pill X = 109+2 = 111px
-  Cargo box: 48px wide                  → cargo spans pill X 111→159px
-  Cargo door: at cargo left edge        → pill X = 111px
-  Package loads FROM LEFT of door,
-    base position left=96px (15px wide → ends at 111px, flush at cargo door)
-    slides RIGHT →  translate(+28px) → at pill X 124px (inside cargo) → fades behind truck (z:3)
+  COORDINATE SYSTEM & MATHEMATICAL CENTERING:
+  ──────────────────────────────────────────
+  Pill: 300px wide, 62px tall.
+  Truck: 82px wide, 34px tall.
+  Horizontal Center: X = (300 - 82) / 2 = 109px
+  Vertical Center:   Y = (62 - 34) / 2 = 14px (top: 50%; margin-top: -17px;)
+  Wheels: bottom: 0 of truck -> 14px from bottom of pill.
+  RoadLine: bottom: 13px (2px height) -> touches wheel bottom perfectly.
+  Package: 15px tall -> top: 50%; margin-top: -7.5px;
   
-  ALL keyframes use absolute pixel values – never calc(%).
-  Animations LOOP INFINITELY so Razorpay long payments keep animating.
-  Total loop period = 1.5s
+  NON-LOOPING TWO-PHASE STATE MACHINE:
+  1. .pillProcessing:
+     - Truck drives in ONCE from left (-110px) to center (109px) in 0.45s.
+     - Package drops and slides into cargo door in 0.65s. Cargo door closes.
+     - Truck gently idles in center (WAITING while API/payment completes).
+     - NEVER loops, NEVER leaves center until confirmation.
+  2. .pillDelivering:
+     - Triggered once order/payment verification completes!
+     - Headlights turn on, speed lines flare, wheels spin fast.
+     - Truck rockets off to right (330px) ONLY ONCE in 0.65s.
+     - Success screen smoothly reveals in place.
 */
 
 .truckTrackPill {
@@ -2117,49 +2114,32 @@
   flex-shrink: 0;
 }
 
-/* ── Road line: visible while truck is in pill, scrolls, then hides ── */
+/* ── Road line: exactly under truck wheels (bottom 13px) ── */
 .truckTrackPill .roadLine {
   position: absolute;
-  bottom: 9px;
+  bottom: 13px;
   left: 18px;
   right: 18px;
   height: 2px;
-  background-image: linear-gradient(to right, rgba(255,255,255,0.4) 55%, transparent 55%);
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.45) 55%, transparent 55%);
   background-size: 14px 2px;
   background-repeat: repeat-x;
   opacity: 0;
-  animation: roadLoop 1.5s ease-in-out infinite;
 }
 
-@keyframes roadLoop {
-  /* 0–10%: off (truck not yet here) */
-  0%   { opacity: 0; background-position-x: 0; }
-  /* 10–20%: fade in as truck arrives */
-  10%  { opacity: 0; }
-  20%  { opacity: 1; background-position-x: 0; }
-  /* 20–65%: scroll while truck is present */
-  65%  { opacity: 1; background-position-x: -84px; }
-  /* 65–78%: fade out as truck exits */
-  78%  { opacity: 0; background-position-x: -112px; }
-  /* 78–100%: off (gap before next loop) */
-  100% { opacity: 0; background-position-x: -112px; }
-}
-
-/* ── Package: appears at cargo door, slides into cargo box, fades behind truck wall ── */
+/* ── Package: enters cargo door, slides inside truck ── */
 .truckTrackPill .package {
   position: absolute;
   top: 50%;
-  /* Right edge of package flush with cargo door (at pill X=111px) */
   left: 96px;
   width: 15px;
   height: 15px;
-  margin-top: -11px;
+  margin-top: -7.5px;
   background: linear-gradient(145deg, #fbbf24 0%, #f59e0b 55%, #d97706 100%);
   border-radius: 2.5px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.35), inset 0 -2px 0 rgba(146,64,14,0.4);
-  z-index: 2; /* under truck (z:3), so slides BEHIND cargo wall */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35), inset 0 -2px 0 rgba(146, 64, 14, 0.4);
+  z-index: 2;
   opacity: 0;
-  animation: packageLoop 1.5s ease-in-out infinite;
 }
 
 .truckTrackPill .package::before {
@@ -2168,7 +2148,7 @@
   top: 0; left: 50%;
   width: 3px; height: 100%;
   transform: translateX(-50%);
-  background: rgba(254,243,199,0.85);
+  background: rgba(254, 243, 199, 0.85);
 }
 
 .truckTrackPill .package::after {
@@ -2176,84 +2156,28 @@
   position: absolute;
   top: 4px; left: 2px;
   width: 4px; height: 1.5px;
-  background: rgba(146,64,14,0.6);
+  background: rgba(146, 64, 14, 0.6);
   border-radius: 1px;
 }
 
-@keyframes packageLoop {
-  /* 0–28%: hidden while truck arrives and door opens */
-  0%   { opacity: 0; transform: translate(0, -16px) scale(0.3); }
-  28%  { opacity: 0; transform: translate(0, -16px) scale(0.3); }
-  /* 32%: pop into view just outside cargo door */
-  32%  { opacity: 1; transform: translate(0, 0) scale(1.1); }
-  /* 36%: settle at cargo door */
-  36%  { opacity: 1; transform: translate(1px, 0) scale(1.0); }
-  /* 52%: slide right, disappearing behind cargo wall (truck is z:3 on top) */
-  52%  { opacity: 1; transform: translate(28px, 0) scale(0.88); }
-  /* 58%: fully consumed into cargo */
-  58%  { opacity: 0; transform: translate(34px, 0) scale(0.72); }
-  /* 58–100%: hidden during truck exit + gap */
-  100% { opacity: 0; transform: translate(0, -16px) scale(0.3); }
-}
-
-/* ── Truck: smooth looping drive sequence ── */
+/* ── Truck: exactly centered vertically (margin-top: -17px) ── */
 .truckTrackPill .truck {
   position: absolute;
   top: 50%;
   left: 0;
   width: 82px;
   height: 34px;
-  margin-top: -21px;
+  margin-top: -17px;
   z-index: 3;
-  /* Start off-screen left */
-  transform: translateX(-105px);
-  animation: truckLoop 1.5s ease-in-out infinite;
+  transform: translateX(-110px);
 }
 
-@keyframes truckLoop {
-  /* Enter from left */
-  0%   { transform: translateX(-105px); }
-  /* Ease-out arrival at center: 109px = (300-82)/2 */
-  22%  { transform: translateX(109px); }
-  /* Hold while package loads */
-  55%  { transform: translateX(109px); }
-  /* Pull-back squat before launch */
-  62%  { transform: translateX(97px); }
-  /* Blast off right — exits at 78% */
-  78%  { transform: translateX(320px); }
-  /* Stay off-screen right until 99% (gap), then instant-reset at 100% */
-  99%  { transform: translateX(320px); }
-  /* Invisible reset: truck is off-screen on BOTH ends, so the jump is never seen */
-  100% { transform: translateX(-105px); }
-}
-
-/* ── Truck body: idle bounce + launch dip ── */
 .truckTrackPill .truckBody {
   position: absolute;
   inset: 0;
-  animation: truckBodyLoop 1.5s ease-in-out infinite;
 }
 
-@keyframes truckBodyLoop {
-  0%,  22% { transform: translateY(0) rotate(0deg); }
-  /* Idle bounce while loading (5 quick bobs 22%–55%) */
-  25%  { transform: translateY(-0.8px); }
-  28%  { transform: translateY(0); }
-  32%  { transform: translateY(-0.8px); }
-  36%  { transform: translateY(0); }
-  40%  { transform: translateY(-0.8px); }
-  44%  { transform: translateY(0); }
-  48%  { transform: translateY(-0.8px); }
-  52%  { transform: translateY(0); }
-  /* Launch dip (squat before blast) */
-  55%  { transform: translateY(0) rotate(0deg); }
-  60%  { transform: translateY(1.5px) rotate(-1.2deg); }
-  65%  { transform: translateY(0) rotate(0deg); }
-  /* Normal for rest of cycle */
-  100% { transform: translateY(0) rotate(0deg); }
-}
-
-/* ── Wheels: continuous spin ── */
+/* ── Wheels ── */
 .truckTrackPill .wheel {
   position: absolute;
   bottom: 0;
@@ -2261,16 +2185,9 @@
   height: 13px;
   background: #090d16;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 2.5px #1e293b, 0 1px 2px rgba(0,0,0,0.5);
+  box-shadow: inset 0 0 0 2.5px #1e293b, 0 1px 2px rgba(0, 0, 0, 0.5);
   display: grid;
   place-items: center;
-  /* Spin continuously — truck is moving in both entry and exit phases */
-  animation: wheelSpin 0.22s linear infinite;
-}
-
-@keyframes wheelSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
 }
 
 .truckTrackPill .wheel::before {
@@ -2301,7 +2218,7 @@
 .truckTrackPill .wheelBack  { left: 13px; }
 .truckTrackPill .wheelFront { left: 56px; }
 
-/* ── Cargo door: swings open to let package in, then closes ── */
+/* ── Cargo door ── */
 .truckTrackPill .cargoDoor {
   position: absolute;
   left: 0; top: 1px;
@@ -2309,55 +2226,31 @@
   background: #94a3b8;
   border-radius: 2px 0 0 2px;
   transform-origin: top left;
-  animation: cargoDoorLoop 1.5s ease-in-out infinite;
 }
 
-@keyframes cargoDoorLoop {
-  /* Closed while arriving */
-  0%,  24% { transform: rotate(0deg); }
-  /* Open to receive package */
-  30%       { transform: rotate(-72deg); }
-  /* Stay open while loading */
-  52%       { transform: rotate(-72deg); }
-  /* Close after package is in */
-  60%       { transform: rotate(0deg); }
-  /* Stay closed for rest of loop */
-  100%      { transform: rotate(0deg); }
-}
-
-/* ── Headlights: flick on before launch, fade out as truck exits ── */
+/* ── Headlights ── */
 .truckTrackPill .headlightBeam {
   position: absolute;
   left: 26px; bottom: -5px;
   width: 58px; height: 22px;
   background: linear-gradient(
     90deg,
-    rgba(254,240,138,0.95) 0%,
-    rgba(250,204,21,0.4) 55%,
-    rgba(250,204,21,0) 100%
+    rgba(254, 240, 138, 0.95) 0%,
+    rgba(250, 204, 21, 0.4) 55%,
+    rgba(250, 204, 21, 0) 100%
   );
   clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 60%);
   opacity: 0;
   pointer-events: none;
-  animation: headlightLoop 1.5s ease-in-out infinite;
 }
 
-@keyframes headlightLoop {
-  0%,  60% { opacity: 0; }
-  65%       { opacity: 1; }
-  76%       { opacity: 1; }
-  80%       { opacity: 0; }
-  100%      { opacity: 0; }
-}
-
-/* ── Speed lines: streak out when blasting off ── */
+/* ── Speed lines ── */
 .truckTrackPill .speedLines {
   position: absolute;
   left: -24px; top: 6px;
   width: 20px; height: 16px;
   opacity: 0;
   pointer-events: none;
-  animation: speedLoop 1.5s ease-in-out infinite;
 }
 
 .truckTrackPill .speedLines span {
@@ -2365,26 +2258,143 @@
   right: 0;
   height: 2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65));
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65));
 }
 
 .truckTrackPill .speedLines span:nth-child(1) { top: 2px;  width: 16px; }
 .truckTrackPill .speedLines span:nth-child(2) { top: 8px;  width: 22px; }
 .truckTrackPill .speedLines span:nth-child(3) { top: 14px; width: 12px; }
 
-@keyframes speedLoop {
-  0%,  62%  { opacity: 0; transform: translateX(4px); }
-  67%        { opacity: 1; transform: translateX(0); }
-  76%        { opacity: 0.8; transform: translateX(-2px); }
-  80%        { opacity: 0; }
-  100%       { opacity: 0; }
+/* =========================================================
+   PHASE 1: PROCESSING STATE (Drive in ONCE, wait in center)
+   ========================================================= */
+.pillProcessing .truck {
+  animation: truckEnterCenter 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
 }
 
-.centerAnimMsg {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #64748b;
-  margin: 0;
+@keyframes truckEnterCenter {
+  0%   { transform: translateX(-110px); }
+  100% { transform: translateX(109px); }
+}
+
+.pillProcessing .truckBody {
+  animation: truckIdleBounce 0.22s ease-in-out 0.45s infinite;
+}
+
+@keyframes truckIdleBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-0.8px); }
+}
+
+.pillProcessing .wheel {
+  animation: wheelSpinEntry 0.45s linear forwards;
+}
+
+@keyframes wheelSpinEntry {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(450deg); }
+}
+
+.pillProcessing .roadLine {
+  animation: roadLineEnter 0.45s ease forwards;
+}
+
+@keyframes roadLineEnter {
+  0%   { opacity: 0; background-position-x: 0; }
+  40%  { opacity: 1; }
+  100% { opacity: 1; background-position-x: -36px; }
+}
+
+.pillProcessing .cargoDoor {
+  animation: cargoDoorProcess 0.65s ease-in-out 0.25s forwards;
+}
+
+@keyframes cargoDoorProcess {
+  0%, 15%  { transform: rotate(0deg); }
+  35%      { transform: rotate(-72deg); }
+  75%      { transform: rotate(-72deg); }
+  100%     { transform: rotate(0deg); }
+}
+
+.pillProcessing .package {
+  animation: packageProcess 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+}
+
+@keyframes packageProcess {
+  0%   { opacity: 0; transform: translate(0, -14px) scale(0.3); }
+  25%  { opacity: 1; transform: translate(0, 0) scale(1); }
+  65%  { opacity: 1; transform: translate(26px, 0) scale(0.9); }
+  100% { opacity: 0; transform: translate(32px, 0) scale(0.72); }
+}
+
+/* =========================================================
+   PHASE 2: DELIVERING STATE (Drive off to right ONE TIME)
+   ========================================================= */
+.pillDelivering .truck {
+  animation: truckExitBlast 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes truckExitBlast {
+  0%   { transform: translateX(109px); }
+  18%  { transform: translateX(96px); }
+  100% { transform: translateX(330px); }
+}
+
+.pillDelivering .truckBody {
+  animation: truckLaunchSquat 0.65s ease-out forwards;
+}
+
+@keyframes truckLaunchSquat {
+  0%   { transform: rotate(0deg) translateY(0); }
+  18%  { transform: rotate(-2.5deg) translateY(-1px); }
+  40%  { transform: rotate(0deg) translateY(0); }
+  100% { transform: rotate(0deg) translateY(0); }
+}
+
+.pillDelivering .wheel {
+  animation: wheelSpinBlast 0.16s linear infinite;
+}
+
+@keyframes wheelSpinBlast {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.pillDelivering .headlightBeam {
+  animation: headlightBlast 0.65s ease forwards;
+}
+
+@keyframes headlightBlast {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.pillDelivering .speedLines {
+  animation: speedLinesBlast 0.55s ease 0.1s forwards;
+}
+
+@keyframes speedLinesBlast {
+  0%   { opacity: 0; transform: translateX(4px); }
+  30%  { opacity: 1; transform: translateX(0); }
+  80%  { opacity: 0.8; transform: translateX(-3px); }
+  100% { opacity: 0; transform: translateX(-6px); }
+}
+
+.pillDelivering .roadLine {
+  opacity: 1;
+  animation: roadLineBlast 0.65s linear forwards;
+}
+
+@keyframes roadLineBlast {
+  0%   { opacity: 1; background-position-x: -36px; }
+  80%  { opacity: 1; background-position-x: -120px; }
+  100% { opacity: 0; background-position-x: -160px; }
+}
+
+.pillDelivering .package {
+  opacity: 0;
 }
 
 /* ── Confirmation state ── */
@@ -3460,7 +3470,13 @@
   background: var(--color-bg, #090d16);
 }
 
-[data-theme="dark"] .orderFlowCard {
+[data-theme="dark"] .orderFlowCardLoading {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .orderFlowCardConfirmed {
   background: #111827;
   border: 1px solid #243048;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
