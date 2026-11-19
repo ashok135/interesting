@@ -4,4 +4,5 @@ export { Skeleton, ProductCardSkeleton, ProductGridSkeleton, SearchItemSkeleton 
 export { QuantitySelector } from './QuantitySelector/QuantitySelector';
 export { ThemeToggle } from './ThemeToggle/ThemeToggle';
 export { BrandLogo } from './BrandLogo';
+export { default as GoogleLoader } from './GoogleLoader';
 

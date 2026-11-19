@@ -43,6 +43,8 @@ import {
   FileText,
 } from 'lucide-react';
 import type { OrderBilling, OrderPayload } from '@/types';
+import { GoogleLoader } from '@/components/ui';
+import TruckOrderLoader from '@/components/checkout/TruckOrderLoader';
 import styles from './page.module.css';
 
 type CheckoutStep = 'auth' | 'address' | 'payment' | 'success';
@@ -778,8 +780,7 @@ export default function CheckoutPage() {
   if (authLoading) {
     return (
       <div className={styles.loadingState}>
-        <div className={styles.loadingSpinner} />
-        <p>Loading checkout…</p>
+        <GoogleLoader size={46} text="Loading checkout…" />
       </div>
     );
   }
@@ -1853,6 +1854,13 @@ export default function CheckoutPage() {
           </aside>
         </div>
       </div>
+
+      {/* Express Delivery Truck Order Placing Animation */}
+      <TruckOrderLoader
+        isOpen={placing}
+        payMethod={payMethod}
+        totalAmount={formatPrice(grandTotal)}
+      />
     </div>
   );
 }

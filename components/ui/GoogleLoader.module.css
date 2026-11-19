@@ -1,0 +1,88 @@
+.loaderContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  user-select: none;
+}
+
+.circular {
+  animation: googleRotate 2s linear infinite;
+  transform-origin: center center;
+}
+
+.path {
+  stroke-dasharray: 1, 200;
+  stroke-dashoffset: 0;
+  animation: googleDash 1.5s ease-in-out infinite, googleColorCycle 6s ease-in-out infinite;
+  stroke-linecap: round;
+}
+
+.brandColors .path {
+  animation: googleDash 1.5s ease-in-out infinite, brandColorCycle 6s ease-in-out infinite;
+}
+
+.loaderText {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+@keyframes googleRotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes googleDash {
+  0% {
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -35px;
+  }
+  100% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -124px;
+  }
+}
+
+@keyframes googleColorCycle {
+  100%, 0% {
+    stroke: #4285F4; /* Google Blue */
+  }
+  25% {
+    stroke: #EA4335; /* Google Red */
+  }
+  50% {
+    stroke: #FBBC05; /* Google Yellow */
+  }
+  75% {
+    stroke: #34A853; /* Google Green */
+  }
+}
+
+@keyframes brandColorCycle {
+  100%, 0% {
+    stroke: #14532d; /* Forest Green */
+  }
+  25% {
+    stroke: #f59e0b; /* Amber Gold */
+  }
+  50% {
+    stroke: #16a34a; /* Vibrant Green */
+  }
+  75% {
+    stroke: #0284c7; /* Sky Blue */
+  }
+}
+
+[data-theme="dark"] .loaderText {
+  color: #cbd5e1;
+}

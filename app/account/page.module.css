@@ -1620,6 +1620,13 @@
     grid-template-columns: 1fr 1fr;
     gap: 0.85rem;
     padding: 1.15rem 1.15rem 1rem;
+    position: relative;
+  }
+
+  .orderMenuWrap {
+    position: absolute;
+    top: 1.15rem;
+    right: 1.15rem;
   }
 
   .stripColRight {

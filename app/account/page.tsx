@@ -43,6 +43,7 @@ import { useCartContext } from '@/store/CartContext';
 import { useWishlist } from '@/store/WishlistContext';
 import { formatPrice } from '@/lib/utils/formatters';
 import type { WooOrder } from '@/types';
+import { GoogleLoader } from '@/components/ui';
 import styles from './page.module.css';
 
 type TabKey = 'orders' | 'addresses' | 'profile';
@@ -1164,13 +1165,25 @@ function AccountContent() {
                               })}
                             </span>
                           </div>
-                          <div className={styles.stripColTotalWithMenu}>
-                            <div className={styles.stripCol}>
-                              <span className={styles.stripLabel}>TOTAL</span>
-                              <span className={styles.stripValueBold}>{formatPrice(order.total)}</span>
-                            </div>
+                          <div className={styles.stripCol}>
+                            <span className={styles.stripLabel}>TOTAL</span>
+                            <span className={styles.stripValueBold}>{formatPrice(order.total)}</span>
+                          </div>
+                          <div className={styles.stripCol}>
+                            <span className={styles.stripLabel}>SHIP TO</span>
+                            <span className={styles.stripValue}>
+                              {order.shipping?.first_name || order.billing.first_name || 'Customer'}{' '}
+                              {order.shipping?.last_name || order.billing.last_name || ''}
+                              {order.shipping?.city ? ` (${order.shipping.city})` : ''}
+                            </span>
+                          </div>
+                          <div className={styles.stripColRight}>
+                            <span className={styles.orderIdBadge}>ORDER #{order.id}</span>
+                            <span className={`${styles.statusChip} ${statusChipClass}`}>
+                              {statusLabel}
+                            </span>
 
-                            {/* 3-Dot More Actions Menu */}
+                            {/* 3-Dot More Actions Menu (Far Right on Desktop, Top-Right on Mobile) */}
                             <div className={styles.orderMenuWrap} data-order-menu>
                               <button
                                 type="button"
@@ -1219,20 +1232,6 @@ function AccountContent() {
                                 </div>
                               )}
                             </div>
-                          </div>
-                          <div className={styles.stripCol}>
-                            <span className={styles.stripLabel}>SHIP TO</span>
-                            <span className={styles.stripValue}>
-                              {order.shipping?.first_name || order.billing.first_name || 'Customer'}{' '}
-                              {order.shipping?.last_name || order.billing.last_name || ''}
-                              {order.shipping?.city ? ` (${order.shipping.city})` : ''}
-                            </span>
-                          </div>
-                          <div className={styles.stripColRight}>
-                            <span className={styles.orderIdBadge}>ORDER #{order.id}</span>
-                            <span className={`${styles.statusChip} ${statusChipClass}`}>
-                              {statusLabel}
-                            </span>
                           </div>
                         </div>
 
@@ -2222,7 +2221,7 @@ export default function AccountPage() {
     <React.Suspense
       fallback={
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-          <div className={styles.spinner} />
+          <GoogleLoader size={46} text="Loading your account…" />
         </div>
       }
     >

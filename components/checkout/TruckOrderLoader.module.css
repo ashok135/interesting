@@ -1,0 +1,320 @@
+/* ==========================================================================
+   Express Delivery Truck Order Placing Animation Modal
+   ========================================================================== */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10, 25, 17, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modalCard {
+  background: #ffffff;
+  border: 1px solid rgba(20, 83, 45, 0.15);
+  border-radius: 24px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  width: 100%;
+  max-width: 440px;
+  padding: 2.25rem 2rem 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  animation: cardScaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Ambient glow orb behind the truck */
+.glowOrb {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 140px;
+  background: radial-gradient(ellipse at center, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0) 70%);
+  pointer-events: none;
+}
+
+/* ── Animation Stage ── */
+.stageWrap {
+  width: 100%;
+  height: 140px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f0fdf4 0%, #e2e8f0 100%);
+  border: 1px solid #dcfce7;
+}
+
+/* Background gliding trees/posts */
+.sceneryWrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.sceneryTree {
+  position: absolute;
+  bottom: 26px;
+  right: -40px;
+  animation: sceneryMove 2.2s linear infinite;
+}
+
+.sceneryTreeAlt {
+  position: absolute;
+  bottom: 26px;
+  right: -40px;
+  animation: sceneryMove 2.2s linear infinite 1.1s;
+}
+
+/* The Animated Truck */
+.truckWrap {
+  position: relative;
+  z-index: 2;
+  animation: truckBounce 0.45s ease-in-out infinite alternate;
+  transform-origin: center bottom;
+}
+
+.wheelFront,
+.wheelBack {
+  animation: wheelRotate 0.6s linear infinite;
+  transform-origin: center;
+}
+
+/* Exhaust Smoke Puffs */
+.smokePuff1 {
+  animation: smokePuff 0.9s ease-out infinite;
+  transform-origin: center;
+}
+
+.smokePuff2 {
+  animation: smokePuff 0.9s ease-out infinite 0.45s;
+  transform-origin: center;
+}
+
+/* Speed wind lines */
+.windLine1 {
+  animation: windSpeed 0.8s linear infinite;
+}
+
+.windLine2 {
+  animation: windSpeed 0.8s linear infinite 0.3s;
+}
+
+/* Road underneath */
+.road {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  background: #334155;
+  border-top: 2px solid #0f172a;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.roadStripes {
+  width: 200%;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    #ffffff 0px,
+    #ffffff 24px,
+    transparent 24px,
+    transparent 48px
+  );
+  animation: roadScroll 0.55s linear infinite;
+}
+
+/* ── Status Text & Progress ── */
+.headline {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.subtext {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 1.25rem;
+  min-height: 2.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Stepper Progress Bar */
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  position: relative;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #16a34a, #22c55e, #f59e0b);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+/* Step badges */
+.badgeRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.trustBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid #bbf7d0;
+}
+
+.badgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  animation: pulseDot 1.4s infinite ease-in-out;
+}
+
+/* ── Keyframe Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cardScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes truckBounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3.5px); }
+}
+
+@keyframes wheelRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes roadScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-48px); }
+}
+
+@keyframes sceneryMove {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.6;
+  }
+  85% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(-480px);
+    opacity: 0;
+  }
+}
+
+@keyframes smokePuff {
+  0% {
+    opacity: 0.8;
+    transform: translate(0, 0) scale(0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-28px, -12px) scale(1.4);
+  }
+}
+
+@keyframes windSpeed {
+  0% {
+    opacity: 0;
+    transform: translateX(15px);
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-35px);
+  }
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+
+/* ── Dark Mode ── */
+[data-theme="dark"] .modalCard {
+  background: #111827;
+  border-color: #243048;
+}
+
+[data-theme="dark"] .stageWrap {
+  background: linear-gradient(180deg, #064e3b 0%, #0f172a 100%);
+  border-color: #047857;
+}
+
+[data-theme="dark"] .headline {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .subtext {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .progressTrack {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .trustBadge {
+  background: #064e3b;
+  border-color: #047857;
+  color: #86efac;
+}
