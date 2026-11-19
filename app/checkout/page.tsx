@@ -667,7 +667,7 @@ export default function CheckoutPage() {
             setPlacing(true);
             setOrderFlowState('animating');
             setOrderError('');
-            const MIN_ANIM_MS = 4500;
+            const MIN_ANIM_MS = 2500;
             const animStart = Date.now();
             try {
               // Cryptographically verify payment on server & confirm order
@@ -754,7 +754,7 @@ export default function CheckoutPage() {
 
     // Minimum animation display: 1 full truck loop = 4.5s
     // Keeps the animation meaningful even if the API responds in <1s
-    const MIN_ANIM_MS = 4500;
+    const MIN_ANIM_MS = 2500;
     const animStart = Date.now();
 
     try {
@@ -1900,11 +1900,6 @@ export default function CheckoutPage() {
           >
             {orderFlowState === 'animating' ? (
               <div className={styles.centerAnimBox}>
-                <div className={styles.centerAnimBadge}>
-                  <span className={styles.centerPulseDot} />
-                  <span>Placing &amp; Confirming Order</span>
-                </div>
-
                 {/* ── Self-contained truck track pill (looping payment loader) ── */}
                 <div className={styles.truckTrackPill} role="status" aria-label="Processing order">
                   <span className={styles.roadLine} aria-hidden="true" />
@@ -1930,10 +1925,6 @@ export default function CheckoutPage() {
                     <span className={`${styles.wheel} ${styles.wheelFront}`} />
                   </span>
                 </div>
-
-                <p className={styles.centerAnimMsg}>
-                  Packing your gourmet order for express dispatch...
-                </p>
               </div>
             ) : (
               <div className={styles.centerSuccessContent}>
