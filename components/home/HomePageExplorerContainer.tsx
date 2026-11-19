@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CuratedCategoryBento, TrustBadges, ZeptoCategoryExplorer } from '@/components/product';
 import { HomeStoryAndFeatures } from '@/components/home/HomeStoryAndFeatures/HomeStoryAndFeatures';
+import { BestSellersSection } from '@/components/home/BestSellersSection/BestSellersSection';
 import type { WooProduct, WooProductCategory } from '@/types';
 
 interface HomePageExplorerContainerProps {
@@ -43,6 +44,10 @@ export function HomePageExplorerContainer({
           onSelectCategoryId={setActiveCategoryId}
         />
       </div>
+      <BestSellersSection
+        allProducts={allProducts}
+        categories={categories}
+      />
       <HomeStoryAndFeatures />
     </>
   );
