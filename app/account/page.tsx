@@ -1121,17 +1121,7 @@ function AccountContent() {
                           </div>
                           <div className={styles.stripCol}>
                             <span className={styles.stripLabel}>TOTAL</span>
-                            <div className={styles.totalAndInvoiceWrap}>
-                              <span className={styles.stripValueBold}>{formatPrice(order.total)}</span>
-                              <a
-                                href={`/api/invoice/${order.id}/download`}
-                                download={`Invoice-INTERSTING-${order.id}.pdf`}
-                                className={styles.headerInvoicePill}
-                                title="Download Tax Invoice (PDF)"
-                              >
-                                <FileText size={11} /> Invoice
-                              </a>
-                            </div>
+                            <span className={styles.stripValueBold}>{formatPrice(order.total)}</span>
                           </div>
                           <div className={styles.stripCol}>
                             <span className={styles.stripLabel}>SHIP TO</span>
@@ -1391,16 +1381,6 @@ function AccountContent() {
                                   Quantity: <strong>{item.quantity}</strong> • {formatPrice(item.total)}
                                 </p>
                               </div>
-                              <div className={styles.itemActionCol}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleBuyAgain(item)}
-                                  className={styles.buyAgainBtn}
-                                  title="Add to cart again"
-                                >
-                                  <ShoppingBag size={14} /> Buy Again
-                                </button>
-                              </div>
                             </div>
                           ))}
                         </div>
@@ -1472,26 +1452,16 @@ function AccountContent() {
                               </button>
                             )}
 
-                            {canCancel ? (
-                              <button
-                                type="button"
-                                onClick={() => setCancellingOrder(order)}
-                                className={styles.cancelOrderBtn}
-                              >
-                                <XCircle size={14} /> Cancel Order
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const msg = `Hi, I need assistance with Order #${order.id} placed on Interesting.`;
-                                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-                                }}
-                                className={styles.helpBtn}
-                              >
-                                <HelpCircle size={14} /> Need Help?
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const msg = `Hi, I need assistance with Order #${order.id} placed on Interesting.`;
+                                window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                              }}
+                              className={styles.helpBtn}
+                            >
+                              <HelpCircle size={14} /> Need Help?
+                            </button>
                           </div>
                         </div>
                       </div>

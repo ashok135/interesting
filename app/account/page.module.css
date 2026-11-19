@@ -793,9 +793,9 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   min-width: 175px;
-  z-index: 50;
+  z-index: 100;
   padding: 0.35rem;
   display: flex;
   flex-direction: column;
@@ -1631,7 +1631,8 @@
   }
 
   .amazonItemRow {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: 0.85rem;
   }
 
