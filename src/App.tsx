@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
-import { BlockbusterRibbon } from './components/BlockbusterRibbon';
-import { ProjectsGallery } from './components/ProjectsGallery';
+import { VideoEditingSection } from './components/VideoEditingSection';
+import { VfxAnimationSection } from './components/VfxAnimationSection';
 import { SkillsMatrix } from './components/SkillsMatrix';
 import { ExperienceTimeline } from './components/ExperienceTimeline';
 import { AboutSection } from './components/AboutSection';
@@ -45,7 +45,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCF9] text-slate-800 flex flex-col selection:bg-amber-100 selection:text-amber-900">
+    <div className="min-h-screen bg-[#FDFCF9] text-slate-800 flex flex-col selection:bg-amber-100 selection:text-amber-900 overflow-x-hidden">
       {/* 1. Floating Glass Navigation */}
       <Navbar onOpenContact={handleOpenContact} />
 
@@ -56,11 +56,11 @@ export function App() {
           onOpenContact={handleOpenContact}
         />
 
-        {/* 3. Theatrical & Broadcast Credits Ribbon */}
-        <BlockbusterRibbon />
+        {/* 3. Section 01: Video Editing & Post-Production (with Before/After Lab) */}
+        <VideoEditingSection onPlayVideo={handlePlayVideo} />
 
-        {/* 4. Projects Showcase & Reel Gallery */}
-        <ProjectsGallery onPlayVideo={handlePlayVideo} />
+        {/* 4. Section 02: CGI, VFX & 3D Animation (with Bollywood & Disney/Netflix) */}
+        <VfxAnimationSection onPlayVideo={handlePlayVideo} />
 
         {/* 5. Technical Skills & AI Matrix */}
         <SkillsMatrix />
