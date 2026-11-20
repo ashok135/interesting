@@ -148,7 +148,7 @@ function generateDynamicSuggestions(query: string, toolNames: string[], products
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface PredictiveIntent {
-  type: 'product' | 'policy' | 'greeting' | 'complex';
+  type: 'product' | 'policy' | 'greeting' | 'order_tracking' | 'complex';
   entity?: string;
   policyTopic?: string;
 }
@@ -162,6 +162,20 @@ function detectPredictiveIntent(query: string): PredictiveIntent {
     q.split(' ').length <= 4
   ) {
     return { type: 'greeting' };
+  }
+
+  // Order tracking intent (handles typos: 'oder', 'ordr', 'where is my')
+  if (
+    q.includes('order') ||
+    q.includes('oder') ||
+    q.includes('ordr') ||
+    q.includes('track') ||
+    q.includes('tracking') ||
+    q.includes('where is my') ||
+    q.includes('delivery status') ||
+    q.includes('courier')
+  ) {
+    return { type: 'order_tracking' };
   }
 
   // Clear policy intents
@@ -242,6 +256,26 @@ export async function runAgenticRag(
     const reply = 'Hello! 🌿 Welcome to Interesting. How may I assist you with our farm-fresh harvests today?';
     const suggestions = ['👑 Best King Cashews', '🌰 Raw Almonds under ₹500', '🎁 Luxury Gift Hampers', '🚚 Free Delivery Policy'];
     return { success: true, reply, products: [], suggestions };
+  }
+
+  if (intent.type === 'order_tracking' && history.length === 0) {
+    let reply = '';
+    if (orderContext && orderContext.id) {
+      reply = `Your Order #${orderContext.id} is currently **${orderContext.status}** (${orderContext.total}). You can view real-time courier tracking and invoices anytime under [My Account > Orders](/account), or tap below to message our concierge on WhatsApp!`;
+    } else {
+      reply = `You can track your live shipment and view invoices anytime under [My Account > Orders](/account)! All orders are packed and dispatched within 24 hours with live SMS tracking. For direct help, reach our WhatsApp concierge at **+91 99948 47167**.`;
+    }
+
+    const suggestions = [
+      '📦 Open My Orders',
+      '💬 Chat on WhatsApp (+91 99948 47167)',
+      '🚚 Shipping Policy',
+      '🔄 Return & Refund Policy',
+    ];
+
+    const result = { success: true, reply, products: [], suggestions };
+    responseCache.set(cacheKey, { ...result, expiresAt: Date.now() + RESPONSE_CACHE_TTL_MS });
+    return result;
   }
 
   if (intent.type === 'product' && intent.entity && history.length === 0) {
