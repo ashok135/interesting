@@ -250,6 +250,7 @@ export async function runAgenticRag(
   }
 
   // ── TIER 1: Predictive 1-Hop Execution (Saves 70-80% Token Cost) ───────────
+  const hasGreeting = /^(hi|hello|hey|good\s*(morning|evening|afternoon)|greetings|namaste|halo)\b/i.test(cleanQuery);
   const intent = detectPredictiveIntent(cleanQuery);
 
   if (intent.type === 'greeting') {
@@ -259,11 +260,12 @@ export async function runAgenticRag(
   }
 
   if (intent.type === 'order_tracking' && history.length === 0) {
+    const greetingPrefix = hasGreeting ? 'Hello! 🌿 ' : '';
     let reply = '';
     if (orderContext && orderContext.id) {
-      reply = `Your Order #${orderContext.id} is currently **${orderContext.status}** (${orderContext.total}). You can view real-time courier tracking and invoices anytime under [My Account > Orders](/account), or tap below to message our concierge on WhatsApp!`;
+      reply = `${greetingPrefix}Your Order #${orderContext.id} is currently **${orderContext.status}** (${orderContext.total}). You can view real-time courier tracking and invoices anytime under [My Account > Orders](/account), or tap below to message our concierge on WhatsApp!`;
     } else {
-      reply = `You can track your live shipment and view invoices anytime under [My Account > Orders](/account)! All orders are packed and dispatched within 24 hours with live SMS tracking. For direct help, reach our WhatsApp concierge at **+91 99948 47167**.`;
+      reply = `${greetingPrefix}You can track your live shipment and view invoices anytime under [My Account > Orders](/account)! All orders are packed and dispatched within 24 hours with live SMS tracking. For direct help, reach our WhatsApp concierge at **+91 99948 47167**.`;
     }
 
     const suggestions = [
@@ -288,13 +290,17 @@ export async function runAgenticRag(
       .map((p, i) => `${i + 1}. **${p.name}** — ₹${p.price} (${p.description})`)
       .join('\n');
 
+    const greetingRule = hasGreeting
+      ? '- Since customer opened with a greeting, start your sentence warmly with "Hello! 🌿" or "Hi! 🌿".\n'
+      : '';
+
     const prompt = `You are "Chappie", AI Concierge for "Interesting" gourmet dry fruits store in India.
 The customer asked: "${cleanQuery}".
 Here are our real-time matching products directly from our live store inventory:
 ${productsText}
 
 INSTRUCTION:
-- In 1 to 2 warm, appetizing sentences (under 35 words), directly answer the customer and recommend the top item(s) with price (e.g. "**Royal Jumbo W180 King Cashews** (₹449)").
+${greetingRule}- In 1 to 2 warm, appetizing sentences (under 35 words), directly answer the customer and recommend the top item(s) with price (e.g. "**Royal Jumbo W180 King Cashews** (₹449)").
 - Do NOT output HTML or UI cards. Product cards auto-render below your message.`;
 
     try {
@@ -330,13 +336,17 @@ INSTRUCTION:
 
     const facts = policyData.vector_passage || `${policyData.summary} ${policyData.details?.join(' ') || ''}`;
 
+    const greetingRule = hasGreeting
+      ? '- Since customer opened with a greeting, start your sentence warmly with "Hello! 🌿" or "Hi! 🌿".\n'
+      : '';
+
     const prompt = `You are "Chappie", AI Concierge for "Interesting" store.
 The customer asked: "${cleanQuery}".
 Verified store policy facts:
 ${facts}
 
 INSTRUCTION:
-- In 1-2 friendly sentences (under 35 words), directly answer their policy question.
+${greetingRule}- In 1-2 friendly sentences (under 35 words), directly answer their policy question.
 - Do NOT recommend products on pure policy inquiries.`;
 
     try {
@@ -386,6 +396,7 @@ You have direct access to live store tools:
 3. "get_curated_collection": Retrieve best-sellers, hampers, or seed collections.
 
 RULES:
+- If the customer opened with a greeting ("hi", "hello", "hey", etc.), start warmly with "Hello! 🌿" or "Hi! 🌿".
 - When a customer asks about products, prices, or recommendations, invoke "search_catalog" or "get_curated_collection" to retrieve live verified items before answering.
 - If a customer is asking purely about policies (returns, refunds, shipping, delivery times, COD, or contact), invoke "get_policy_info" and answer their policy question directly. DO NOT recommend products on pure policy inquiries.
 - Keep final replies warm, appetizing, and concise (1 to 2 sentences, maximum 35 words).
