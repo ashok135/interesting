@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Scissors, ArrowUpRight, SlidersHorizontal } from 'lucide-react';
+import { Play, Scissors, ArrowUpRight } from 'lucide-react';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
 import { Reveal } from './Reveal';
 
@@ -93,23 +93,21 @@ export const VideoEditingSection: React.FC<VideoEditingSectionProps> = ({ onPlay
               </p>
             </div>
 
-            {/* Filter Pills with Horizontal Swipe on Mobile */}
-            <div className="w-full md:w-auto overflow-x-auto scrollbar-none pb-1 md:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0">
-              <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-full border border-slate-200/80 w-max shrink-0">
-                {(['All', 'Trailers', 'Commercials', 'Color'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveFilter(tab)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                      activeFilter === tab
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {tab === 'All' ? 'All Edits' : tab}
-                  </button>
-                ))}
-              </div>
+            {/* Filter Pills - Clean flex wrap */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100 rounded-full border border-slate-200/80">
+              {(['All', 'Trailers', 'Commercials', 'Color'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveFilter(tab)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    activeFilter === tab
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {tab === 'All' ? 'All Edits' : tab}
+                </button>
+              ))}
             </div>
           </div>
         </Reveal>
@@ -119,25 +117,13 @@ export const VideoEditingSection: React.FC<VideoEditingSectionProps> = ({ onPlay
           <BeforeAfterSlider />
         </Reveal>
 
-        {/* Mobile Swipe Hint Banner */}
-        <div className="md:hidden flex items-center justify-between text-[11px] text-amber-800/80 bg-amber-50/80 border border-amber-200/60 rounded-xl px-3 py-1.5 mb-4">
-          <span className="font-semibold flex items-center gap-1.5">
-            <SlidersHorizontal size={12} className="text-amber-600" />
-            <span>Swipe projects horizontally</span>
-          </span>
-          <span className="text-[10px] text-amber-700 font-bold">4 Projects ◀ ▶</span>
-        </div>
-
-        {/* Video Editing Projects: Horizontal Snap Carousel on Mobile, Grid on Tablet/Desktop */}
-        <div className="flex md:grid md:grid-cols-2 gap-4 sm:gap-8 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory scrollbar-none -mx-4 px-4 md:mx-0 md:px-0 pb-4">
+        {/* Video Editing Projects: Standard Responsive Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {filtered.map((project, index) => {
             const thumbUrl = `https://img.youtube.com/vi/${project.youtubeId}/hqdefault.jpg`;
 
             return (
-              <div
-                key={project.id}
-                className="w-[85vw] sm:w-[380px] md:w-auto shrink-0 snap-center flex flex-col"
-              >
+              <div key={project.id} className="flex flex-col">
                 <Reveal direction="up" delay={index * 80}>
                   <div
                     className="bezel-outer group hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full cursor-pointer shadow-xs"
@@ -178,44 +164,46 @@ export const VideoEditingSection: React.FC<VideoEditingSectionProps> = ({ onPlay
 
                         {/* Bottom Banner */}
                         {project.stats && (
-                          <div className="absolute bottom-2 left-2.5 right-2.5 sm:left-3 sm:right-3">
-                            <span className="text-[10px] sm:text-[11px] font-semibold text-white/95 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md inline-block">
+                          <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:bottom-3 sm:left-3 sm:right-3">
+                            <span className="text-[10px] sm:text-[11px] font-semibold text-white/95 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-md inline-block">
                               {project.stats}
                             </span>
                           </div>
                         )}
                       </div>
 
-                      {/* Content Details */}
-                      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3.5">
+                      {/* Content Body */}
+                      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                         <div>
-                          <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1 font-medium">
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium mb-1.5">
                             <span>{project.role}</span>
+                            <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-semibold">
+                              {project.category}
+                            </span>
                           </div>
-                          <h3 className="font-display font-bold text-base sm:text-lg text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-1 sm:line-clamp-none">
+                          <h3 className="font-display font-bold text-lg text-slate-900 group-hover:text-amber-600 transition-colors">
                             {project.title}
                           </h3>
-                          <p className="text-xs text-slate-600 mt-1.5 line-clamp-2 sm:line-clamp-3 leading-relaxed">
+                          <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
                             {project.description}
                           </p>
                         </div>
 
-                        {/* Tools & Watch Action */}
-                        <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                          <div className="flex flex-wrap gap-1">
-                            {project.tools.slice(0, 3).map((t) => (
+                        {/* Card Footer: Tools & Action */}
+                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <div className="flex flex-wrap gap-1.5">
+                            {project.tools.map((tool) => (
                               <span
-                                key={t}
-                                className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[9px] sm:text-[10px] font-semibold"
+                                key={tool}
+                                className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold"
                               >
-                                {t}
+                                {tool}
                               </span>
                             ))}
                           </div>
 
                           <div className="text-amber-700 text-xs font-semibold flex items-center gap-1 group-hover:translate-x-1 transition-transform shrink-0">
-                            <span className="hidden sm:inline">Watch Reel</span>
-                            <span className="sm:hidden">Play</span>
+                            <span>Watch</span>
                             <ArrowUpRight size={13} />
                           </div>
                         </div>

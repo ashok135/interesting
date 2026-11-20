@@ -59,29 +59,27 @@ export const VfxAnimationSection: React.FC<VfxAnimationSectionProps> = ({ onPlay
               </p>
             </div>
 
-            {/* Filter Tabs with Horizontal Swipe on Mobile */}
-            <div className="w-full md:w-auto overflow-x-auto scrollbar-none pb-1 md:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0">
-              <div className="flex items-center gap-1.5 p-1.5 bg-white rounded-full border border-slate-200 shadow-xs w-max shrink-0">
-                {(['All', 'Reels', 'Bollywood', 'Animation'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                      activeTab === tab
-                        ? 'bg-slate-900 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {tab === 'All'
-                      ? 'All VFX & 3D'
-                      : tab === 'Reels'
-                      ? '3D Showreels'
-                      : tab === 'Bollywood'
-                      ? 'Bollywood Movies'
-                      : 'Disney/Netflix Shows'}
-                  </button>
-                ))}
-              </div>
+            {/* Filter Tabs - Clean flex-wrap */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-white rounded-full border border-slate-200 shadow-xs">
+              {(['All', 'Reels', 'Bollywood', 'Animation'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    activeTab === tab
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {tab === 'All'
+                    ? 'All VFX & 3D'
+                    : tab === 'Reels'
+                    ? '3D Showreels'
+                    : tab === 'Bollywood'
+                    ? 'Bollywood Movies'
+                    : 'Disney/Netflix Shows'}
+                </button>
+              ))}
             </div>
           </div>
         </Reveal>
@@ -90,29 +88,21 @@ export const VfxAnimationSection: React.FC<VfxAnimationSectionProps> = ({ onPlay
         {(activeTab === 'All' || activeTab === 'Reels') && (
           <div className="mb-12 sm:mb-14">
             <Reveal direction="up" delay={50}>
-              <div className="flex items-center justify-between mb-3.5">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={16} className="text-indigo-600" />
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-display">
-                    Featured 3D &amp; Gaming Video Showreels
-                  </h3>
-                </div>
-                <span className="md:hidden text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
-                  Swipe ◀ ▶
-                </span>
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles size={16} className="text-indigo-600" />
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-display">
+                  Featured 3D &amp; Gaming Video Showreels
+                </h3>
               </div>
             </Reveal>
 
-            {/* Carousel on Mobile, Grid on Tablet/Desktop */}
-            <div className="flex md:grid md:grid-cols-2 gap-4 sm:gap-8 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory scrollbar-none -mx-4 px-4 md:mx-0 md:px-0 pb-4">
+            {/* Standard Responsive 2-Col Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               {vfxReels.map((reel, idx) => {
                 const thumbUrl = `https://img.youtube.com/vi/${reel.youtubeId}/hqdefault.jpg`;
 
                 return (
-                  <div
-                    key={reel.id}
-                    className="w-[85vw] sm:w-[380px] md:w-auto shrink-0 snap-center flex flex-col"
-                  >
+                  <div key={reel.id} className="flex flex-col">
                     <Reveal direction="up" delay={idx * 100}>
                       <div
                         className="bezel-outer group hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full cursor-pointer shadow-xs"
@@ -147,33 +137,33 @@ export const VfxAnimationSection: React.FC<VfxAnimationSectionProps> = ({ onPlay
                             </div>
 
                             {reel.stats && (
-                              <div className="absolute bottom-2 left-2.5 right-2.5 sm:left-3 sm:right-3">
-                                <span className="text-[10px] sm:text-[11px] font-semibold text-white/95 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md inline-block">
+                              <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:bottom-3 sm:left-3 sm:right-3">
+                                <span className="text-[10px] sm:text-[11px] font-semibold text-white/95 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-md inline-block">
                                   {reel.stats}
                                 </span>
                               </div>
                             )}
                           </div>
 
-                          <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3.5">
+                          <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                             <div>
                               <span className="text-[11px] text-slate-500 font-medium block mb-1">
                                 {reel.role}
                               </span>
-                              <h4 className="font-display font-bold text-base sm:text-lg text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1 sm:line-clamp-none">
+                              <h4 className="font-display font-bold text-lg text-slate-900 group-hover:text-indigo-600 transition-colors">
                                 {reel.title}
                               </h4>
-                              <p className="text-xs text-slate-600 mt-1.5 line-clamp-2 sm:line-clamp-3 leading-relaxed">
+                              <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
                                 {reel.description}
                               </p>
                             </div>
 
-                            <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                              <div className="flex flex-wrap gap-1">
+                            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                              <div className="flex flex-wrap gap-1.5">
                                 {reel.tools.map((tool) => (
                                   <span
                                     key={tool}
-                                    className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[9px] sm:text-[10px] font-semibold"
+                                    className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-semibold"
                                   >
                                     {tool}
                                   </span>
@@ -181,8 +171,7 @@ export const VfxAnimationSection: React.FC<VfxAnimationSectionProps> = ({ onPlay
                               </div>
 
                               <div className="text-indigo-700 text-xs font-semibold flex items-center gap-1 group-hover:translate-x-1 transition-transform shrink-0">
-                                <span className="hidden sm:inline">Watch Reel</span>
-                                <span className="sm:hidden">Play</span>
+                                <span>Watch Reel</span>
                                 <ArrowUpRight size={13} />
                               </div>
                             </div>
@@ -197,32 +186,24 @@ export const VfxAnimationSection: React.FC<VfxAnimationSectionProps> = ({ onPlay
           </div>
         )}
 
-        {/* 2. Bollywood Theatrical VFX Productions (Swipeable Horizontal Carousel on Mobile) */}
+        {/* 2. Bollywood Theatrical VFX Productions (Standard Clean 5-Col Grid) */}
         {(activeTab === 'All' || activeTab === 'Bollywood') && (
           <div className="mb-12 sm:mb-14">
             <Reveal direction="up" delay={50}>
-              <div className="flex items-center justify-between mb-3.5">
-                <div className="flex items-center gap-2">
-                  <Film size={16} className="text-amber-600" />
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-display">
-                    Bollywood Theatrical Feature Film VFX Credits
-                  </h3>
-                </div>
-                <span className="lg:hidden text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                  Swipe 5 Movies ◀ ▶
-                </span>
+              <div className="flex items-center gap-2 mb-4">
+                <Film size={16} className="text-amber-600" />
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-display">
+                  Bollywood Theatrical Feature Film VFX Credits
+                </h3>
               </div>
             </Reveal>
 
-            {/* Mobile Horizontal Snap Carousel, Desktop 5-Col Grid */}
-            <div className="flex lg:grid lg:grid-cols-5 gap-3.5 sm:gap-4 overflow-x-auto lg:overflow-x-visible snap-x snap-mandatory scrollbar-none -mx-4 px-4 lg:mx-0 lg:px-0 pb-3">
+            {/* Standard Responsive Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
               {blockbusters.map((film, i) => (
-                <div
-                  key={film.title}
-                  className="w-[74vw] sm:w-[260px] lg:w-auto shrink-0 snap-center flex flex-col"
-                >
+                <div key={film.title} className="flex flex-col">
                   <Reveal direction="up" delay={i * 60}>
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs hover:border-amber-400 hover:shadow-md transition-all duration-300 group h-full flex flex-col justify-between">
+                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs hover:border-amber-400 hover:shadow-md transition-all duration-300 group h-full flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
@@ -248,32 +229,24 @@ export const VfxAnimationSection: React.FC<VfxAnimationSectionProps> = ({ onPlay
           </div>
         )}
 
-        {/* 3. Global Broadcast Cartoon CGI Animation (Swipeable Horizontal Carousel on Mobile) */}
+        {/* 3. Global Broadcast Cartoon CGI Animation (Standard Clean 4-Col Grid) */}
         {(activeTab === 'All' || activeTab === 'Animation') && (
           <div>
             <Reveal direction="up" delay={50}>
-              <div className="flex items-center justify-between mb-3.5">
-                <div className="flex items-center gap-2">
-                  <Clapperboard size={16} className="text-indigo-600" />
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-display">
-                    International Children TV &amp; Netflix CGI Animation
-                  </h3>
-                </div>
-                <span className="lg:hidden text-[10px] text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
-                  Swipe 4 Shows ◀ ▶
-                </span>
+              <div className="flex items-center gap-2 mb-4">
+                <Clapperboard size={16} className="text-indigo-600" />
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-display">
+                  International Children TV &amp; Netflix CGI Animation
+                </h3>
               </div>
             </Reveal>
 
-            {/* Mobile Horizontal Snap Carousel, Desktop 4-Col Grid */}
-            <div className="flex lg:grid lg:grid-cols-4 gap-3.5 sm:gap-4 overflow-x-auto lg:overflow-x-visible snap-x snap-mandatory scrollbar-none -mx-4 px-4 lg:mx-0 lg:px-0 pb-3">
+            {/* Standard Responsive Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
               {cartoonShows.map((show, i) => (
-                <div
-                  key={show.title}
-                  className="w-[74vw] sm:w-[260px] lg:w-auto shrink-0 snap-center flex flex-col"
-                >
+                <div key={show.title} className="flex flex-col">
                   <Reveal direction="up" delay={i * 60}>
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs hover:border-indigo-400 hover:shadow-md transition-all duration-300 group h-full flex flex-col justify-between">
+                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs hover:border-indigo-400 hover:shadow-md transition-all duration-300 group h-full flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">

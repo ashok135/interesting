@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Sparkles, Compass, Target, ShieldCheck, HeartHandshake, Film, SlidersHorizontal } from 'lucide-react';
+import { User, Sparkles, Compass, Target, ShieldCheck, HeartHandshake, Film } from 'lucide-react';
 import { Reveal } from './Reveal';
 
 export const AboutSection: React.FC = () => {
@@ -74,43 +74,27 @@ export const AboutSection: React.FC = () => {
             </Reveal>
           </div>
 
-          {/* Right Column: 4 Core Pillars (Swipeable on Mobile, 2-Col Grid on Tablet/Desktop) */}
-          <div className="lg:col-span-6">
-            {/* Mobile swipe hint */}
-            <div className="sm:hidden flex items-center justify-between text-[11px] text-slate-600 bg-white border border-slate-200/80 rounded-xl px-3 py-1.5 mb-3">
-              <span className="font-semibold flex items-center gap-1.5">
-                <SlidersHorizontal size={12} className="text-indigo-600" />
-                <span>Swipe creative pillars</span>
-              </span>
-              <span className="text-[10px] text-indigo-700 font-bold">4 Pillars ◀ ▶</span>
-            </div>
-
-            <div className="flex sm:grid sm:grid-cols-2 gap-4 overflow-x-auto sm:overflow-x-visible snap-x snap-mandatory scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
-              {pillars.map((pillar, idx) => (
-                <div
-                  key={pillar.title}
-                  className="w-[75vw] sm:w-auto shrink-0 snap-center flex flex-col"
-                >
-                  <Reveal direction="up" delay={idx * 100}>
-                    <div className="bezel-outer h-full">
-                      <div className="bezel-inner p-5 bg-white space-y-3 h-full flex flex-col justify-between shadow-xs">
-                        <div>
-                          <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center mb-3 border border-slate-100">
-                            {pillar.icon}
-                          </div>
-                          <h3 className="font-display font-bold text-base text-slate-900">
-                            {pillar.title}
-                          </h3>
-                        </div>
-                        <p className="text-xs text-slate-500 leading-relaxed">
-                          {pillar.desc}
-                        </p>
+          {/* Right Column: 4 Core Pillars (Standard Responsive Grid) */}
+          <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {pillars.map((pillar, idx) => (
+              <Reveal key={pillar.title} direction="up" delay={idx * 100}>
+                <div className="bezel-outer h-full">
+                  <div className="bezel-inner p-5 bg-white space-y-3 h-full flex flex-col justify-between shadow-xs">
+                    <div>
+                      <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center mb-3 border border-slate-100">
+                        {pillar.icon}
                       </div>
+                      <h3 className="font-display font-bold text-base text-slate-900">
+                        {pillar.title}
+                      </h3>
                     </div>
-                  </Reveal>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      {pillar.desc}
+                    </p>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </div>

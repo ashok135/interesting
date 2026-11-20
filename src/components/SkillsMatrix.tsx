@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Cpu, Film, Sparkles, Box, Palette, Languages, Terminal, Layers, SlidersHorizontal } from 'lucide-react';
+import { Cpu, Film, Sparkles, Box, Palette, Languages, Terminal, Layers } from 'lucide-react';
 import { PORTFOLIO_DATA } from '../data/portfolioData';
 import { Reveal } from './Reveal';
 
@@ -29,7 +29,7 @@ export const SkillsMatrix: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <Reveal direction="up">
-          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-3">
+          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 space-y-3">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 shadow-xs">
               <Cpu size={13} className="text-indigo-600" />
               <span>Technical &amp; Creative Arsenal</span>
@@ -44,14 +44,14 @@ export const SkillsMatrix: React.FC = () => {
           </div>
         </Reveal>
 
-        {/* 1. Category Switcher Tabs - Horizontally scrollable on mobile */}
+        {/* 1. Category Switcher Tabs - Flex-wrap centered, no clipping */}
         <Reveal direction="up" delay={100}>
-          <div className="flex items-center justify-start sm:justify-center gap-2 mb-8 overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 mb-10 max-w-4xl mx-auto">
             {skillCategories.map((cat, idx) => (
               <button
                 key={cat.title}
                 onClick={() => setSelectedCategory(idx)}
-                className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold transition-all shadow-2xs ${
                   selectedCategory === idx
                     ? 'bg-slate-900 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/80'
@@ -125,107 +125,92 @@ export const SkillsMatrix: React.FC = () => {
           </div>
         </Reveal>
 
-        {/* Mobile Swipe Hint for Bento Cards */}
-        <div className="md:hidden flex items-center justify-between text-[11px] text-slate-600 bg-slate-100 border border-slate-200/80 rounded-xl px-3 py-1.5 mb-3.5">
-          <span className="font-semibold flex items-center gap-1.5">
-            <SlidersHorizontal size={12} className="text-indigo-600" />
-            <span>Swipe accreditations &amp; tools</span>
-          </span>
-          <span className="text-[10px] text-indigo-700 font-bold">3 Cards ◀ ▶</span>
-        </div>
-
-        {/* 3. Bottom Bento Cards: Languages & Special Accreditations (Swipeable on Mobile) */}
-        <div className="flex md:grid md:grid-cols-3 gap-4 sm:gap-6 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory scrollbar-none -mx-4 px-4 md:mx-0 md:px-0 pb-3">
+        {/* 3. Bottom Bento Cards: Languages & Special Accreditations (Standard Responsive Grid) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
           {/* Card 1: 5 Indian Languages Fluent */}
-          <div className="w-[82vw] sm:w-[320px] md:w-auto shrink-0 snap-center flex flex-col">
-            <Reveal direction="up" delay={200}>
-              <div className="bezel-outer h-full">
-                <div className="bezel-inner p-5 sm:p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4">
-                  <div>
-                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
-                      <Languages size={18} />
-                    </div>
-                    <h4 className="font-display font-bold text-base text-slate-900">
-                      Multilingual Fluency
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Seamless collaboration with pan-India production crews and directors:
-                    </p>
+          <Reveal direction="up" delay={200}>
+            <div className="bezel-outer h-full">
+              <div className="bezel-inner p-5 sm:p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4 shadow-xs">
+                <div>
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+                    <Languages size={18} />
                   </div>
+                  <h4 className="font-display font-bold text-base text-slate-900">
+                    Multilingual Fluency
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Seamless collaboration with pan-India production crews and directors:
+                  </p>
+                </div>
 
-                  <div className="flex flex-wrap gap-1.5 pt-2">
-                    {personal.languages.map((lang) => (
-                      <span
-                        key={lang}
-                        className="px-2.5 py-1 rounded-full text-xs font-bold bg-white text-emerald-800 border border-emerald-200 shadow-xs"
-                      >
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {personal.languages.map((lang) => (
+                    <span
+                      key={lang}
+                      className="px-2.5 py-1 rounded-full text-xs font-bold bg-white text-emerald-800 border border-emerald-200 shadow-xs"
+                    >
+                      {lang}
+                    </span>
+                  ))}
                 </div>
               </div>
-            </Reveal>
-          </div>
+            </div>
+          </Reveal>
 
           {/* Card 2: Software Suite Taxonomy */}
-          <div className="w-[82vw] sm:w-[320px] md:w-auto shrink-0 snap-center flex flex-col">
-            <Reveal direction="up" delay={250}>
-              <div className="bezel-outer h-full">
-                <div className="bezel-inner p-5 sm:p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4">
-                  <div>
-                    <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3">
-                      <Terminal size={18} />
-                    </div>
-                    <h4 className="font-display font-bold text-base text-slate-900">
-                      Core Software Suites
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Standard industry editing and compositing suites:
-                    </p>
+          <Reveal direction="up" delay={250}>
+            <div className="bezel-outer h-full">
+              <div className="bezel-inner p-5 sm:p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4 shadow-xs">
+                <div>
+                  <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3">
+                    <Terminal size={18} />
                   </div>
+                  <h4 className="font-display font-bold text-base text-slate-900">
+                    Core Software Suites
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Standard industry editing and compositing suites:
+                  </p>
+                </div>
 
-                  <div className="flex flex-wrap gap-1.5 pt-2">
-                    {['Premiere Pro', 'After Effects', 'Photoshop', 'MAYA', 'Canva', 'Runway Gen-3', 'Midjourney', 'ElevenLabs'].map((soft) => (
-                      <span
-                        key={soft}
-                        className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white text-slate-700 border border-slate-200 shadow-xs"
-                      >
-                        {soft}
-                      </span>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {['Premiere Pro', 'After Effects', 'Photoshop', 'MAYA', 'Canva', 'Runway Gen-3', 'Midjourney', 'ElevenLabs'].map((soft) => (
+                    <span
+                      key={soft}
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white text-slate-700 border border-slate-200 shadow-xs"
+                    >
+                      {soft}
+                    </span>
+                  ))}
                 </div>
               </div>
-            </Reveal>
-          </div>
+            </div>
+          </Reveal>
 
           {/* Card 3: Engineering Discipline & Textbook Publication */}
-          <div className="w-[82vw] sm:w-[320px] md:w-auto shrink-0 snap-center flex flex-col">
-            <Reveal direction="up" delay={300}>
-              <div className="bezel-outer h-full">
-                <div className="bezel-inner p-5 sm:p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4">
-                  <div>
-                    <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
-                      <Layers size={18} />
-                    </div>
-                    <h4 className="font-display font-bold text-base text-slate-900">
-                      Technical CAD &amp; Author
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Co-authored &amp; published a Karnataka state textbook on Electrical &amp; Electronics (E&amp;E) for 11th standard students.
-                    </p>
+          <Reveal direction="up" delay={300}>
+            <div className="bezel-outer h-full">
+              <div className="bezel-inner p-5 sm:p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4 shadow-xs">
+                <div>
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
+                    <Layers size={18} />
                   </div>
+                  <h4 className="font-display font-bold text-base text-slate-900">
+                    Technical CAD &amp; Author
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Co-authored &amp; published a Karnataka state textbook on Electrical &amp; Electronics (E&amp;E) for 11th standard students.
+                  </p>
+                </div>
 
-                  <div className="pt-2">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-200 shadow-xs">
-                      Published State Author (2013)
-                    </span>
-                  </div>
+                <div className="pt-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-200 shadow-xs">
+                    Published State Author (2013)
+                  </span>
                 </div>
               </div>
-            </Reveal>
-          </div>
+            </div>
+          </Reveal>
         </div>
       </div>
     </section>
