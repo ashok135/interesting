@@ -48,6 +48,15 @@ h1, h2, h3, h4, .font-display {
   background: #94A3B8;
 }
 
+/* Hide scrollbar for mobile carousels while preserving touch swiping */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Double-bezel concentric curves */
 .bezel-outer {
   background: #F1F5F9;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Sparkles, Compass, Target, ShieldCheck, HeartHandshake, Film } from 'lucide-react';
+import { User, Sparkles, Compass, Target, ShieldCheck, HeartHandshake, Film, SlidersHorizontal } from 'lucide-react';
 import { Reveal } from './Reveal';
 
 export const AboutSection: React.FC = () => {
@@ -27,11 +27,11 @@ export const AboutSection: React.FC = () => {
   ];
 
   return (
-    <section id="about" className="py-20 md:py-28 bg-slate-50 border-t border-slate-200/80 relative">
+    <section id="about" className="py-14 sm:py-20 md:py-28 bg-slate-50 border-t border-slate-200/80 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Artistic Statement (6 cols) */}
-          <div className="lg:col-span-6 space-y-6">
+          <div className="lg:col-span-6 space-y-4 sm:space-y-6">
             <Reveal direction="up">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-xs">
                 <User size={13} className="text-indigo-600" />
@@ -40,13 +40,13 @@ export const AboutSection: React.FC = () => {
             </Reveal>
 
             <Reveal direction="up" delay={100}>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 font-display">
+              <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 font-display">
                 Where Engineering Rigor Meets Cinematic Artistry.
               </h2>
             </Reveal>
 
             <Reveal direction="up" delay={200}>
-              <div className="space-y-4 text-slate-600 text-sm sm:text-base leading-relaxed">
+              <div className="space-y-3.5 text-slate-600 text-xs sm:text-base leading-relaxed">
                 <p>
                   My journey began with a Diploma in Electrical &amp; Electronics Engineering and drafting technical textbooks. This unique foundation gave me an obsessive eye for geometry, spatial precision, and systemic workflow optimization.
                 </p>
@@ -60,41 +60,57 @@ export const AboutSection: React.FC = () => {
             </Reveal>
 
             <Reveal direction="up" delay={300}>
-              <div className="pt-2 flex flex-wrap items-center gap-4">
+              <div className="pt-2 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-xs">
-                  <ShieldCheck size={16} className="text-emerald-600" />
+                  <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
                   <span>100% On-Time Studio Delivery</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-xs">
-                  <HeartHandshake size={16} className="text-indigo-600" />
+                  <HeartHandshake size={16} className="text-indigo-600 shrink-0" />
                   <span>Collaborative &amp; Director-Friendly</span>
                 </div>
               </div>
             </Reveal>
           </div>
 
-          {/* Right Column: 4 Core Pillars Bento Grid (6 cols) */}
-          <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {pillars.map((pillar, idx) => (
-              <Reveal key={pillar.title} direction="up" delay={idx * 100}>
-                <div className="bezel-outer h-full">
-                  <div className="bezel-inner p-5 bg-white space-y-3 h-full flex flex-col justify-between">
-                    <div>
-                      <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center mb-3 border border-slate-100">
-                        {pillar.icon}
+          {/* Right Column: 4 Core Pillars (Swipeable on Mobile, 2-Col Grid on Tablet/Desktop) */}
+          <div className="lg:col-span-6">
+            {/* Mobile swipe hint */}
+            <div className="sm:hidden flex items-center justify-between text-[11px] text-slate-600 bg-white border border-slate-200/80 rounded-xl px-3 py-1.5 mb-3">
+              <span className="font-semibold flex items-center gap-1.5">
+                <SlidersHorizontal size={12} className="text-indigo-600" />
+                <span>Swipe creative pillars</span>
+              </span>
+              <span className="text-[10px] text-indigo-700 font-bold">4 Pillars ◀ ▶</span>
+            </div>
+
+            <div className="flex sm:grid sm:grid-cols-2 gap-4 overflow-x-auto sm:overflow-x-visible snap-x snap-mandatory scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
+              {pillars.map((pillar, idx) => (
+                <div
+                  key={pillar.title}
+                  className="w-[75vw] sm:w-auto shrink-0 snap-center flex flex-col"
+                >
+                  <Reveal direction="up" delay={idx * 100}>
+                    <div className="bezel-outer h-full">
+                      <div className="bezel-inner p-5 bg-white space-y-3 h-full flex flex-col justify-between shadow-xs">
+                        <div>
+                          <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center mb-3 border border-slate-100">
+                            {pillar.icon}
+                          </div>
+                          <h3 className="font-display font-bold text-base text-slate-900">
+                            {pillar.title}
+                          </h3>
+                        </div>
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                          {pillar.desc}
+                        </p>
                       </div>
-                      <h3 className="font-display font-bold text-base text-slate-900">
-                        {pillar.title}
-                      </h3>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      {pillar.desc}
-                    </p>
-                  </div>
+                  </Reveal>
                 </div>
-              </Reveal>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

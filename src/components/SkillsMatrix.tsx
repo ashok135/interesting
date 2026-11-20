@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Cpu, Film, Sparkles, Box, Palette, Languages, Terminal, Layers } from 'lucide-react';
+import { Cpu, Film, Sparkles, Box, Palette, Languages, Terminal, Layers, SlidersHorizontal } from 'lucide-react';
 import { PORTFOLIO_DATA } from '../data/portfolioData';
 import { Reveal } from './Reveal';
 
@@ -25,33 +25,33 @@ export const SkillsMatrix: React.FC = () => {
   };
 
   return (
-    <section id="skills" className="py-20 md:py-28 bg-white border-t border-slate-200/80 relative">
+    <section id="skills" className="py-14 sm:py-20 md:py-28 bg-white border-t border-slate-200/80 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <Reveal direction="up">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-3">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 shadow-xs">
               <Cpu size={13} className="text-indigo-600" />
               <span>Technical &amp; Creative Arsenal</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 font-display">
+            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 font-display">
               Mastered Tools. <br />
               Hybrid AI &amp; VFX Pipelines.
             </h2>
-            <p className="text-sm sm:text-base text-slate-600">
+            <p className="text-xs sm:text-base text-slate-600">
               Fusing traditional studio discipline (Premiere, Maya, After Effects) with next-generation generative AI to deliver faster, richer visual narratives.
             </p>
           </div>
         </Reveal>
 
-        {/* 1. Category Switcher Tabs */}
+        {/* 1. Category Switcher Tabs - Horizontally scrollable on mobile */}
         <Reveal direction="up" delay={100}>
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+          <div className="flex items-center justify-start sm:justify-center gap-2 mb-8 overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
             {skillCategories.map((cat, idx) => (
               <button
                 key={cat.title}
                 onClick={() => setSelectedCategory(idx)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold transition-all ${
+                className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                   selectedCategory === idx
                     ? 'bg-slate-900 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/80'
@@ -66,25 +66,25 @@ export const SkillsMatrix: React.FC = () => {
 
         {/* 2. Active Category Skills Grid */}
         <Reveal direction="up" delay={150}>
-          <div className="bezel-outer mb-12 shadow-md">
-            <div className="bezel-inner p-6 sm:p-8 bg-slate-50/50">
-              <div className="flex items-center justify-between pb-6 mb-6 border-b border-slate-200/70">
+          <div className="bezel-outer mb-10 sm:mb-12 shadow-md">
+            <div className="bezel-inner p-5 sm:p-8 bg-slate-50/50">
+              <div className="flex items-center justify-between pb-5 sm:pb-6 mb-5 sm:mb-6 border-b border-slate-200/70">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-xs border border-slate-200">
+                  <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-xs border border-slate-200 shrink-0">
                     {getCategoryIcon(skillCategories[selectedCategory].iconName)}
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-lg sm:text-xl text-slate-900">
+                    <h3 className="font-display font-bold text-base sm:text-xl text-slate-900">
                       {skillCategories[selectedCategory].title}
                     </h3>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-[11px] sm:text-xs text-slate-500">
                       Production-grade proficiency &amp; real project implementation
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {skillCategories[selectedCategory].skills.map((skill) => (
                   <div
                     key={skill.name}
@@ -125,92 +125,107 @@ export const SkillsMatrix: React.FC = () => {
           </div>
         </Reveal>
 
-        {/* 3. Bottom Bento Cards: Languages & Special Accreditations */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Reveal direction="up" delay={200}>
-            {/* Card 1: 5 Indian Languages Fluent */}
-            <div className="bezel-outer h-full">
-              <div className="bezel-inner p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4">
-                <div>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
-                    <Languages size={18} />
-                  </div>
-                  <h4 className="font-display font-bold text-base text-slate-900">
-                    Multilingual Fluency
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Seamless collaboration with pan-India production crews and directors:
-                  </p>
-                </div>
+        {/* Mobile Swipe Hint for Bento Cards */}
+        <div className="md:hidden flex items-center justify-between text-[11px] text-slate-600 bg-slate-100 border border-slate-200/80 rounded-xl px-3 py-1.5 mb-3.5">
+          <span className="font-semibold flex items-center gap-1.5">
+            <SlidersHorizontal size={12} className="text-indigo-600" />
+            <span>Swipe accreditations &amp; tools</span>
+          </span>
+          <span className="text-[10px] text-indigo-700 font-bold">3 Cards ◀ ▶</span>
+        </div>
 
-                <div className="flex flex-wrap gap-1.5 pt-2">
-                  {personal.languages.map((lang) => (
-                    <span
-                      key={lang}
-                      className="px-2.5 py-1 rounded-full text-xs font-bold bg-white text-emerald-800 border border-emerald-200 shadow-xs"
-                    >
-                      {lang}
+        {/* 3. Bottom Bento Cards: Languages & Special Accreditations (Swipeable on Mobile) */}
+        <div className="flex md:grid md:grid-cols-3 gap-4 sm:gap-6 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory scrollbar-none -mx-4 px-4 md:mx-0 md:px-0 pb-3">
+          {/* Card 1: 5 Indian Languages Fluent */}
+          <div className="w-[82vw] sm:w-[320px] md:w-auto shrink-0 snap-center flex flex-col">
+            <Reveal direction="up" delay={200}>
+              <div className="bezel-outer h-full">
+                <div className="bezel-inner p-5 sm:p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4">
+                  <div>
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+                      <Languages size={18} />
+                    </div>
+                    <h4 className="font-display font-bold text-base text-slate-900">
+                      Multilingual Fluency
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Seamless collaboration with pan-India production crews and directors:
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {personal.languages.map((lang) => (
+                      <span
+                        key={lang}
+                        className="px-2.5 py-1 rounded-full text-xs font-bold bg-white text-emerald-800 border border-emerald-200 shadow-xs"
+                      >
+                        {lang}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* Card 2: Software Suite Taxonomy */}
+          <div className="w-[82vw] sm:w-[320px] md:w-auto shrink-0 snap-center flex flex-col">
+            <Reveal direction="up" delay={250}>
+              <div className="bezel-outer h-full">
+                <div className="bezel-inner p-5 sm:p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4">
+                  <div>
+                    <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3">
+                      <Terminal size={18} />
+                    </div>
+                    <h4 className="font-display font-bold text-base text-slate-900">
+                      Core Software Suites
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Standard industry editing and compositing suites:
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {['Premiere Pro', 'After Effects', 'Photoshop', 'MAYA', 'Canva', 'Runway Gen-3', 'Midjourney', 'ElevenLabs'].map((soft) => (
+                      <span
+                        key={soft}
+                        className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white text-slate-700 border border-slate-200 shadow-xs"
+                      >
+                        {soft}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* Card 3: Engineering Discipline & Textbook Publication */}
+          <div className="w-[82vw] sm:w-[320px] md:w-auto shrink-0 snap-center flex flex-col">
+            <Reveal direction="up" delay={300}>
+              <div className="bezel-outer h-full">
+                <div className="bezel-inner p-5 sm:p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4">
+                  <div>
+                    <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
+                      <Layers size={18} />
+                    </div>
+                    <h4 className="font-display font-bold text-base text-slate-900">
+                      Technical CAD &amp; Author
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Co-authored &amp; published a Karnataka state textbook on Electrical &amp; Electronics (E&amp;E) for 11th standard students.
+                    </p>
+                  </div>
+
+                  <div className="pt-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-200 shadow-xs">
+                      Published State Author (2013)
                     </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Reveal>
-
-          <Reveal direction="up" delay={250}>
-            {/* Card 2: Software Suite Taxonomy */}
-            <div className="bezel-outer h-full">
-              <div className="bezel-inner p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4">
-                <div>
-                  <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3">
-                    <Terminal size={18} />
                   </div>
-                  <h4 className="font-display font-bold text-base text-slate-900">
-                    Core Software Suites
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Standard industry editing and compositing suites:
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 pt-2">
-                  {['Premiere Pro', 'After Effects', 'Photoshop', 'MAYA', 'Canva', 'Runway Gen-3', 'Midjourney', 'ElevenLabs'].map((soft) => (
-                    <span
-                      key={soft}
-                      className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white text-slate-700 border border-slate-200 shadow-xs"
-                    >
-                      {soft}
-                    </span>
-                  ))}
                 </div>
               </div>
-            </div>
-          </Reveal>
-
-          <Reveal direction="up" delay={300}>
-            {/* Card 3: Engineering Discipline & Textbook Publication */}
-            <div className="bezel-outer h-full">
-              <div className="bezel-inner p-6 bg-slate-50 flex flex-col justify-between h-full space-y-4">
-                <div>
-                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
-                    <Layers size={18} />
-                  </div>
-                  <h4 className="font-display font-bold text-base text-slate-900">
-                    Technical CAD &amp; Author
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Co-authored &amp; published a Karnataka state textbook on Electrical &amp; Electronics (E&amp;E) for 11th standard students.
-                  </p>
-                </div>
-
-                <div className="pt-2">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-200 shadow-xs">
-                    Published State Author (2013)
-                  </span>
-                </div>
-              </div>
-            </div>
-          </Reveal>
+            </Reveal>
+          </div>
         </div>
       </div>
     </section>
