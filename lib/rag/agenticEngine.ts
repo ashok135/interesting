@@ -156,8 +156,11 @@ interface PredictiveIntent {
 function detectPredictiveIntent(query: string): PredictiveIntent {
   const q = query.toLowerCase().trim();
 
-  // Pure greeting
-  if (/^(hi|hello|hey|good\s*(morning|evening|afternoon)|greetings)\b/i.test(q) && q.split(' ').length <= 3) {
+  // Pure greeting / small talk
+  if (
+    /^(hi|hello|hey|good\s*(morning|evening|afternoon)|greetings|how\s*are\s*you|how\s*r\s*u|who\s*are\s*you|what('s|\s*is)\s*up)\b/i.test(q) &&
+    q.split(' ').length <= 4
+  ) {
     return { type: 'greeting' };
   }
 
