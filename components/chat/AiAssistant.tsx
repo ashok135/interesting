@@ -189,7 +189,9 @@ export default function AiAssistant() {
     };
   }, []);
 
+  const messagesListRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastActiveUserMsgIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { addItem, openDrawer, itemCount } = useCartContext();
@@ -245,8 +247,36 @@ export default function AiAssistant() {
     setShowRemoveZone(false);
   };
 
+  /**
+   * Intelligently scrolls to a specific message so newly generated text and
+   * the user's question appear right at the top of the viewport (never pushed out by cards below).
+   */
+  const scrollToMessage = (msgId: string, behavior: ScrollBehavior = 'smooth') => {
+    if (!messagesListRef.current || typeof window === 'undefined') return;
+    const container = messagesListRef.current;
+    const target = document.getElementById(`msg-${msgId}`);
+    if (target) {
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const targetRelativeTop = targetRect.top - containerRect.top + container.scrollTop;
+      container.scrollTo({
+        top: Math.max(0, targetRelativeTop - 12),
+        behavior,
+      });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }
+  };
+
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
+    if (messagesListRef.current) {
+      messagesListRef.current.scrollTo({
+        top: messagesListRef.current.scrollHeight,
+        behavior,
+      });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }
   };
 
   // Mobile virtual keyboard handling and background scroll lock
@@ -268,9 +298,13 @@ export default function AiAssistant() {
       setIsKeyboardOpen(keyboardActive);
       setVisualHeight(vh);
       document.documentElement.style.setProperty('--chat-vh', `${vh}px`);
-      // Keep messages visible right above the virtual keyboard
+      // Keep active message visible right above the virtual keyboard
       setTimeout(() => {
-        scrollToBottom('smooth');
+        if (lastActiveUserMsgIdRef.current) {
+          scrollToMessage(lastActiveUserMsgIdRef.current, 'smooth');
+        } else {
+          scrollToBottom('smooth');
+        }
       }, 80);
     };
 
@@ -292,7 +326,14 @@ export default function AiAssistant() {
 
   useEffect(() => {
     if (isOpen) {
-      scrollToBottom('auto');
+      if (messages.length === 0) {
+        if (messagesListRef.current) messagesListRef.current.scrollTop = 0;
+      } else if (lastActiveUserMsgIdRef.current) {
+        scrollToMessage(lastActiveUserMsgIdRef.current, 'auto');
+      } else {
+        scrollToBottom('auto');
+      }
+
       // On mobile devices, DO NOT auto-focus input so the keyboard doesn't abruptly pop up
       // and hide the welcome text and starter prompt chips! Only auto-focus on desktop keyboards.
       const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
@@ -301,12 +342,6 @@ export default function AiAssistant() {
       }
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      scrollToBottom('smooth');
-    }
-  }, [messages, isLoading, isOpen]);
 
   const handleSendMessage = async (textToSend?: string, orderOverride?: OrderContext | null) => {
     const text = (textToSend || input).trim();
@@ -317,10 +352,16 @@ export default function AiAssistant() {
       role: 'user',
       content: text,
     };
+    lastActiveUserMsgIdRef.current = userMsg.id;
 
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
+
+    // Smoothly scroll to the newly sent user message so typing indicator is visible right below
+    setTimeout(() => {
+      scrollToMessage(userMsg.id, 'smooth');
+    }, 40);
 
     const activeOrder = orderOverride !== undefined ? orderOverride : currentOrderContext;
 
@@ -353,19 +394,29 @@ export default function AiAssistant() {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+      setIsLoading(false);
+
+      // Intelligently scroll to the user message so the newly generated text is front-and-center
+      // and NOT scrolled past by product cards!
+      setTimeout(() => {
+        scrollToMessage(userMsg.id, 'smooth');
+      }, 70);
     } catch (err) {
       console.error('Chat error:', err);
+      const errId = `err-${Date.now()}`;
       setMessages((prev) => [
         ...prev,
         {
-          id: `err-${Date.now()}`,
+          id: errId,
           role: 'assistant',
           content:
             'I had a temporary hiccup retrieving recommendations. Feel free to ask again or explore our catalog directly!',
         },
       ]);
-    } finally {
       setIsLoading(false);
+      setTimeout(() => {
+        scrollToMessage(userMsg.id, 'smooth');
+      }, 70);
     }
   };
 
@@ -567,7 +618,7 @@ export default function AiAssistant() {
           )}
 
           {/* Messages Body */}
-          <div className={styles.messagesList}>
+          <div className={styles.messagesList} ref={messagesListRef}>
             {/* Welcome Greeting */}
             <div className={styles.welcomeCard}>
               <p style={{ margin: '0 0 0.5rem' }}>
@@ -591,54 +642,17 @@ export default function AiAssistant() {
             {messages.map((msg) => (
               <React.Fragment key={msg.id}>
                 {msg.role === 'user' ? (
-                  <div className={styles.userRow}>
+                  <div id={`msg-${msg.id}`} className={styles.userRow}>
                     <div className={styles.userBubble}>{msg.content}</div>
                   </div>
                 ) : (
-                  <div className={styles.assistantRow}>
+                  <div id={`msg-${msg.id}`} className={styles.assistantRow}>
+                    {/* 1. Primary AI Text Response */}
                     <div className={styles.assistantBubble}>
                       {renderFormattedText(msg.content, () => setIsOpen(false))}
                     </div>
 
-                    {/* Quick Action Suggestion Cards / Pills */}
-                    {msg.suggestions && msg.suggestions.length > 0 && (
-                      <div className={styles.actionCardsGrid}>
-                        {msg.suggestions.map((actionText) => (
-                          <button
-                            key={actionText}
-                            type="button"
-                            onClick={() => handleSuggestionClick(actionText)}
-                            className={styles.actionCardBtn}
-                          >
-                            {actionText}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Escalate to WhatsApp if order query isn't resolved */}
-                    {currentOrderContext && (
-                      <div className={styles.chatEscalateCard}>
-                        <div className={styles.chatEscalateContent}>
-                          <span className={styles.chatEscalateTitle}>Still need assistance?</span>
-                          <span className={styles.chatEscalateDesc}>
-                            If our automated concierge didn&apos;t fully answer your question, connect directly with our support team on WhatsApp.
-                          </span>
-                        </div>
-                        <a
-                          href={`https://wa.me/919994847167?text=${encodeURIComponent(
-                            `Hi Interesting Support, I need human assistance regarding Order #${currentOrderContext.id} (${currentOrderContext.status}, ${currentOrderContext.total}).`
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.chatEscalateWhatsAppBtn}
-                        >
-                          <PhoneCall size={13} /> Chat on WhatsApp
-                        </a>
-                      </div>
-                    )}
-
-                    {/* Rich Product Recommendation Cards */}
+                    {/* 2. Direct Matching Product Recommendation Cards */}
                     {msg.products && msg.products.length > 0 && (
                       <div className={styles.productCardsStrip}>
                         {msg.products.map((p) => {
@@ -690,6 +704,44 @@ export default function AiAssistant() {
                         })}
                       </div>
                     )}
+
+                    {/* 3. Escalate to WhatsApp if order query isn't resolved */}
+                    {currentOrderContext && (
+                      <div className={styles.chatEscalateCard}>
+                        <div className={styles.chatEscalateContent}>
+                          <span className={styles.chatEscalateTitle}>Still need assistance?</span>
+                          <span className={styles.chatEscalateDesc}>
+                            If our automated concierge didn&apos;t fully answer your question, connect directly with our support team on WhatsApp.
+                          </span>
+                        </div>
+                        <a
+                          href={`https://wa.me/919994847167?text=${encodeURIComponent(
+                            `Hi Interesting Support, I need human assistance regarding Order #${currentOrderContext.id} (${currentOrderContext.status}, ${currentOrderContext.total}).`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.chatEscalateWhatsAppBtn}
+                        >
+                          <PhoneCall size={13} /> Chat on WhatsApp
+                        </a>
+                      </div>
+                    )}
+
+                    {/* 4. Quick Action Suggestion Cards / Pills (Placed below products for next questions) */}
+                    {msg.suggestions && msg.suggestions.length > 0 && (
+                      <div className={styles.actionCardsGrid}>
+                        {msg.suggestions.map((actionText) => (
+                          <button
+                            key={actionText}
+                            type="button"
+                            onClick={() => handleSuggestionClick(actionText)}
+                            className={styles.actionCardBtn}
+                          >
+                            {actionText}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </React.Fragment>
@@ -723,7 +775,13 @@ export default function AiAssistant() {
                 onChange={(e) => setInput(e.target.value)}
                 onFocus={() => {
                   setIsKeyboardOpen(true);
-                  setTimeout(() => scrollToBottom('smooth'), 120);
+                  setTimeout(() => {
+                    if (lastActiveUserMsgIdRef.current) {
+                      scrollToMessage(lastActiveUserMsgIdRef.current, 'smooth');
+                    } else {
+                      scrollToBottom('smooth');
+                    }
+                  }, 120);
                 }}
                 onBlur={() => {
                   setTimeout(() => {
