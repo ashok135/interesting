@@ -1,235 +1,101 @@
-# INTERSTING Store — Simple Project & WooCommerce Architecture Guide
+<p align="center">
+  <img src="public/images/logo.png" alt="INTERSTING Logo" width="130" />
+</p>
 
-Welcome to the plain-English handbook for how the **INTERSTING** online store works. Whether you are managing products, deploying updates, or explaining the system to someone else, this guide shows **every piece of technology you are using**, **how WooCommerce connects to your website**, and **what happens behind the scenes**.
+# 📘 INTERSTING — Store Owner Study Guide
 
----
-
-## 1. The Big Idea: What Is "Headless WooCommerce"?
-
-Think of a normal shop vs. a modern restaurant setup:
-- **WordPress + WooCommerce (The Kitchen & Warehouse):** This is your private back office (`intersting.duckdns.org/wp-admin`). You add products, change prices, upload photos, update stock counts, create coupons, and manage customer orders here. Customers never see the slow WordPress theme.
-- **Next.js + React (The Fast Customer Showroom):** This is the website your shoppers actually open on their phone or laptop. It looks super clean, loads fast, works like a mobile app (PWA), lets users pay with Razorpay/UPI/COD, and chats with your AI assistant (**Chappie**).
-- **The Bridge Between Them (Next.js API Layer):** Whenever a customer views products, logs in, or places an order, your Next.js server talks privately to WooCommerce behind the scenes—so your secret passwords and keys **never reach the customer's browser**.
+> 💡 **Welcome!** This handbook is written like a simple Notion study guide. There is **no code** here—only clear, everyday explanations and visual diagrams so anyone can understand how the **INTERSTING** store works from start to finish.
 
 ---
 
-## Where Everything Is Hosted
+## 1. The Big Idea: Two Halves Working Together
+
+Think of your online store like a modern restaurant with a **Showroom** in the front and a **Kitchen** in the back:
+
+- **Your Back Office (WordPress + WooCommerce):** This is your private kitchen and warehouse. Here, you add new dry fruits, change prices, upload product photos, track stock, create discount coupons, and manage customer orders.
+- **Your Customer Website (The Fast Storefront):** This is the clean, modern showroom your customers open on their phone or laptop. It loads fast, works like an installable phone app, accepts online payments, and includes your AI helper **Chappie**.
+- **The Private Bridge Between Them:** Whenever a shopper views products, signs in, or pays for an order, a private server bridge talks to WooCommerce behind the scenes—so your store passwords and payment secrets never reach the customer's screen.
+
+---
+
+## 2. Where Everything Is Hosted
+
+> 📌 **Study Note:** Every part of the store has its own home on the internet. Knowing where each piece lives makes it easy to manage, update, or troubleshoot.
 
 ![INTERSTING Where Everything Is Hosted](docs/hosting-architecture.png)
 
-- **Storefront Website & Server Bridge:** Hosted on Vercel or a Node.js cloud server / VPS.
-- **WordPress + WooCommerce & Qdrant AI Memory:** Hosted on your server at `https://intersting.duckdns.org` (with Qdrant at `/qdrant`).
-- **Online Payments:** Handled by Razorpay Cloud (plus Direct Store UPI).
-- **Customer Sign-In:** Handled by Google Firebase Cloud (Google Sign-In & Phone OTP).
-- **Chappie AI Brain:** Powered by NVIDIA NIM Cloud.
-- **Order SMS Alerts:** Sent from your own Android phone SIM using the `httpSMS` app.
-- **GPS Address Autofill:** Powered by OpenStreetMap Nominatim.
+### Quick Home Map
+
+- **Customer Website & Private Server:** Hosted on **Vercel** (or a Node.js cloud server / VPS). This serves the fast shopping pages and runs all private price, login, and invoice checks.
+- **Store Back Office (WordPress + WooCommerce):** Hosted on your server at **intersting.duckdns.org**. This is where your master catalog, stock, coupons, and orders live.
+- **Chappie AI Search Memory (Qdrant):** Hosted on your same server under the **Qdrant** service. It remembers your product details and store policies so Chappie can answer quickly.
+- **Online Payments (Razorpay):** Hosted on **Razorpay Cloud**. Handles UPI apps (Google Pay, PhonePe, Paytm, CRED), debit/credit cards, and net banking.
+- **Customer Sign-In (Google Firebase):** Hosted on **Google Firebase Cloud**. Powers quick Google Sign-In and mobile phone OTP login.
+- **Chappie AI Brain (NVIDIA NIM):** Hosted on **NVIDIA's AI Cloud**. Generates friendly, natural answers to shopper questions.
+- **Order SMS Alerts (httpSMS):** Runs on **your own Android phone** using your SIM card, sending order and delivery texts without expensive SMS gateway bills.
+- **One-Tap Address Fill (OpenStreetMap):** Uses **OpenStreetMap's free public lookup** to turn GPS coordinates into a street address, city, state, and PIN code.
 
 ---
 
-## 2. Overall Project Architecture (How Everything Connects)
+## 3. How the Whole Store Connects
+
+> 💡 **How to Read This Picture:** Start on the left (**Customer Browser / Mobile App**), follow the arrows into the middle (**Private Server Bridge**), and see how the right side (**Store Tools**) responds safely.
 
 ![INTERSTING Complete Project Architecture](docs/project-architecture.png)
 
-```mermaid
-flowchart TD
-    Shopper["Customer (Phone, Mobile App PWA, or Laptop)"] -->|"Browses Store & Checkout"| Showroom["Next.js 16 Storefront (React 19 UI)"]
-    Shopper -->|"Taps Use My Location"| Maps["OpenStreetMap GPS Lookup (Free)"]
-    Shopper -->|"Signs in with Google or Phone OTP"| Firebase["Firebase Authentication"]
-    Shopper -->|"Completes UPI / Card Payment"| RzpModal["Razorpay Payment Popup"]
+### What Happens Behind the Scenes
 
-    Showroom -->|"Asks Server Safely (No Secrets in Browser)"| ServerAPI["Next.js Server Bridge (/api/*)"]
-
-    ServerAPI -->|"Products, Coupons, Customers & Orders"| Woo["WordPress + WooCommerce Store Engine"]
-    ServerAPI -->|"Verify Payment & Amount"| RzpServer["Razorpay Server API"]
-    ServerAPI -->|"Confirm User Login Token"| Identity["Google Identity Toolkit"]
-    ServerAPI -->|"Send Order & Shipping Alerts"| PhoneSMS["httpSMS (Your Android Phone Gateway)"]
-    ServerAPI -->|"Generate AI Chat Replies"| NvidiaAI["NVIDIA NIM AI (Chappie)"]
-    ServerAPI -->|"Search Store Rules & Policies"| Qdrant["Qdrant Search Memory (Vector DB)"]
-
-    RzpServer -->|"Backup Payment Alert (Webhook)"| ServerAPI
-    Woo -->|"Order Status & New Product Alerts (Webhooks)"| ServerAPI
-```
+1. **Customers never talk directly to your database.** Everything goes through the Private Server Bridge in the middle.
+2. **Prices and discounts are always verified.** Even if someone tries to change a price in their browser, the server ignores it and checks the real price directly from WooCommerce.
+3. **Every external tool has one clear job.** Razorpay handles money, Firebase handles quick login, NVIDIA + Qdrant power Chappie AI, and your Android phone sends SMS updates.
 
 ---
 
-## 3. WooCommerce Architecture (How WordPress Controls Your Site)
+## 4. How You Control Everything From WordPress
+
+> 📌 **Key Takeaway:** You never need to edit website code for daily store work. Your WordPress dashboard is the single boss of your business.
 
 ![INTERSTING WooCommerce Control Loop and Order Lifecycle](docs/woocommerce-architecture.png)
 
-Your storefront does **not** keep a separate copy of your catalog or order database. WordPress + WooCommerce is the **single boss** for your business data:
+### What Updates Automatically When You Make a Change
 
-```mermaid
-flowchart LR
-    subgraph Admin ["1. Your WordPress Admin Dashboard"]
-        WP_Prod["Products, Prices & Photos"]
-        WP_Cat["Categories & Featured Tags"]
-        WP_Stock["Stock Quantity & Sold Out Status"]
-        WP_Coupon["Discount Coupons & Rules"]
-        WP_Orders["Customer Orders & Tracking Status"]
-    end
-
-    subgraph Bridge ["2. Secure Server Bridge (Next.js API)"]
-        API_Read["Catalog & Coupon Reader"]
-        PriceCheck["Live Price & Stock Checker"]
-        OrderWrite["Order Creator & Updater"]
-        MediaProxy["Image Delivery Proxy (/api/media)"]
-        Webhooks["Webhook Listener (/api/webhooks/*)"]
-    end
-
-    subgraph LiveSite ["3. What Customers See on Your Website"]
-        UI_Shop["Home, Shop & Product Pages"]
-        UI_Cart["Cart & Promo Code Box"]
-        UI_Checkout["Checkout & Order Confirmation"]
-        UI_Account["My Orders & Tax Invoice PDF"]
-        UI_AI["Chappie AI & Customer SMS"]
-    end
-
-    WP_Prod --> API_Read
-    WP_Cat --> API_Read
-    WP_Prod -->|"/wp-content/uploads/*"| MediaProxy
-    API_Read --> UI_Shop
-    MediaProxy --> UI_Shop
-
-    WP_Coupon --> PriceCheck
-    WP_Stock --> PriceCheck
-    PriceCheck --> UI_Cart
-    PriceCheck --> UI_Checkout
-
-    UI_Checkout -->|"Verified Checkout"| OrderWrite
-    OrderWrite -->|"Saves Real Order"| WP_Orders
-    OrderWrite -->|"Immediate Receipt & PDF"| UI_Account
-
-    WP_Orders -->|"Status Changed (Shipped/Completed)"| Webhooks
-    WP_Prod -->|"Product Created or Updated"| Webhooks
-    Webhooks -->|"Sends Customer SMS & Updates AI Index"| UI_AI
-```
-
-### What happens automatically when you change something in WordPress:
-1. **Add or edit a product / sale price:** It appears automatically on `/shop` and `/product/[slug]`, and WooCommerce sends a webhook to `/api/webhooks/product` so Chappie AI learns about the new product.
-2. **Mark an item Out of Stock:** Checkout blocks anyone from buying it, and the storefront shows it as unavailable.
-3. **Create a coupon (minimum spend, expiry, free shipping, percent/flat off):** Our server pricing checker (`lib/payment/pricing.ts`) enforces every WooCommerce coupon rule automatically at checkout.
-4. **Update an order status (`Processing`, `Shipped`, `Completed`, `Cancelled`, `Refunded`):** WooCommerce notifies `/api/webhooks/woocommerce/orders`, which sends an automatic WhatsApp-style SMS update to the buyer via your Android phone (`httpSMS`).
+- **Add or edit a product or sale price:** It shows up on the website automatically, and Chappie AI learns about the new product right away.
+- **Mark an item Out of Stock:** The website shows it as unavailable and blocks anyone from checking out with it.
+- **Create a discount coupon:** Minimum spend rules, expiry dates, percentage discounts, and flat discounts are automatically enforced at checkout.
+- **Change an order status:** When you mark an order as Processing, Shipped, Completed, Cancelled, or Refunded, your Android phone automatically sends a clean SMS update to the customer.
 
 ---
 
-## 4. What Happens When a Customer Places an Order
+## 5. Step-by-Step: What Happens When a Customer Buys
 
-This diagram shows why payments and orders are rock-solid—even if a customer loses internet or closes their browser right after paying:
-
-```mermaid
-sequenceDiagram
-    participant C as "Customer"
-    participant Site as "Website & Server"
-    participant Woo as "WooCommerce"
-    participant RZP as "Razorpay"
-    participant SMS as "Android httpSMS"
-
-    C->>Site: "1. Taps Pay Now (Cart + Address + Coupon)"
-    Site->>Woo: "2. Checks real live product prices, stock & coupon rules"
-    Woo-->>Site: "3. Sends official amounts & stock confirmation"
-
-    alt "Pays Online via Razorpay (UPI / Card / Netbanking)"
-        Site->>RZP: "4a. Locks exact verified amount with Razorpay"
-        RZP-->>C: "4b. Opens Razorpay payment popup"
-        C->>RZP: "4c. Completes payment"
-        C->>Site: "4d. Sends payment proof back to server"
-        Site->>RZP: "4e. Double-checks with Razorpay that money was really captured"
-        Site->>Woo: "5. Creates Paid Processing Order in WooCommerce"
-        Note over RZP,Woo: "Safety Net: If browser closed early, Razorpay calls /api/webhooks/razorpay directly so no paid order is ever lost!"
-    else "Chooses Cash on Delivery (COD) or Direct UPI"
-        Site->>Woo: "5. Creates Order as Processing (COD) or On-Hold (Direct UPI)"
-    end
-
-    Site->>SMS: "6. Texts Customer Confirmation + Owner Alert"
-    Site-->>C: "7. Shows Order Number + Downloadable Tax Invoice PDF"
-```
+1. **Customer taps Pay Now:** They enter their address (or tap once for GPS autofill), apply a coupon if they have one, and choose how to pay.
+2. **Server double-checks everything:** The private server asks WooCommerce for the real prices, stock availability, coupon eligibility, and the ₹499 free-shipping rule.
+3. **Customer pays:**
+   - **Razorpay Online:** The payment popup opens for the exact verified amount. Once paid, the server double-checks with Razorpay that the money was truly captured, then saves the order in WooCommerce.
+   - **Direct Store UPI:** The customer pays your store UPI ID and enters their 12-digit transaction number. The order is saved as On-Hold for you to confirm.
+   - **Cash on Delivery:** The order is saved immediately as Processing so you can pack and ship it.
+4. **Backup safety net:** Even if a customer's internet disconnects right after paying on Razorpay, Razorpay sends a private confirmation signal directly to your server so the order is never lost.
+5. **SMS & PDF Invoice:** Your Android phone texts the customer an order confirmation, and the customer can immediately view and download their PDF tax bill.
 
 ---
 
-## 5. How Customer Login & Invoices Work Safely
+## 6. How Customer Accounts, Privacy & Chappie AI Work
 
-```mermaid
-flowchart TD
-    Login["Customer Signs In"] --> Method{"Which Login Method?"}
-    Method -->|"Google or Phone OTP"| FB["Firebase Login -> Server Checks Google Token"]
-    Method -->|"Email & Password"| WP["Server Checks WordPress Account Password"]
+> 🛡️ **Built-In Privacy:** Only the customer who placed an order—or someone holding the private checkout receipt link—can view full personal details or download the PDF tax bill.
 
-    FB --> Match["Finds or Creates Customer in WooCommerce"]
-    WP --> Match
-    Match --> Cookie["Gives Browser a Tamper-Proof Session Cookie (14 Days)"]
-
-    Cookie --> Access["Customer Opens /account or Downloads PDF Invoice"]
-    Guest["Guest Buyer After Checkout"] -->|"Uses One-Time Signed Receipt Link"| PDF["Official PDF Tax Invoice (pdf-lib)"]
-    Access -->|"Checks Order Matches Customer ID / Email"| PDF
-```
+- **Protected Login Sessions:** Whether a shopper signs in with Google, phone OTP, or email and password, their session is locked with a tamper-proof signature.
+- **Safe Guest Tracking:** Anyone checking an order without signing in only sees basic city, state, and delivery status—never phone numbers or street addresses.
+- **Chappie AI's 3-Step Cost Saver:**
+  1. **Instant Cache:** If someone asks a common question that was already answered in the last 10 minutes, Chappie replies instantly with zero AI cost.
+  2. **Smart Lookup:** For normal product or policy questions, Chappie reads live WooCommerce items and your policy memory, then makes one short AI call.
+  3. **Deep Search:** For multi-part questions, Chappie searches step by step so customers always get an accurate answer.
 
 ---
 
-## 6. How Your AI Shopping Assistant ("Chappie") Works
+## 7. Simple Launch Checklist for the Store Owner
 
-Chappie uses a **3-step speed & cost-saving design** so common questions don't waste AI credits:
+> ✅ **Before Going Live:** Make sure these three simple items are in place.
 
-```mermaid
-flowchart LR
-    Ask["Shopper Asks Chappie a Question"] --> Filter["Spam & Length Check (Rate Limit)"]
-    Filter --> Tier0{"Seen Same Question in Last 10 Mins?"}
-    Tier0 -->|"Yes (Instant & Zero Cost)"| Reply["Send Answer + Matching Product Cards"]
-    Tier0 -->|"No"| Pick{"How Complex Is Question?"}
-    Pick -->|"Normal Product or Policy Question"| Tier1["Search Live WooCommerce + Qdrant Policies -> 1 Short NVIDIA AI Call"]
-    Pick -->|"Complex Multi-Step Request"| Tier2["Chappie Searches Tools Step-by-Step + NVIDIA AI"]
-    Tier1 --> Reply
-    Tier2 --> Reply
-```
-
----
-
-## 7. Everything You Are Using (Complete Plain-English Tech Stack)
-
-| What You Are Using | Version / Tool | What It Actually Does for Your Store |
-| --- | --- | --- |
-| **Next.js (App Router + Turbopack)** | `16.3.4` | Powers all website pages AND acts as your secure private backend API (`app/api/*`). |
-| **React & React DOM** | `19.2.8` | Runs interactive shopping features like cart drawer, checkout steps, account tabs, and chat. |
-| **TypeScript** | `^5` | Catches spelling mistakes and data bugs before code goes live. |
-| **TanStack React Query** | `^5.102.8` | Keeps product lists smooth and avoids refetching data unnecessarily. |
-| **WordPress + WooCommerce REST API v3** | `intersting.duckdns.org` | Stores every product, category, image, stock count, coupon, customer, and order. |
-| **Razorpay** | `razorpay` `^2.9.8` | Accepts UPI apps (GPay/PhonePe/Paytm), Cards, and Netbanking, with backup webhook verification. |
-| **Direct UPI & Cash on Delivery** | Built into `/api/orders` | Lets buyers pay on delivery (`cod`) or scan your store UPI ID directly (`bacs`). |
-| **Firebase Authentication** | `firebase` `^13.2.0` | Gives customers fast Google Sign-In and Phone OTP login, verified server-side. |
-| **httpSMS** | Android SMS API | Turns your Android phone SIM into an automatic SMS notification sender for order confirmations and shipping updates. |
-| **NVIDIA NIM AI (`openai` SDK)** | `openai` `^7.57.0` | Powers Chappie's smart shopping answers (`nvidia/nemotron-3.5-bolt-e4b`) and search meaning (`nvidia/nemotron-3.5-embed-1b`). |
-| **Qdrant Vector Database** | Hosted at `/qdrant` | Stores searchable knowledge from your policy pages (`content/policies/*.json`) and products for Chappie. |
-| **`pdf-lib`** | `^1.17.1` | Draws clean downloadable GST/Tax PDF invoices right on your server (`lib/utils/invoicePdf.ts`). |
-| **OpenStreetMap Nominatim** | Free Public API | Fills city, state, and pincode automatically when shoppers tap **Use My Location** on checkout (no API key needed). |
-| **`lucide-react`** | `^1.41.0` | Crisp icons used across menus, buttons, cart, and order tracking. |
-| **`page-mascot`** | `^0.1.0` | Drives the floating interactive **Chappie** character in the corner (`public/mascots/`). |
-| **PWA (`sw.js` + `manifest.json`) & `sharp`** | Offline scripts + Service Worker | Lets customers install the site like an app while blocking caching of private pages (`/account`, `/checkout`, `/invoice`, `/login`, `/cart`). `sharp` optimizes images & app icons locally. |
-
----
-
-## 8. Simple Folder Map (Where Things Live)
-
-| Folder | What Is Inside |
-| --- | --- |
-| `app/` | Every visible website page (`/`, `/shop`, `/product/[slug]`, `/cart`, `/checkout`, `/wishlist`, `/account`, `/invoice/[id]`, legal pages) plus all private server APIs inside `app/api/`. |
-| `components/` | Reusable UI blocks: header, footer, product cards, category grids, checkout summaries, PWA install prompt, and Chappie AI drawer. |
-| `lib/` | Behind-the-scenes brains: WooCommerce connection, server pricing & coupon calculator, Razorpay verification, login cookie signer, httpSMS sender, PDF invoice builder, and Chappie AI engine. |
-| `store/`, `hooks/`, `providers/` | Remembers cart items, wishlist items, logged-in user, dark/light theme, and popup alerts across pages. |
-| `content/policies/` | Your master text files (`faq.json`, `shipping.json`, `returns.json`, `contact.json`, `terms-privacy.json`) used by both policy pages and Chappie AI. |
-| `scripts/` | Helper scripts to optimize product photos, build round app icons, seed products, and sync policies/products into Qdrant. |
-| `public/` | App icons, brand logo, Chappie mascot images, `manifest.json`, and PWA Service Worker (`sw.js`). |
-
----
-
-## 9. Important Safety Rules & Launch Checklist
-
-### Built-In Protections Already Active in Code
-- **Real Prices Checked on Server:** Hackers cannot edit browser prices or fake coupons—the server recalculates item prices, stock, coupon discounts, and ₹499 free-shipping threshold from WooCommerce (`lib/payment/pricing.ts`).
-- **Private Invoices & Orders:** Customers can only download tax invoices if logged into the matching account or using the signed one-time link from checkout. Guest order lookup requires a full 10-digit phone or non-placeholder email match.
-- **No Leaked Keys in Browser:** WooCommerce, Razorpay secret, NVIDIA, and httpSMS keys stay strictly on the server (and WooCommerce credentials are sent only inside encrypted HTTPS headers, never inside URLs).
-- **Verified Webhooks:** Incoming Razorpay and WooCommerce webhooks must carry valid cryptographic signatures (`500`/`401` otherwise).
-
-### Your 3-Step Checklist Before Going Live
-1. **Rotate Your Old WordPress App Password:** Earlier code in `scripts/seed-woocommerce.js` exposed an old WordPress Application Password in git history. Create a new one in **WordPress Admin -> Users -> Profile -> Application Passwords** and update `WC_APP_PASSWORD` in `.env.local` and your hosting environment.
-2. **Copy All Secrets Into Vercel (Before Building):** Ensure `SESSION_SECRET`, all 7 `NEXT_PUBLIC_FIREBASE_*` keys, `WC_CONSUMER_KEY`, `WC_CONSUMER_SECRET`, `WC_WEBHOOK_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` (if separate), `NEXT_PUBLIC_STORE_UPI_*`, `HTTPSMS_*`, `NVIDIA_*`, and `QDRANT_*` are added in Vercel Project Settings.
-3. **Keep Your WordPress Server Online & Note Contact Form:** Make sure `intersting.duckdns.org` is running so live catalog, login, and checkout work; also note that the contact form (`app/contact/page.tsx`) currently shows a browser confirmation only and does not email messages yet.
+1. **Keep Your WordPress Server Online:** Ensure your WordPress + WooCommerce server is running smoothly so products, login, and checkout stay live.
+2. **Use Fresh Passwords & Hosting Keys:** Make sure your hosting dashboard (such as Vercel) has all updated WooCommerce, Razorpay, Firebase, AI, and SMS keys saved safely—and rotate any old WordPress application password you used during early setup.
+3. **Note on the Contact Us Page:** The Contact Us form currently shows a confirmation message on the customer's screen and does not send emails automatically yet.
