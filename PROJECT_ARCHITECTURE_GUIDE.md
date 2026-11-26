@@ -26,9 +26,9 @@ Think of your online store like a modern restaurant with a **Showroom** in the f
 
 ### Quick Home Map
 
-- **Customer Website & Private Server:** Hosted on **Vercel** (or a Node.js cloud server / VPS). This serves the fast shopping pages and runs all private price, login, and invoice checks.
-- **Store Back Office (WordPress + WooCommerce):** Hosted on your server at **intersting.duckdns.org**. This is where your master catalog, stock, coupons, and orders live.
-- **Chappie AI Search Memory (Qdrant):** Hosted on your same server under the **Qdrant** service. It remembers your product details and store policies so Chappie can answer quickly.
+- **Customer Website & Private Server:** Hosted on **Vercel** (Frontend CDN + Serverless API routes). This serves the fast shopping pages and runs all private price, login, and invoice checks.
+- **Store Back Office (WordPress + WooCommerce):** Hosted on your **Oracle Cloud 2 GB Micro VM** at **intersting.duckdns.org**. This is where your master catalog, stock, coupons, and orders live.
+- **Chappie AI Search Memory (Qdrant):** Hosted on the same **Oracle Cloud 2 GB Micro VM** under the **Qdrant** service. It remembers your product details and store policies so Chappie can answer quickly.
 - **Online Payments (Razorpay):** Hosted on **Razorpay Cloud**. Handles UPI apps (Google Pay, PhonePe, Paytm, CRED), debit/credit cards, and net banking.
 - **Customer Sign-In (Google Firebase):** Hosted on **Google Firebase Cloud**. Powers quick Google Sign-In and mobile phone OTP login.
 - **Chappie AI Brain (NVIDIA NIM):** Hosted on **NVIDIA's AI Cloud**. Generates friendly, natural answers to shopper questions.

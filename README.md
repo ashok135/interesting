@@ -29,12 +29,12 @@ Customers shop on a fast Next.js website, a private backend API bridge handles s
 ![INTERSTING Where Everything Is Hosted](docs/hosting-architecture.png)
 
 ### 1. Frontend — Live Storefront (`app/`)
-- **Runs on:** Vercel / Node.js server
+- **Runs on:** **Vercel** (Global CDN + Next.js Edge/Serverless)
 - **Pages:** Home (`/`), Shop (`/shop`), Product Details (`/product/[slug]`), Cart (`/cart`), Checkout (`/checkout`), Wishlist (`/wishlist`), Account (`/account`), Login/Signup (`/login`, `/signup`), Order Invoice (`/invoice/[id]`), and policy/FAQ pages.
 - **Role:** Displays products, handles cart & wishlist, runs the Chappie AI chat widget, and guides shoppers through checkout.
 
 ### 2. Backend — Live API Bridge (`app/api/`)
-- **Runs on:** Private server-side Next.js API routes (secrets never reach the browser)
+- **Runs on:** **Vercel** Serverless Functions (private server-side Next.js API routes — secrets never reach the browser)
 - **Endpoints:**
   - **Auth & Account:** `/api/auth/*` (Google, Firebase OTP, email login/signup) and `/api/account/*` (profile, address, password)
   - **Catalog & Cart:** `/api/products`, `/api/search`, `/api/reviews`, `/api/coupons`, `/api/wishlist`, `/api/media/[...path]`
@@ -43,7 +43,7 @@ Customers shop on a fast Next.js website, a private backend API bridge handles s
 - **Role:** Verifies users, checks real prices/stock, confirms Razorpay payments (including backup webhooks), generates PDF invoices, and triggers SMS/AI updates.
 
 ### 3. WooCommerce — Live Store Admin (`https://intersting.duckdns.org`)
-- **Runs on:** WordPress + WooCommerce server (+ Qdrant at `/qdrant`)
+- **Runs on:** **Oracle Cloud 2 GB Micro VM** (WordPress + WooCommerce + MariaDB + Qdrant at `/qdrant`)
 - **Role:** Your daily control room. Add products, upload photos, update prices, manage stock, create coupons, and update order statuses — the storefront and Chappie AI stay in sync automatically.
 
 ---
