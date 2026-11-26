@@ -4,130 +4,76 @@
 
 # 🥜 INTERSTING — Gourmet Dry Fruits Storefront
 
-**INTERSTING** is an online store for gourmet dry fruits, nuts, and pantry staples.
-
-It gives your customers a fast, app-like shopping website on their phone or computer, while letting you manage all products, prices, stock, coupons, and orders from your familiar WordPress and WooCommerce dashboard.
-
----
-
-## 🌟 What This Store Does (Line by Line)
-
-- **Fast, App-Like Shopping Website:** Customers can browse categories, search for dry fruits, save favorites, and even install the website on their phone home screen like an app.
-- **Controlled From WordPress & WooCommerce:** Whenever you add a product, change a price, upload photos, create a coupon, or update an order in WooCommerce, the store stays in sync automatically.
-- **Three Easy Ways for Customers to Pay:**
-  - **Razorpay Online:** Customers can pay with Google Pay, PhonePe, Paytm, CRED, debit/credit cards, or net banking.
-  - **Direct Store UPI:** Customers can pay directly to your store UPI ID with zero gateway fee and enter their 12-digit transaction reference number.
-  - **Cash on Delivery:** Customers can confirm their order right away and pay when the delivery arrives.
-- **Automatic Price & Stock Check:** Before any payment is accepted, our private server double-checks the real product prices, stock counts, coupon rules, and ₹499 free-shipping rule directly from WooCommerce.
-- **One-Tap Address Fill:** At checkout, customers can tap once to fill in their street, city, state, and PIN code automatically using their phone or browser location.
-- **Easy Sign-In & PDF Tax Bills:** Shoppers can sign in with Google, mobile phone OTP, or email and password, track their orders, and download clean PDF tax invoices.
-- **Chappie AI Shopping Helper:** A friendly built-in chat assistant answers customer questions about products, prices, shipping, and return policies using live store data.
-- **Automatic SMS Updates From Your Phone:** Customers receive branded order confirmations and delivery status alerts sent straight from your own Android phone SIM card.
+**INTERSTING** is a live, decoupled e-commerce storefront for gourmet dry fruits, nuts, and pantry staples.  
+Customers shop on a fast Next.js website, a private backend API bridge handles security and payments, and **WordPress + WooCommerce** runs as the live store admin.
 
 ---
 
-## ☁️ Where Everything Is Hosted
+## 🎯 Problems Solved & What Is Used
 
-Every part of this store has its own clear home. Here is the visual map showing where each piece lives and runs:
+| Problem | How This Project Solves It | Tech / Service Used |
+| :--- | :--- | :--- |
+| **Slow WordPress store pages** | Separates the customer website from WordPress so pages load fast like a mobile app (PWA). | **Next.js 16**, **React 19**, **TypeScript**, **TanStack Query** |
+| **Price or coupon tampering at checkout** | Re-calculates real product prices, stock, coupons, and the **₹499 free-shipping** rule on the server before confirming any order. | **Next.js API Routes** (`/api/payment/*`, `/api/orders`) |
+| **Limited payment options & gateway fees** | Supports Razorpay (UPI/cards/net banking), Direct Store UPI (0% fee with 12-digit UTR), and Cash on Delivery (COD). | **Razorpay SDK** + Direct UPI + COD |
+| **Customers dropping off during signup** | Lets shoppers sign in with one-tap Google, mobile phone OTP, or email/password. | **Google Firebase Auth** + signed session cookies |
+| **Slow address typing on mobile** | One-tap GPS location fills street, city, state, and PIN code automatically at checkout. | **OpenStreetMap Nominatim** |
+| **Expensive per-SMS gateway bills** | Sends order and delivery status SMS alerts directly from your own Android phone SIM card. | **httpSMS** + WooCommerce Webhooks |
+| **Repetitive customer support questions** | Built-in **Chappie AI** assistant answers product, price, shipping, and return questions using live store data. | **Qdrant Vector DB** + **NVIDIA NIM** (`openai` SDK) |
+| **Manual GST / tax invoice creation** | Generates downloadable PDF tax invoices automatically for every order. | **pdf-lib** (`/api/invoice/[id]`) |
+
+---
+
+## 🏗️ Project Architecture (3 Live Layers)
 
 ![INTERSTING Where Everything Is Hosted](docs/hosting-architecture.png)
 
-### Line-by-Line Hosting Guide
+### 1. Frontend — Live Storefront (`app/`)
+- **Runs on:** Vercel / Node.js server
+- **Pages:** Home (`/`), Shop (`/shop`), Product Details (`/product/[slug]`), Cart (`/cart`), Checkout (`/checkout`), Wishlist (`/wishlist`), Account (`/account`), Login/Signup (`/login`, `/signup`), Order Invoice (`/invoice/[id]`), and policy/FAQ pages.
+- **Role:** Displays products, handles cart & wishlist, runs the Chappie AI chat widget, and guides shoppers through checkout.
 
-1. **The Customer Website & Private Server Bridge**
-   - **Hosted on:** Vercel, a cloud Node.js host, or your own VPS server.
-   - **What it does:** Shows the fast storefront pages to shoppers and runs the private server checks for login, pricing, coupons, payments, and PDF invoices.
+### 2. Backend — Live API Bridge (`app/api/`)
+- **Runs on:** Private server-side Next.js API routes (secrets never reach the browser)
+- **Endpoints:**
+  - **Auth & Account:** `/api/auth/*` (Google, Firebase OTP, email login/signup) and `/api/account/*` (profile, address, password)
+  - **Catalog & Cart:** `/api/products`, `/api/search`, `/api/reviews`, `/api/coupons`, `/api/wishlist`, `/api/media/[...path]`
+  - **Payments & Invoices:** `/api/payment/create-order`, `/api/payment/verify`, `/api/orders`, `/api/invoice/[id]`
+  - **AI & Webhooks:** `/api/assistant`, `/api/sync-policies`, `/api/webhooks/razorpay`, `/api/webhooks/product`, `/api/webhooks/woocommerce/orders`
+- **Role:** Verifies users, checks real prices/stock, confirms Razorpay payments (including backup webhooks), generates PDF invoices, and triggers SMS/AI updates.
 
-2. **Your Store Back Office (WordPress + WooCommerce)**
-   - **Hosted on:** Your server at `https://intersting.duckdns.org`.
-   - **What it does:** Acts as the main control room where you manage products, photos, stock, coupons, customers, and orders.
-
-3. **Chappie AI Memory (Qdrant Vector Database)**
-   - **Hosted on:** Your server at `https://intersting.duckdns.org/qdrant`.
-   - **What it does:** Stores searchable product details and store policies so Chappie AI can find the right answers in milliseconds.
-
-4. **Online Payments (Razorpay Cloud)**
-   - **Hosted on:** Razorpay's secure payment cloud.
-   - **What it does:** Collects UPI, card, and net banking payments and sends a backup confirmation signal so no paid order is ever lost.
-
-5. **Customer Sign-In (Google Firebase)**
-   - **Hosted on:** Google Firebase Cloud.
-   - **What it does:** Powers one-tap Google Sign-In and mobile phone OTP login, then gets verified by our private server.
-
-6. **Chappie AI Brain (NVIDIA NIM)**
-   - **Hosted on:** NVIDIA's cloud AI service.
-   - **What it does:** Generates helpful, natural replies when shoppers ask questions in the chat box.
-
-7. **Order SMS Alerts (httpSMS + Your Android Phone)**
-   - **Hosted on:** The `httpSMS` app on your Android phone (connected through `httpsms.com`).
-   - **What it does:** Sends order confirmation and shipping SMS messages using your own SIM card—no expensive per-SMS gateway bills.
-
-8. **One-Tap Location Lookup (OpenStreetMap Nominatim)**
-   - **Hosted on:** OpenStreetMap's free public service.
-   - **What it does:** Converts a customer's GPS coordinates into a readable street address, city, state, and PIN code at checkout.
+### 3. WooCommerce — Live Store Admin (`https://intersting.duckdns.org`)
+- **Runs on:** WordPress + WooCommerce server (+ Qdrant at `/qdrant`)
+- **Role:** Your daily control room. Add products, upload photos, update prices, manage stock, create coupons, and update order statuses — the storefront and Chappie AI stay in sync automatically.
 
 ---
 
-## 🗺️ How the Whole Store Connects
-
-The diagram below shows how a customer's browser or mobile phone talks to your private server bridge, and how that server safely connects to WooCommerce, Razorpay, Chappie AI, and SMS alerts.
+## 🗺️ How Everything Connects
 
 ![INTERSTING Complete Project Architecture](docs/project-architecture.png)
-
----
-
-## 🛒 How You Control the Store & How Payments Stay Safe
-
-You never have to edit website code for daily store work. Everything flows from your WordPress dashboard to the customer's screen, while the five-step payment check protects every rupee before an order is confirmed.
 
 ![INTERSTING WooCommerce Control Loop and Order Lifecycle](docs/woocommerce-architecture.png)
 
 ---
 
-## 🛡️ Built-In Safety & Privacy (Line by Line)
+## 🛡️ Safety & Privacy Notes
 
-- **Secret Keys Never Leave the Server:** Store passwords, Razorpay secrets, SMS keys, and AI keys stay safely on the server and are never sent to a customer's browser.
-- **Protected Customer Accounts:** Login cookies are signed and locked so only the rightful customer can view their saved addresses, order history, or full PDF tax bill.
-- **Guest Privacy Protection:** Anyone checking an order without signing in or holding a checkout link only sees basic city, state, and delivery status—never personal phone numbers or street addresses.
-- **Backup Payment Confirmation:** Even if a shopper closes the browser or loses internet right after paying on Razorpay, a background confirmation notice still saves their order safely.
-- **No Confusing Draft Texts:** Temporary payment holds, drafts, and failed attempts are silently filtered so customers only receive clear, helpful SMS updates.
-
----
-
-## 🧰 Summary of Tools Used
-
-| Part of the Store | Service / Tool | Hosted Where | What It Handles |
-| :--- | :--- | :--- | :--- |
-| **Storefront Website** | Next.js & React | Vercel / Node.js VPS | Fast shopping pages, checkout, and installable mobile web app |
-| **Store Back Office** | WordPress & WooCommerce | Your Server (`intersting.duckdns.org`) | Products, prices, photos, stock, coupons, and orders |
-| **AI Search Memory** | Qdrant | Your Server (`/qdrant`) | Fast product and store policy memory for Chappie AI |
-| **AI Chat Brain** | NVIDIA NIM | NVIDIA Cloud | Answers customer questions and recommends products |
-| **Online Payments** | Razorpay & Direct UPI | Razorpay Cloud | UPI, cards, net banking, and direct UPI verification |
-| **Quick Sign-In** | Google Firebase | Google Cloud | Google Sign-In and mobile phone OTP verification |
-| **Order SMS Alerts** | httpSMS | Your Android Phone + `httpsms.com` | Order placed and delivery status texts via your SIM |
-| **GPS Address Fill** | OpenStreetMap | OpenStreetMap Public API | One-tap street, city, state, and PIN autofill |
-| **PDF Tax Bills** | Built-in PDF Generator | Your Website Server | Downloadable GST-style tax invoices for every order |
+- **Secret keys stay on the server:** WooCommerce keys, Razorpay secrets, SMS keys, and AI keys are never exposed to the browser.
+- **Protected customer data:** Signed cookies ensure only the rightful customer can view saved addresses, order history, or full PDF invoices.
+- **No lost paid orders:** Razorpay backup webhooks save paid orders even if a customer closes the browser right after payment.
 
 ---
 
 ## 📖 More Guides
 
-- **[Store Owner Handbook](PROJECT_ARCHITECTURE_GUIDE.md)** — A plain-English walkthrough of daily store operations, order flows, and launch checks.
-
----
+- **[Store Owner Handbook](PROJECT_ARCHITECTURE_GUIDE.md)** — Plain-English walkthrough of daily store operations and launch checks.
 
 <details>
-<summary><strong>🛠️ For Developers: Local Setup, Build & Webhook Setup</strong></summary>
+<summary><strong>🛠️ For Developers: Local Setup & Webhooks</strong></summary>
 
 <br />
 
-### Requirements
-
-- Node.js 20 or newer
-- A running WordPress + WooCommerce store
-- Credentials configured in `.env.local` (copy from `.env.example`; never commit `.env.local`)
-
-### Install, Check & Run Locally
+**Requirements:** Node.js 20+, a running WordPress + WooCommerce store, and `.env.local` (copied from `.env.example`; never commit `.env.local`).
 
 ```bash
 npm install
@@ -137,11 +83,10 @@ npx next build
 npm run dev
 ```
 
-Open `http://localhost:3000` in your browser.
+Open `http://localhost:3000`.
 
-### One-Time Webhook Setup
-
-- **Razorpay Dashboard → Settings → Webhooks:** `https://your-domain.com/api/webhooks/razorpay` (events: `payment.captured`, `order.paid`, `payment.failed`)
+**One-Time Webhook Setup:**
+- **Razorpay Dashboard → Settings → Webhooks:** `https://your-domain.com/api/webhooks/razorpay` (`payment.captured`, `order.paid`, `payment.failed`)
 - **WooCommerce → Settings → Advanced → Webhooks:**
   - Product sync (`product.created`, `product.updated`): `https://your-domain.com/api/webhooks/product`
   - Order SMS (`order.updated`): `https://your-domain.com/api/webhooks/woocommerce/orders`
@@ -150,6 +95,4 @@ Open `http://localhost:3000` in your browser.
 
 ---
 
-## 📄 License
-
-Proprietary storefront built for **INTERSTING Gourmet Pantry**. All rights reserved.
+**License:** Proprietary storefront built for **INTERSTING Gourmet Pantry**. All rights reserved.
