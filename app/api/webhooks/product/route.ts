@@ -28,7 +28,7 @@ function stripHtml(html?: string): string {
 
 /**
  * Health check & status verification
- * GET https://interesting-ten.vercel.app/api/webhooks/product
+ * GET /api/webhooks/product
  */
 export async function GET() {
   return NextResponse.json({
@@ -41,7 +41,7 @@ export async function GET() {
 
 /**
  * WooCommerce Product Webhook Listener
- * POST https://interesting-ten.vercel.app/api/webhooks/product
+ * POST /api/webhooks/product
  *
  * When a product is created or updated in WordPress:
  * 1. Responds immediately to WooCommerce test pings.
@@ -57,28 +57,33 @@ export async function POST(req: NextRequest) {
     const webhookSecret = process.env.WC_WEBHOOK_SECRET;
 
     // 1. Handle WooCommerce Ping (Sent when creating/testing the webhook in WP Admin)
-    if (topic.includes('ping') || rawBody.includes('webhook_id')) {
-      console.log('[WooCommerce Product Webhook] Ping verification received successfully.');
+    if (topic === 'action.woocommerce_webhook_ping' || /^webhook_id=\d+$/.test(rawBody.trim())) {
       return NextResponse.json({
         success: true,
         message: 'WooCommerce webhook ping verified.',
       });
     }
 
-    // 2. Verify HMAC-SHA256 signature if secret is present
-    if (webhookSecret && signature) {
-      const computedSignature = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(rawBody, 'utf8')
-        .digest('base64');
+    // 2. Fail-closed HMAC-SHA256 signature verification
+    if (!webhookSecret) {
+      console.error('[WooCommerce Product Webhook] WC_WEBHOOK_SECRET is not configured.');
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+    }
+    if (!signature) {
+      return NextResponse.json({ error: 'Missing webhook signature header' }, { status: 401 });
+    }
 
-      const computedBuf = Buffer.from(computedSignature, 'utf8');
-      const sigBuf = Buffer.from(signature, 'utf8');
+    const computedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawBody, 'utf8')
+      .digest('base64');
 
-      if (computedBuf.length !== sigBuf.length || !crypto.timingSafeEqual(computedBuf, sigBuf)) {
-        console.warn('[WooCommerce Product Webhook] Invalid signature detected.');
-        return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
-      }
+    const computedBuf = Buffer.from(computedSignature, 'utf8');
+    const sigBuf = Buffer.from(signature, 'utf8');
+
+    if (computedBuf.length !== sigBuf.length || !crypto.timingSafeEqual(computedBuf, sigBuf)) {
+      console.warn('[WooCommerce Product Webhook] Invalid signature detected.');
+      return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
     }
 
     if (!rawBody || rawBody.trim() === '') {
@@ -152,7 +157,7 @@ export async function POST(req: NextRequest) {
     if (!embedRes.ok) {
       const errText = await embedRes.text();
       console.error('[WooCommerce Product Webhook] NVIDIA embedding failed:', errText);
-      return NextResponse.json({ error: 'Embedding generation failed', details: errText }, { status: 502 });
+      return NextResponse.json({ error: 'Embedding generation failed' }, { status: 502 });
     }
 
     const embedData = await embedRes.json();
@@ -183,7 +188,7 @@ export async function POST(req: NextRequest) {
     if (!qdrantRes.ok) {
       const errText = await qdrantRes.text();
       console.error('[WooCommerce Product Webhook] Qdrant upsert failed:', errText);
-      return NextResponse.json({ error: 'Qdrant upsert failed', details: errText }, { status: 502 });
+      return NextResponse.json({ error: 'Qdrant upsert failed' }, { status: 502 });
     }
 
     console.log(`[WooCommerce Product Webhook] Successfully indexed Product #${productId} (${productName}) in Qdrant.`);

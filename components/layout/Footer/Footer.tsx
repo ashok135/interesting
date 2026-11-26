@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   Mail,
@@ -9,9 +10,13 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/ui';
+import { useToast } from '@/store/ToastContext';
 import styles from './Footer.module.css';
 
 export function Footer() {
+  const [email, setEmail] = useState('');
+  const { showSuccess } = useToast();
+
   return (
     <footer className={styles.footer}>
 
@@ -42,11 +47,14 @@ export function Footer() {
                 className={styles.newsletterForm}
                 onSubmit={(e) => {
                   e.preventDefault();
-                  alert('Thank you for subscribing to Interesting Gourmet Pantry!');
+                  setEmail('');
+                  showSuccess('Thank you for subscribing to Interesting Gourmet Pantry!');
                 }}
               >
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   className={styles.newsletterInput}
                   required

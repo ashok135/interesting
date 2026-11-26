@@ -50,8 +50,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API calls & WooCommerce backend: Always network-only
-  if (url.pathname.startsWith('/api') || url.pathname.includes('/wp-json')) {
+  // API calls, WooCommerce backend, & sensitive/authenticated user pages: Always network-only
+  if (
+    url.pathname.startsWith('/api') ||
+    url.pathname.includes('/wp-json') ||
+    url.pathname.startsWith('/account') ||
+    url.pathname.startsWith('/checkout') ||
+    url.pathname.startsWith('/invoice') ||
+    url.pathname.startsWith('/login') ||
+    url.pathname.startsWith('/signup') ||
+    url.pathname.startsWith('/cart') ||
+    url.pathname.startsWith('/wishlist')
+  ) {
     return;
   }
 

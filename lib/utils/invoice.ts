@@ -96,8 +96,17 @@ export function buildInvoiceDataFromWooOrder(order: WooOrder): InvoiceData {
   };
 }
 
+function escapeHtml(str: string | number | undefined | null): string {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
- * Generates an elegant, print-ready HTML tax invoice string.
+ * Generates an elegant, print-ready HTML tax invoice string (with strict HTML escaping).
  */
 export function generateInvoiceHtml(data: InvoiceData): string {
   const invoiceDate = data.dateCreated
@@ -114,21 +123,29 @@ export function generateInvoiceHtml(data: InvoiceData): string {
         year: 'numeric',
       });
 
-  const addressLine = [data.address1, data.address2].filter(Boolean).join(', ');
-  const locationLine = [data.city, data.state ? `${data.state} - ${data.postcode}` : data.postcode].filter(Boolean).join(', ');
+  const addressLine = escapeHtml([data.address1, data.address2].filter(Boolean).join(', '));
+  const locationLine = escapeHtml([data.city, data.state ? `${data.state} - ${data.postcode}` : data.postcode].filter(Boolean).join(', '));
+  const safeOrderId = escapeHtml(data.orderId);
+  const safeCustomerName = escapeHtml(data.customerName);
+  const safePhone = escapeHtml(data.phone);
+  const safeEmail = escapeHtml(data.email);
+  const safePaymentTitle = escapeHtml(data.paymentMethodTitle);
+  const safeState = escapeHtml(data.state || 'Tamil Nadu');
+  const siteUrl = escapeHtml((process.env.NEXT_PUBLIC_SITE_URL || 'https://intersting.duckdns.org').replace(/\/$/, ''));
 
   const rowsHtml = data.items
     .map((item, idx) => {
       const unit = typeof item.price === 'number' ? item.price : parseFloat(item.price || '0');
       const tot = typeof item.total === 'number' ? item.total : parseFloat(item.total || '0');
+      const safeItemName = escapeHtml(item.name);
       return `
         <tr>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 13px;">${idx + 1}</td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">
-            <strong style="color: #0f172a; display: block;">${item.name}</strong>
-            <span style="color: #64748b; font-size: 11px;">HSN: 0801 • Gourmet Grade</span>
+            <strong style="color: #0f172a; display: block;">${safeItemName}</strong>
+            <span style="color: #64748b; font-size: 11px;">HSN: 0802 • Gourmet Grade</span>
           </td>
-          <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 13px;">${item.quantity}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 13px;">${Number(item.quantity) || 1}</td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 13px;">₹${unit.toFixed(2)}</td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b;">5% (Incl.)</td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: #0f172a; font-size: 13px;">₹${tot.toFixed(2)}</td>
@@ -141,7 +158,7 @@ export function generateInvoiceHtml(data: InvoiceData): string {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Invoice_Order_${data.orderId}_INTERSTING</title>
+  <title>Invoice_Order_${safeOrderId}_INTERSTING</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -239,14 +256,14 @@ export function generateInvoiceHtml(data: InvoiceData): string {
           <span class="badge-tax">TAX INVOICE</span>
         </div>
         <p style="font-size: 12px; color: #64748b; font-weight: 500;">Direct Orchard Harvest • 100% Zero Adulteration King Grade Dry Fruits</p>
-        <p style="font-size: 12px; color: #64748b; margin-top: 4px;">FSSAI Central Lic: 22424578000129 • GSTIN: 33AAACI1234F1Z5</p>
-        <p style="font-size: 12px; color: #64748b;">Support: support@intersting.com | https://interesting-ten.vercel.app</p>
+        <p style="font-size: 12px; color: #64748b; margin-top: 4px;">GST-Inclusive Tax Invoice</p>
+        <p style="font-size: 12px; color: #64748b;">Support: support@intersting.duckdns.org | ${siteUrl}</p>
       </div>
       <div style="text-align: right;">
         <p style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Invoice Number</p>
-        <p style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">INV-2026-${data.orderId}</p>
-        <p style="font-size: 12px; color: #64748b;">Order Ref: <strong>#${data.orderId}</strong></p>
-        <p style="font-size: 12px; color: #64748b;">Date: <strong>${invoiceDate}</strong></p>
+        <p style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">INV-2026-${safeOrderId}</p>
+        <p style="font-size: 12px; color: #64748b;">Order Ref: <strong>#${safeOrderId}</strong></p>
+        <p style="font-size: 12px; color: #64748b;">Date: <strong>${escapeHtml(invoiceDate)}</strong></p>
       </div>
     </div>
 
@@ -254,20 +271,20 @@ export function generateInvoiceHtml(data: InvoiceData): string {
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px 0; border-bottom: 1px solid #e2e8f0;">
       <div style="background: #f8fafc; padding: 14px 16px; border-radius: 8px; border: 1px solid #edf2f7;">
         <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Billed & Delivered To:</span>
-        <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin: 4px 0;">${data.customerName}</h4>
+        <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin: 4px 0;">${safeCustomerName}</h4>
         <p style="font-size: 12px; color: #475569; line-height: 1.45;">${addressLine}</p>
         <p style="font-size: 12px; color: #475569; line-height: 1.45;">${locationLine}</p>
-        ${data.phone ? `<p style="font-size: 12px; color: #0f172a; margin-top: 4px;"><strong>Phone:</strong> ${data.phone}</p>` : ''}
-        ${data.email ? `<p style="font-size: 12px; color: #64748b;"><strong>Email:</strong> ${data.email}</p>` : ''}
+        ${safePhone ? `<p style="font-size: 12px; color: #0f172a; margin-top: 4px;"><strong>Phone:</strong> ${safePhone}</p>` : ''}
+        ${safeEmail ? `<p style="font-size: 12px; color: #64748b;"><strong>Email:</strong> ${safeEmail}</p>` : ''}
       </div>
 
       <div style="background: #f8fafc; padding: 14px 16px; border-radius: 8px; border: 1px solid #edf2f7;">
         <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Payment Details:</span>
-        <p style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 4px 0;">${data.paymentMethodTitle}</p>
+        <p style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 4px 0;">${safePaymentTitle}</p>
         <div style="margin: 6px 0;">
           ${data.isPaid ? '<span class="badge-paid">✓ PAID</span>' : '<span class="badge-cod">⌛ PAY ON DELIVERY</span>'}
         </div>
-        <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Place of Supply: <strong>${data.state || 'Tamil Nadu'} (33)</strong></p>
+        <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Place of Supply: <strong>${safeState}</strong></p>
         <p style="font-size: 12px; color: #64748b;">Dispatch: <strong>Air Express Courier (3-5 Days)</strong></p>
       </div>
     </div>

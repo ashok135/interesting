@@ -319,6 +319,7 @@ function AccountContent() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Password state
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSavingPassword, setIsSavingPassword] = useState(false);
@@ -593,6 +594,10 @@ function AccountContent() {
 
   const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.provider === 'email' && !currentPassword) {
+      showError('Please enter your current password');
+      return;
+    }
     if (!newPassword || newPassword.length < 6) {
       showError('Password must be at least 6 characters long');
       return;
@@ -606,12 +611,13 @@ function AccountContent() {
       const res = await fetch('/api/account/password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword, confirmPassword }),
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update password');
 
       showSuccess('Password updated securely!');
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: unknown) {
@@ -1761,6 +1767,23 @@ function AccountContent() {
                   </div>
 
                   <form onSubmit={handleSavePassword} className={styles.form}>
+                    {user.provider === 'email' && (
+                      <div className={styles.field}>
+                        <label className={styles.label} htmlFor="current-pass">
+                          Current Password
+                        </label>
+                        <input
+                          id="current-pass"
+                          type="password"
+                          required
+                          placeholder="••••••••"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className={styles.input}
+                        />
+                      </div>
+                    )}
+
                     <div className={styles.field}>
                       <label className={styles.label} htmlFor="new-pass">
                         New Password

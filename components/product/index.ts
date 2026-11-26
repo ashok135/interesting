@@ -1,7 +1,6 @@
 export { ProductCard } from './ProductCard/ProductCard';
 export { ProductGrid } from './ProductGrid';
 export { CategoryBar } from './CategoryBar/CategoryBar';
-export { HeroBanner } from './HeroBanner/HeroBanner';
 export { TrustBadges } from './TrustBadges/TrustBadges';
 export { default as ProductReviews } from './ProductReviews/ProductReviews';
 export { default as FrequentlyBoughtTogether } from './FrequentlyBoughtTogether/FrequentlyBoughtTogether';

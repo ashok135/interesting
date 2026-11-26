@@ -40,12 +40,7 @@ function buildHeaders(): Record<string, string> {
 function buildUrl(endpoint: string, params?: Record<string, string | number | boolean>): string {
   const url = new URL(`${WC_BASE_URL}/wp-json/wc/v3/${endpoint}`);
 
-  // Query parameter fallback if consumer credentials are used
-  if (CONSUMER_KEY && CONSUMER_SECRET) {
-    url.searchParams.set('consumer_key', CONSUMER_KEY);
-    url.searchParams.set('consumer_secret', CONSUMER_SECRET);
-  }
-
+  // Send credentials exclusively in the Authorization header over HTTPS — never in URL query params
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.set(key, String(value));

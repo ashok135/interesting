@@ -259,11 +259,11 @@ export default function FAQPage() {
           </p>
         </div>
         <div className={styles.supportRight}>
-          <a href="tel:+919876543210" className={styles.supportBtnPrimary}>
+          <a href="tel:+919994847167" className={styles.supportBtnPrimary}>
             <Phone size={16} />
             <span>Call / WhatsApp</span>
           </a>
-          <a href="mailto:support@interesting.com" className={styles.supportBtnSecondary}>
+          <a href="mailto:support@intersting.duckdns.org" className={styles.supportBtnSecondary}>
             <Mail size={16} />
             <span>Email Support</span>
           </a>

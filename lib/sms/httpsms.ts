@@ -65,7 +65,6 @@ export async function sendHttpSms(options: SendSmsOptions): Promise<SmsResult> {
   const isEnabled = process.env.HTTPSMS_ENABLED !== 'false';
 
   if (!isEnabled) {
-    console.log('[httpSMS] SMS dispatch skipped because HTTPSMS_ENABLED is false.');
     return { success: false, error: 'httpSMS is disabled via HTTPSMS_ENABLED flag.' };
   }
 
@@ -158,7 +157,7 @@ export async function sendOrderConfirmationSms(order: WooOrder): Promise<{
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '') ||
-    'https://interesting-ten.vercel.app'
+    'https://intersting.duckdns.org'
   ).replace(/\/$/, '');
 
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;
@@ -248,7 +247,7 @@ export async function sendOrderStatusUpdateSms(
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '') ||
-    'https://interesting-ten.vercel.app'
+    'https://intersting.duckdns.org'
   ).replace(/\/$/, '');
 
   const trackingUrl = `${siteUrl}/account?order=${orderId}`;

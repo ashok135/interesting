@@ -13,6 +13,15 @@ export async function GET(
     }
 
     const imagePath = pathSegments.join('/');
+    // Prevent path traversal or arbitrary URL redirection
+    if (
+      imagePath.includes('..') ||
+      imagePath.includes('\\') ||
+      !/^[a-zA-Z0-9/_\-.]+$/.test(imagePath)
+    ) {
+      return new NextResponse('Invalid media path', { status: 400 });
+    }
+
     const targetUrl = `${PROD_WC_URL}/wp-content/uploads/${imagePath}`;
 
     // Redirect to authoritative WordPress media URL

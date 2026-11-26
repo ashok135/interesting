@@ -10,6 +10,7 @@ interface RateLimitStore {
 }
 
 const ipMap = new Map<string, RateLimitStore>();
+const MAX_TRACKED_IPS = 10000;
 
 // Periodically clean up entries older than 5 minutes
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
@@ -17,7 +18,7 @@ let lastCleanup = Date.now();
 
 function cleanOldEntries(windowMs: number) {
   const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
+  if (now - lastCleanup < CLEANUP_INTERVAL_MS && ipMap.size < MAX_TRACKED_IPS) return;
   lastCleanup = now;
 
   for (const [ip, store] of ipMap.entries()) {
@@ -26,15 +27,23 @@ function cleanOldEntries(windowMs: number) {
       ipMap.delete(ip);
     }
   }
+
+  // Hard cap to prevent memory exhaustion if flooded with spoofed headers
+  if (ipMap.size >= MAX_TRACKED_IPS) {
+    const oldestKey = ipMap.keys().next().value;
+    if (oldestKey) ipMap.delete(oldestKey);
+  }
 }
 
 export function getClientIp(req: NextRequest): string {
+  // Prefer proxy-set single IP headers when present (e.g., Vercel x-real-ip, Cloudflare)
+  const realIp = req.headers.get('x-real-ip') || req.headers.get('cf-connecting-ip');
+  if (realIp) return realIp.trim().slice(0, 64);
+
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) {
-    return forwarded.split(',')[0].trim();
+    return forwarded.split(',')[0].trim().slice(0, 64);
   }
-  const realIp = req.headers.get('x-real-ip');
-  if (realIp) return realIp.trim();
   return '127.0.0.1';
 }
 

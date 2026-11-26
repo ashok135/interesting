@@ -35,33 +35,34 @@ export async function POST(req: NextRequest) {
     const webhookSecret = process.env.WC_WEBHOOK_SECRET;
 
     // 1. Handle WooCommerce Ping (Sent when creating/testing the webhook in WP Admin)
-    if (topic.includes('ping') || rawBody.includes('webhook_id')) {
-      console.log('[WooCommerce Webhook] Ping verification received successfully.');
+    if (topic === 'action.woocommerce_webhook_ping' || /^webhook_id=\d+$/.test(rawBody.trim())) {
       return NextResponse.json({
         success: true,
         message: 'WooCommerce webhook ping verified.',
       });
     }
 
-    // 2. Verify HMAC-SHA256 signature if a secret is configured in env
-    if (webhookSecret) {
-      if (!signature) {
-        console.warn('[WooCommerce Webhook] Missing x-wc-webhook-signature header.');
-        return NextResponse.json({ error: 'Missing webhook signature header' }, { status: 401 });
-      }
+    // 2. Fail-closed HMAC-SHA256 signature verification
+    if (!webhookSecret) {
+      console.error('[WooCommerce Webhook] WC_WEBHOOK_SECRET is not configured.');
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+    }
+    if (!signature) {
+      console.warn('[WooCommerce Webhook] Missing x-wc-webhook-signature header.');
+      return NextResponse.json({ error: 'Missing webhook signature header' }, { status: 401 });
+    }
 
-      const computedSignature = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(rawBody, 'utf8')
-        .digest('base64');
+    const computedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawBody, 'utf8')
+      .digest('base64');
 
-      const computedBuf = Buffer.from(computedSignature, 'utf8');
-      const sigBuf = Buffer.from(signature, 'utf8');
+    const computedBuf = Buffer.from(computedSignature, 'utf8');
+    const sigBuf = Buffer.from(signature, 'utf8');
 
-      if (computedBuf.length !== sigBuf.length || !crypto.timingSafeEqual(computedBuf, sigBuf)) {
-        console.warn('[WooCommerce Webhook] Invalid signature detected.');
-        return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
-      }
+    if (computedBuf.length !== sigBuf.length || !crypto.timingSafeEqual(computedBuf, sigBuf)) {
+      console.warn('[WooCommerce Webhook] Invalid signature detected.');
+      return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
     }
 
     if (!rawBody || rawBody.trim() === '') {

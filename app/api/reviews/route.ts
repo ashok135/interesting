@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth/session';
 import { wcFetch, clearWcCache } from '@/lib/api/client';
 import { getProductReviews, createProductReview } from '@/lib/api/reviews';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 import type { WooOrder } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -13,8 +14,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const productId = searchParams.get('productId');
 
-    if (!productId) {
-      return NextResponse.json({ error: 'productId is required' }, { status: 400 });
+    if (!productId || !/^\d+$/.test(productId)) {
+      return NextResponse.json({ error: 'Valid numeric productId is required' }, { status: 400 });
     }
 
     const reviews = await getProductReviews(parseInt(productId, 10));
@@ -27,6 +28,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = checkRateLimit(req, { limit: 10, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many review submissions. Please wait a minute.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSec) } }
+      );
+    }
+
     const sessionUser = await getCurrentUser(req);
     const body = await req.json();
     const { productId, review, rating, reviewer, reviewerEmail, orderId } = body;
@@ -38,7 +47,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const numRating = parseInt(rating, 10);
+    const numRating = parseInt(String(rating), 10);
     if (isNaN(numRating) || numRating < 1 || numRating > 5) {
       return NextResponse.json(
         { error: 'Rating must be between 1 and 5 stars.' },
@@ -46,9 +55,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const targetProductId = parseInt(productId, 10);
-    const targetEmail = (reviewerEmail || sessionUser?.email || '').trim().toLowerCase();
-    const targetName = (reviewer || sessionUser?.name || 'Verified Customer').trim();
+    const targetProductId = parseInt(String(productId), 10);
+    if (!Number.isInteger(targetProductId) || targetProductId <= 0) {
+      return NextResponse.json({ error: 'Invalid product ID.' }, { status: 400 });
+    }
+
+    // Security: Always require an authenticated session or an explicit orderId + email verification (never blindly accept someone else's email)
+    const targetEmail = (sessionUser?.email || reviewerEmail || '').trim().toLowerCase();
+    const targetName = (sessionUser?.name || reviewer || 'Verified Customer').trim().slice(0, 80);
+
+    if (!sessionUser && !orderId) {
+      return NextResponse.json(
+        { error: 'Please sign in to submit a verified purchase review.' },
+        { status: 401 }
+      );
+    }
 
     if (!targetEmail || !targetEmail.includes('@')) {
       return NextResponse.json(
@@ -58,13 +79,12 @@ export async function POST(req: NextRequest) {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // STRICT AMAZON / FLIPKART VERIFIED PURCHASE VERIFICATION:
+    // STRICT VERIFIED PURCHASE CHECK:
     // Only customers with a 'completed' (Delivered) order can review!
     // ─────────────────────────────────────────────────────────────
     let isVerifiedPurchase = false;
 
-    if (orderId && Number(orderId) > 0) {
-      // Direct verification via specified Order ID (e.g., from Account Order card)
+    if (orderId && Number.isInteger(Number(orderId)) && Number(orderId) > 0) {
       try {
         const order = await wcFetch<WooOrder>(`orders/${Number(orderId)}`, { cache: 'no-store' });
         if (order && order.id) {
@@ -74,7 +94,7 @@ export async function POST(req: NextRequest) {
           const sessionUserId = sessionUser?.id ? Number(sessionUser.id) : null;
 
           const emailMatches = orderEmail === targetEmail;
-          const userMatches = sessionUserId && orderCustId && sessionUserId === orderCustId;
+          const userMatches = Boolean(sessionUserId && orderCustId && sessionUserId === orderCustId);
 
           if ((emailMatches || userMatches) && orderStatus === 'completed') {
             const hasItem = Array.isArray(order.line_items) && order.line_items.some(
@@ -90,12 +110,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!isVerifiedPurchase) {
-      // Query completed orders for this customer (via customer_id or email)
+    if (!isVerifiedPurchase && sessionUser) {
       try {
         let candidateOrders: WooOrder[] = [];
 
-        if (sessionUser?.id && Number(sessionUser.id) > 0) {
+        if (sessionUser.id && Number(sessionUser.id) > 0) {
           const userOrders = await wcFetch<WooOrder[]>('orders', {
             params: {
               customer: sessionUser.id,
@@ -109,22 +128,24 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Also search by email to cover guest checkouts or differing user records
-        if (candidateOrders.length === 0 && targetEmail) {
+        if (candidateOrders.length === 0 && sessionUser.email) {
           const emailOrders = await wcFetch<WooOrder[]>('orders', {
             params: {
-              search: targetEmail,
+              search: sessionUser.email.toLowerCase().trim(),
               status: 'completed',
               per_page: 50,
             },
             cache: 'no-store',
           });
           if (Array.isArray(emailOrders)) {
-            candidateOrders.push(...emailOrders);
+            candidateOrders.push(
+              ...emailOrders.filter(
+                (o) => o.billing?.email?.toLowerCase().trim() === sessionUser.email.toLowerCase().trim()
+              )
+            );
           }
         }
 
-        // Search candidate orders for completed delivery of this product
         for (const ord of candidateOrders) {
           if ((ord.status || '').toLowerCase() === 'completed') {
             const hasItem = Array.isArray(ord.line_items) && ord.line_items.some(

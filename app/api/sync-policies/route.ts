@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -12,6 +13,17 @@ const QDRANT_URL = process.env.QDRANT_URL || 'https://intersting.duckdns.org/qdr
 const COLLECTION_NAME = process.env.QDRANT_COLLECTION || 'products_rag';
 
 const POLICIES_DIR = path.resolve(process.cwd(), 'content/policies');
+
+function verifyAdminToken(req: NextRequest): boolean {
+  const adminSecret = process.env.ADMIN_SYNC_SECRET;
+  if (!adminSecret || adminSecret.length < 16) return false;
+
+  const authHeader = req.headers.get('authorization') || '';
+  const expected = `Bearer ${adminSecret}`;
+  const aBuf = Buffer.from(authHeader, 'utf8');
+  const bBuf = Buffer.from(expected, 'utf8');
+  return aBuf.length === bBuf.length && crypto.timingSafeEqual(aBuf, bBuf);
+}
 
 async function generateEmbeddings(textBatch: string[]) {
   const res = await fetch(NVIDIA_EMBED_URL, {
@@ -28,19 +40,17 @@ async function generateEmbeddings(textBatch: string[]) {
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`NVIDIA Embedding failed (${res.status}): ${errText}`);
+    throw new Error(`NVIDIA Embedding failed (${res.status})`);
   }
 
   const data = await res.json();
-  return data.data.map((item: any) => item.embedding);
-}
-
-export async function GET(req: NextRequest) {
-  return handleSync();
+  return data.data.map((item: { embedding: number[] }) => item.embedding);
 }
 
 export async function POST(req: NextRequest) {
+  if (!verifyAdminToken(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   return handleSync();
 }
 
@@ -55,13 +65,17 @@ async function handleSync() {
 
     if (!fs.existsSync(POLICIES_DIR)) {
       return NextResponse.json(
-        { error: `Policies directory not found: ${POLICIES_DIR}` },
+        { error: 'Policies directory not found.' },
         { status: 500 }
       );
     }
 
     const policyFiles = fs.readdirSync(POLICIES_DIR).filter((f) => f.endsWith('.json'));
-    const allChunks: any[] = [];
+    const allChunks: Array<{
+      id: number;
+      passage: string;
+      payload: Record<string, unknown>;
+    }> = [];
 
     for (const file of policyFiles) {
       const filePath = path.join(POLICIES_DIR, file);
@@ -88,7 +102,7 @@ async function handleSync() {
     }
 
     const BATCH_SIZE = 8;
-    const qdrantPoints: any[] = [];
+    const qdrantPoints: Array<{ id: number; vector: number[]; payload: Record<string, unknown> }> = [];
 
     for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
       const batch = allChunks.slice(i, i + BATCH_SIZE);
@@ -110,9 +124,8 @@ async function handleSync() {
     });
 
     if (!qdrantRes.ok) {
-      const errText = await qdrantRes.text();
       return NextResponse.json(
-        { error: 'Failed to save policy chunks to Qdrant', details: errText },
+        { error: 'Failed to save policy chunks to Qdrant' },
         { status: 502 }
       );
     }
@@ -125,14 +138,9 @@ async function handleSync() {
       success: true,
       message: `All ${allChunks.length} policy chunks successfully indexed from content/policies/ into Qdrant!`,
       totalPointsInDatabase: totalPoints,
-      chunksIndexed: allChunks.map((c) => ({
-        id: c.id,
-        name: c.payload.name,
-        url: c.payload.url,
-      })),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Sync Policies API] Error:', error);
-    return NextResponse.json({ error: error.message || 'Sync failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Policy sync failed' }, { status: 500 });
   }
 }

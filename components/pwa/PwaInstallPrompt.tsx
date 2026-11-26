@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Download, X, Share, PlusSquare } from 'lucide-react';
+import { useToast } from '@/store/ToastContext';
 import styles from './PwaInstallPrompt.module.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -11,6 +12,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PwaInstallPrompt() {
+  const { showToast } = useToast();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -23,9 +25,6 @@ export function PwaInstallPrompt() {
       window.addEventListener('load', () => {
         navigator.serviceWorker
           .register('/sw.js')
-          .then((reg) => {
-            console.log('[PWA] Service Worker registered:', reg.scope);
-          })
           .catch((err) => {
             console.warn('[PWA] Service Worker registration failed:', err);
           });
@@ -107,7 +106,7 @@ export function PwaInstallPrompt() {
     }
 
     if (!deferredPrompt) {
-      alert('To install, tap your browser menu (⋮) and choose "Add to Home screen" or "Install App".');
+      showToast('To install, tap your browser menu (⋮) and choose "Add to Home screen" or "Install App".', 'info');
       return;
     }
 

@@ -270,7 +270,7 @@ export function Header() {
               <div className={styles.drawerPromoBox}>
                 <Sparkles size={16} className={styles.sparkleIcon} />
                 <div>
-                  <p className={styles.promoCodeText}>USE CODE: <strong>KAJU100</strong></p>
+                  <p className={styles.promoCodeText}>USE CODE: <strong>WELCOME</strong></p>
                   <p className={styles.promoSubText}>Flat ₹100 OFF on your first royal order</p>
                 </div>
               </div>

@@ -270,7 +270,7 @@ export function ZeptoCategoryExplorer({
                   </span>
                 </div>
                 <p className={styles.metaSubtitle}>
-                  {headerInfo ? headerInfo.subtitle : 'Direct whole harvest • Delivered fresh in 15–30 mins'}
+                  {headerInfo ? headerInfo.subtitle : 'Direct whole harvest • Dispatched fresh within 24–48 hrs'}
                 </p>
               </div>
 

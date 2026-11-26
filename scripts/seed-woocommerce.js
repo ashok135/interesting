@@ -1,5 +1,12 @@
 // seed-woocommerce.js
-const auth = Buffer.from('ashok:G4J1 hiEc rSBt ALs7 Ftyh 6mBf').toString('base64');
+// Requires WC_APP_USER and WC_APP_PASSWORD environment variables (never hardcode credentials!)
+const wpUser = process.env.WC_APP_USER;
+const wpPass = process.env.WC_APP_PASSWORD;
+if (!wpUser || !wpPass) {
+  console.error('Error: Set WC_APP_USER and WC_APP_PASSWORD in your environment before running seed-woocommerce.js.');
+  process.exit(1);
+}
+const auth = Buffer.from(`${wpUser}:${wpPass}`).toString('base64');
 const baseUrl = (process.env.NEXT_PUBLIC_WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '') + '/wp-json';
 
 async function wcRequest(endpoint, method = 'GET', body = null) {

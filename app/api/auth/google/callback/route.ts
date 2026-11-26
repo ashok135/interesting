@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { getOrCreateCustomer } from '@/lib/api/customers';
 import { createSessionToken } from '@/lib/auth/session';
 
@@ -13,28 +14,43 @@ interface GoogleUserInfo {
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const code = searchParams.get('code');
-  const isDevMock = process.env.NODE_ENV !== 'production' && searchParams.get('dev_mock') === 'true';
+  const state = searchParams.get('state');
+  const storedState = req.cookies.get('google_oauth_state')?.value;
+  const isDevMock =
+    process.env.NODE_ENV !== 'production' &&
+    process.env.ALLOW_DEV_AUTH_MOCK === 'true' &&
+    searchParams.get('dev_mock') === 'true';
 
   let googleUser: GoogleUserInfo;
 
   if (isDevMock) {
-    // Local dev mock user to test Google flow before user adds real Google Cloud keys
     googleUser = {
-      email: 'ashok.google@example.com',
-      name: 'Ashok Chingari',
-      given_name: 'Ashok',
-      family_name: 'Chingari',
-      picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&q=80',
+      email: 'demo@example.com',
+      name: 'Demo Customer',
+      given_name: 'Demo',
+      family_name: 'Customer',
     };
   } else if (!code) {
     return NextResponse.redirect(new URL('/login?error=Google+login+was+cancelled', req.url));
   } else {
+    // Verify OAuth state parameter to prevent CSRF login attacks
+    if (!state || !storedState) {
+      return NextResponse.redirect(new URL('/login?error=Invalid+OAuth+state', req.url));
+    }
+    const stateBuf = Buffer.from(state, 'utf8');
+    const storedBuf = Buffer.from(storedState, 'utf8');
+    if (stateBuf.length !== storedBuf.length || !crypto.timingSafeEqual(stateBuf, storedBuf)) {
+      return NextResponse.redirect(new URL('/login?error=OAuth+state+mismatch', req.url));
+    }
+
     try {
-      const clientId = process.env.GOOGLE_CLIENT_ID!;
-      const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      if (!clientId || !clientSecret) {
+        return NextResponse.redirect(new URL('/login?error=Google+OAuth+is+not+configured', req.url));
+      }
       const redirectUri = `${req.nextUrl.origin}/api/auth/google/callback`;
 
-      // 1. Exchange code for Google access token
       const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -54,7 +70,6 @@ export async function GET(req: NextRequest) {
 
       const tokens = await tokenRes.json();
 
-      // 2. Fetch Google user profile
       const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: { Authorization: `Bearer ${tokens.access_token}` },
       });
@@ -71,7 +86,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 3. Sync customer with WooCommerce (find existing or create new customer)
     const customer = await getOrCreateCustomer({
       email: googleUser.email,
       first_name: googleUser.given_name || googleUser.name.split(' ')[0] || '',
@@ -79,7 +93,6 @@ export async function GET(req: NextRequest) {
       avatar_url: googleUser.picture,
     });
 
-    // 4. Create secure session
     const sessionUser = {
       id: customer.id,
       email: customer.email,
@@ -92,6 +105,7 @@ export async function GET(req: NextRequest) {
     const redirectTarget = new URL('/account', req.url);
     const response = NextResponse.redirect(redirectTarget);
 
+    response.cookies.delete('google_oauth_state');
     response.cookies.set('intersting_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

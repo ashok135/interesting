@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/session';
+import { getCurrentUser, createOrderAccessToken } from '@/lib/auth/session';
 import { wcFetch, clearWcCache } from '@/lib/api/client';
 import { updateCustomer } from '@/lib/api/customers';
+import { verifyAndCalculateOrderPricing } from '@/lib/payment/pricing';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 import { sendOrderConfirmationSms } from '@/lib/sms/httpsms';
 import type { OrderPayload, WooOrder } from '@/types';
 
@@ -10,6 +12,14 @@ export const revalidate = 0;
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = checkRateLimit(req, { limit: 15, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many order requests. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSec) } }
+      );
+    }
+
     const sessionUser = await getCurrentUser(req);
     const body: OrderPayload = await req.json();
 
@@ -27,86 +37,79 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determine customer ID (logged-in user takes precedence)
-    let customerId: number | undefined = undefined;
-    if (sessionUser?.id && Number(sessionUser.id) > 0) {
-      customerId = Number(sessionUser.id);
-    } else if (body.customer_id && Number(body.customer_id) > 0) {
-      customerId = Number(body.customer_id);
-    }
+    // Security: ONLY assign customer_id from the cryptographically verified session cookie (never trust client body.customer_id!)
+    const customerId = sessionUser?.id && Number(sessionUser.id) > 0 ? Number(sessionUser.id) : undefined;
 
-    // Format billing and shipping addresses
+    // Server-side validation of line items, stock, coupon, and shipping fee
+    const pricing = await verifyAndCalculateOrderPricing(body.line_items, body.coupon_code);
+
     const billingAddress = {
-      first_name: body.billing.first_name || sessionUser?.name?.split(' ')[0] || 'Guest',
-      last_name: body.billing.last_name || sessionUser?.name?.split(' ').slice(1).join(' ') || '',
+      first_name: (body.billing.first_name || sessionUser?.name?.split(' ')[0] || 'Guest').trim().slice(0, 60),
+      last_name: (body.billing.last_name || sessionUser?.name?.split(' ').slice(1).join(' ') || '').trim().slice(0, 60),
       company: '',
-      email: body.billing.email || sessionUser?.email || 'guest@interestingstore.com',
-      phone: body.billing.phone || '',
-      address_1: body.billing.address_1.trim(),
-      address_2: (body.billing.address_2 || '').trim(),
-      city: body.billing.city.trim(),
-      state: body.billing.state.trim(),
-      postcode: body.billing.postcode.trim(),
+      email: (body.billing.email || sessionUser?.email || 'guest@intersting.duckdns.org').trim().slice(0, 120),
+      phone: (body.billing.phone || '').trim().slice(0, 20),
+      address_1: body.billing.address_1.trim().slice(0, 200),
+      address_2: (body.billing.address_2 || '').trim().slice(0, 200),
+      city: body.billing.city.trim().slice(0, 80),
+      state: (body.billing.state || '').trim().slice(0, 80),
+      postcode: body.billing.postcode.trim().slice(0, 20),
       country: body.billing.country || 'IN',
     };
 
-    const shippingAddress = body.shipping ? {
-      first_name: body.shipping.first_name || billingAddress.first_name,
-      last_name: body.shipping.last_name || billingAddress.last_name,
-      company: '',
-      address_1: body.shipping.address_1.trim(),
-      address_2: (body.shipping.address_2 || '').trim(),
-      city: body.shipping.city.trim(),
-      state: body.shipping.state.trim(),
-      postcode: body.shipping.postcode.trim(),
-      country: body.shipping.country || 'IN',
-    } : { ...billingAddress };
+    const shippingAddress = body.shipping
+      ? {
+          first_name: (body.shipping.first_name || billingAddress.first_name).trim().slice(0, 60),
+          last_name: (body.shipping.last_name || billingAddress.last_name).trim().slice(0, 60),
+          company: '',
+          address_1: (body.shipping.address_1 || billingAddress.address_1).trim().slice(0, 200),
+          address_2: (body.shipping.address_2 || '').trim().slice(0, 200),
+          city: (body.shipping.city || billingAddress.city).trim().slice(0, 80),
+          state: (body.shipping.state || billingAddress.state).trim().slice(0, 80),
+          postcode: (body.shipping.postcode || billingAddress.postcode).trim().slice(0, 20),
+          country: body.shipping.country || 'IN',
+        }
+      : { ...billingAddress };
 
+    // Only COD or BACS (Direct UPI transfer) may be created directly through /api/orders
     const isCod = (body.payment_method || 'cod').toLowerCase() === 'cod';
 
-    // Build payload for WooCommerce REST API
     const wcPayload: Record<string, unknown> = {
-      payment_method: isCod ? 'cod' : (body.payment_method || 'bacs'),
-      payment_method_title: isCod ? 'Pay on Delivery (Cash / UPI)' : (body.payment_method_title || 'Direct UPI Transfer'),
+      payment_method: isCod ? 'cod' : 'bacs',
+      payment_method_title: isCod ? 'Pay on Delivery (Cash / UPI)' : 'Direct UPI Transfer',
       set_paid: false, // Security: Direct API orders (COD & UPI) can NEVER self-certify as paid!
-      // COD is immediately confirmed -> status 'processing'. UPI awaits UTR verification -> status 'on-hold'
       status: isCod ? 'processing' : 'on-hold',
       billing: billingAddress,
       shipping: shippingAddress,
-      line_items: body.line_items.map((item) => ({
-        product_id: Number(item.product_id),
-        quantity: Number(item.quantity) || 1,
-      })),
+      line_items: pricing.normalizedLineItems,
+      shipping_lines: [
+        {
+          method_id: pricing.shippingFee === 0 ? 'free_shipping' : 'flat_rate',
+          method_title: pricing.shippingFee === 0 ? 'Free Express Delivery' : 'Standard Delivery',
+          total: String(pricing.shippingFee),
+        },
+      ],
     };
 
     if (customerId) {
       wcPayload.customer_id = customerId;
     }
 
-    // Apply coupon directly through WooCommerce (WooCommerce validates code, limits, and calculates discount)
-    if (body.coupon_code) {
-      wcPayload.coupon_lines = [{ code: body.coupon_code.trim().toLowerCase() }];
-    }
-
-    // Handle shipping lines
-    if (body.shipping_lines && body.shipping_lines.length > 0) {
-      wcPayload.shipping_lines = body.shipping_lines;
+    if (pricing.appliedCouponCode) {
+      wcPayload.coupon_lines = [{ code: pricing.appliedCouponCode.toLowerCase() }];
     }
 
     if (body.customer_note) {
-      wcPayload.customer_note = body.customer_note;
+      wcPayload.customer_note = String(body.customer_note).slice(0, 500);
     }
 
-    // Call WooCommerce API from server with full credentials
     const order = await wcFetch<WooOrder>('orders', {
       method: 'POST',
       body: wcPayload,
     });
 
-    // Invalidate order cache so new order shows up immediately in user account
     clearWcCache();
 
-    // If customer is logged in, optionally save their latest address to their customer record
     if (customerId) {
       try {
         await updateCustomer(customerId, {
@@ -118,33 +121,42 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Dispatch order confirmation SMS via httpSMS (with live tracking link)
     try {
-      const smsResult = await sendOrderConfirmationSms(order);
-      console.log(`[httpSMS] Order #${order.id} SMS dispatch result:`, JSON.stringify(smsResult));
+      await sendOrderConfirmationSms(order);
     } catch (smsErr) {
       console.error('[httpSMS] Non-blocking error sending order SMS:', smsErr);
     }
 
+    const invoiceToken = createOrderAccessToken(order.id, billingAddress.email);
+
     return NextResponse.json({
       success: true,
       order,
+      invoiceToken,
     });
   } catch (error: unknown) {
     console.error('Server order creation error:', error);
     const message = error instanceof Error ? error.message : 'Failed to create order.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
+    const rl = checkRateLimit(req, { limit: 30, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSec) } }
+      );
+    }
+
     const sessionUser = await getCurrentUser(req);
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    if (!id) {
-      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    if (!id || !/^\d+$/.test(id)) {
+      return NextResponse.json({ error: 'Valid numeric Order ID is required' }, { status: 400 });
     }
 
     const order = await wcFetch<WooOrder>(`orders/${id}`);
@@ -166,20 +178,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, order });
     }
 
-    // Guest verification via query params
+    // Guest verification requires matching non-placeholder email OR full 10-digit phone match
     const queryEmail = searchParams.get('email')?.toLowerCase().trim();
-    const rawQueryPhone = searchParams.get('phone')?.replace(/[^0-9]/g, '');
-    const billingPhone = order.billing?.phone?.replace(/[^0-9]/g, '');
+    const rawQueryPhone = searchParams.get('phone')?.replace(/[^0-9]/g, '') || '';
+    const billingPhone = order.billing?.phone?.replace(/[^0-9]/g, '') || '';
+
+    const isRealOrderEmail = Boolean(
+      orderEmail &&
+      orderEmail !== 'guest@interestingstore.com' &&
+      orderEmail !== 'guest@intersting.duckdns.org'
+    );
+    const isPhoneMatch =
+      rawQueryPhone.length >= 10 &&
+      billingPhone.length >= 10 &&
+      billingPhone.slice(-10) === rawQueryPhone.slice(-10);
 
     const isGuestVerified =
-      Boolean(queryEmail && orderEmail === queryEmail) ||
-      Boolean(rawQueryPhone && billingPhone && (billingPhone.endsWith(rawQueryPhone) || rawQueryPhone.endsWith(billingPhone)));
+      Boolean(isRealOrderEmail && queryEmail && orderEmail === queryEmail) ||
+      isPhoneMatch;
 
     if (isGuestVerified) {
       return NextResponse.json({ success: true, order });
     }
 
-    // Unauthenticated guest tracking: return masked/sanitized order (no sensitive PII leaked)
+    // Unauthenticated guest tracking: return masked/sanitized order (no PII leaked)
     const maskedOrder = {
       id: order.id,
       status: order.status,
@@ -208,13 +230,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, order: maskedOrder });
   } catch (error: unknown) {
     console.error('Get order error:', error);
-    const message = error instanceof Error ? error.message : 'Failed to retrieve order.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to retrieve order.' }, { status: 500 });
   }
 }
 
 export async function PATCH(req: NextRequest) {
   try {
+    const rl = checkRateLimit(req, { limit: 10, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many cancellation requests. Please wait a minute.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSec) } }
+      );
+    }
+
     const sessionUser = await getCurrentUser(req);
     if (!sessionUser) {
       return NextResponse.json(
@@ -225,9 +254,9 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json();
     const orderId = Number(body.id || body.orderId);
-    const reason = (body.reason || 'Cancelled by customer').trim();
+    const reason = String(body.reason || 'Cancelled by customer').trim().slice(0, 200);
 
-    if (!orderId || isNaN(orderId)) {
+    if (!Number.isInteger(orderId) || orderId <= 0) {
       return NextResponse.json(
         { error: 'Valid Order ID is required.' },
         { status: 400 }

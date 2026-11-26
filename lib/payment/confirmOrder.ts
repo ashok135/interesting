@@ -1,28 +1,10 @@
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
 import { wcFetch, clearWcCache } from '@/lib/api/client';
 import { updateCustomer } from '@/lib/api/customers';
 import { sendOrderConfirmationSms } from '@/lib/sms/httpsms';
 import { getRazorpay } from '@/lib/payment/razorpay';
+import { verifyAndCalculateOrderPricing } from '@/lib/payment/pricing';
 import { deletePendingOrder } from './pendingOrders';
 import type { OrderPayload, WooOrder } from '@/types';
-
-const ORPHANED_LOG_FILE = path.join(os.tmpdir(), 'intersting_orphaned_payments.json');
-
-function logOrphanedPayment(record: Record<string, any>) {
-  try {
-    let existing: any[] = [];
-    if (fs.existsSync(ORPHANED_LOG_FILE)) {
-      existing = JSON.parse(fs.readFileSync(ORPHANED_LOG_FILE, 'utf-8')) || [];
-    }
-    existing.push({ ...record, logged_at: new Date().toISOString() });
-    fs.writeFileSync(ORPHANED_LOG_FILE, JSON.stringify(existing, null, 2), 'utf-8');
-    console.warn(`[OrphanedPayments] Successfully recorded failed transaction to: ${ORPHANED_LOG_FILE}`);
-  } catch (err) {
-    console.error('[OrphanedPayments] Failed to record orphaned payment to disk:', err);
-  }
-}
 
 export interface ConfirmOrderParams {
   razorpay_order_id: string;
@@ -47,7 +29,7 @@ export async function confirmRazorpayOrder({
     const existing = await wcFetch<WooOrder[]>('orders', {
       params: {
         search: razorpay_payment_id,
-        per_page: 1,
+        per_page: 5,
       },
     });
 
@@ -59,7 +41,6 @@ export async function confirmRazorpayOrder({
       );
 
       if (match) {
-        console.log(`[Order Confirmation (${source})] Order #${match.id} already exists for payment ${razorpay_payment_id}. Skipping creation.`);
         deletePendingOrder(razorpay_order_id);
         return {
           alreadyProcessed: true,
@@ -72,14 +53,19 @@ export async function confirmRazorpayOrder({
   }
 
   // 2. Gateway Verification: Verify directly with Razorpay gateway that funds were captured
+  let paidAmountInRupees = 0;
   try {
     const rzp = getRazorpay();
-    const paymentEntity = await rzp.payments.fetch(razorpay_payment_id) as any;
+    const paymentEntity = (await rzp.payments.fetch(razorpay_payment_id)) as {
+      status?: string;
+      order_id?: string;
+      amount?: number;
+    };
     if (!paymentEntity) {
       throw new Error(`Razorpay payment ${razorpay_payment_id} not found.`);
     }
     const validStatuses = ['captured', 'authorized'];
-    if (!validStatuses.includes(paymentEntity.status)) {
+    if (!paymentEntity.status || !validStatuses.includes(paymentEntity.status)) {
       throw new Error(`Payment ${razorpay_payment_id} has invalid status "${paymentEntity.status}".`);
     }
 
@@ -87,20 +73,29 @@ export async function confirmRazorpayOrder({
     if (paymentEntity.order_id && paymentEntity.order_id !== razorpay_order_id) {
       throw new Error(`Payment ${razorpay_payment_id} belongs to order ${paymentEntity.order_id}, not ${razorpay_order_id}.`);
     }
-    console.log(`[Order Confirmation (${source})] Gateway verified: payment ${razorpay_payment_id} is ${paymentEntity.status} for ₹${(paymentEntity.amount || 0) / 100}`);
-  } catch (rzpErr: any) {
-    console.error(`[Order Confirmation (${source})] Gateway fetch error:`, rzpErr.message);
-    throw new Error(`Could not verify payment status with Razorpay gateway: ${rzpErr.message}`);
+    paidAmountInRupees = (paymentEntity.amount || 0) / 100;
+  } catch (rzpErr: unknown) {
+    const msg = rzpErr instanceof Error ? rzpErr.message : 'Unknown gateway error';
+    console.error(`[Order Confirmation (${source})] Gateway fetch error:`, msg);
+    throw new Error(`Could not verify payment status with Razorpay gateway: ${msg}`);
   }
 
-  // 3. Format customer addresses
+  // 3. Authoritative Pricing Check: Ensure captured Razorpay amount covers the server-computed cart total
+  const pricing = await verifyAndCalculateOrderPricing(orderData.line_items, orderData.coupon_code);
+  if (paidAmountInRupees + 1 < pricing.grandTotal) {
+    throw new Error(
+      `Captured payment (₹${paidAmountInRupees}) is less than order total (₹${pricing.grandTotal}). Order rejected.`
+    );
+  }
+
+  // 4. Format customer addresses
   const customerId = orderData.customer_id && Number(orderData.customer_id) > 0 ? Number(orderData.customer_id) : undefined;
 
   const billingAddress = {
     first_name: orderData.billing.first_name || 'Customer',
     last_name: orderData.billing.last_name || '',
     company: '',
-    email: orderData.billing.email || 'guest@interestingstore.com',
+    email: orderData.billing.email || 'guest@intersting.duckdns.org',
     phone: orderData.billing.phone || '',
     address_1: orderData.billing.address_1.trim(),
     address_2: (orderData.billing.address_2 || '').trim(),
@@ -124,19 +119,23 @@ export async function confirmRazorpayOrder({
       }
     : { ...billingAddress };
 
-  // 3. Prepare WooCommerce Order Payload
+  // 5. Prepare WooCommerce Order Payload (server-verified items, coupon & shipping)
   const wcPayload: Record<string, unknown> = {
     payment_method: 'razorpay',
     payment_method_title: 'Razorpay Online (UPI / Cards / Netbanking)',
     set_paid: true,
-    status: 'processing', // Paid & confirmed
+    status: 'processing',
     transaction_id: razorpay_payment_id,
     billing: billingAddress,
     shipping: shippingAddress,
-    line_items: orderData.line_items.map((item) => ({
-      product_id: Number(item.product_id),
-      quantity: Number(item.quantity) || 1,
-    })),
+    line_items: pricing.normalizedLineItems,
+    shipping_lines: [
+      {
+        method_id: pricing.shippingFee === 0 ? 'free_shipping' : 'flat_rate',
+        method_title: pricing.shippingFee === 0 ? 'Free Express Delivery' : 'Standard Delivery',
+        total: String(pricing.shippingFee),
+      },
+    ],
     meta_data: [
       { key: 'razorpay_order_id', value: razorpay_order_id },
       { key: 'razorpay_payment_id', value: razorpay_payment_id },
@@ -149,41 +148,38 @@ export async function confirmRazorpayOrder({
     wcPayload.customer_id = customerId;
   }
 
-  if (orderData.coupon_code) {
-    wcPayload.coupon_lines = [{ code: orderData.coupon_code.trim().toLowerCase() }];
-  }
-
-  if (orderData.shipping_lines && orderData.shipping_lines.length > 0) {
-    wcPayload.shipping_lines = orderData.shipping_lines;
+  if (pricing.appliedCouponCode) {
+    wcPayload.coupon_lines = [{ code: pricing.appliedCouponCode.toLowerCase() }];
   }
 
   if (orderData.customer_note) {
-    wcPayload.customer_note = orderData.customer_note;
+    wcPayload.customer_note = String(orderData.customer_note).slice(0, 500);
   }
 
-  // 4. Create confirmed Order in WooCommerce
+  // 6. Create confirmed Order in WooCommerce
   let order: WooOrder;
   try {
     order = await wcFetch<WooOrder>('orders', {
       method: 'POST',
       body: wcPayload,
     });
-  } catch (createErr: any) {
-    console.error(`[CRITICAL_PAYMENT_ALERT] Payment was CAPTURED on Razorpay (${razorpay_payment_id}), but WooCommerce order creation failed:`, createErr.message);
-    logOrphanedPayment({
+  } catch (createErr: unknown) {
+    const errMsg = createErr instanceof Error ? createErr.message : 'Unknown error';
+    // Log structured non-PII error references to server logs instead of writing customer PII to /tmp
+    console.error('[CRITICAL_PAYMENT_ALERT] Payment captured on Razorpay, WooCommerce order creation failed:', {
       razorpay_order_id,
       razorpay_payment_id,
-      wcPayload,
-      errorMessage: createErr.message,
+      amount: paidAmountInRupees,
       source,
+      error: errMsg,
     });
-    throw new Error(`Payment was captured, but WooCommerce order provisioning encountered an error: ${createErr.message}. Admin has been notified.`);
+    throw new Error(`Payment was captured, but order provisioning encountered an error. Please contact support with payment ID ${razorpay_payment_id}.`);
   }
 
   clearWcCache();
   deletePendingOrder(razorpay_order_id);
 
-  // 5. Update user saved address if logged in
+  // 7. Update user saved address if logged in
   if (customerId) {
     try {
       await updateCustomer(customerId, {
@@ -195,10 +191,9 @@ export async function confirmRazorpayOrder({
     }
   }
 
-  // 6. Send Order Confirmation SMS
+  // 8. Send Order Confirmation SMS
   try {
-    const smsResult = await sendOrderConfirmationSms(order);
-    console.log(`[httpSMS] Razorpay Order #${order.id} (${source}) SMS sent:`, JSON.stringify(smsResult));
+    await sendOrderConfirmationSms(order);
   } catch (smsErr) {
     console.error('[httpSMS] Error sending order SMS:', smsErr);
   }

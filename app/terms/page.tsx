@@ -131,7 +131,7 @@ export default function TermsPage() {
 
             <h3>3.1 Order Cancellation Window</h3>
             <p>
-              You can cancel your order free of charge at any time <strong>before it has been dispatched</strong> from our warehouse (typically within 4–6 hours of order placement). To cancel, reach out via WhatsApp at <strong>+91 98765 43210</strong> or email <strong>support@interesting.com</strong> with your Order ID.
+              You can cancel your order free of charge at any time <strong>before it has been dispatched</strong> from our warehouse (typically within 4–6 hours of order placement). To cancel, reach out via WhatsApp at <strong>+91 99948 47167</strong> or email <strong>support@intersting.duckdns.org</strong> with your Order ID.
             </p>
 
             <h3>3.2 Post-Dispatch Cancellations</h3>
@@ -154,11 +154,11 @@ export default function TermsPage() {
           <p>Reach out to our legal and customer compliance desk anytime.</p>
         </div>
         <div className={styles.contactActions}>
-          <a href="mailto:support@interesting.com" className={styles.contactBtn}>
+          <a href="mailto:support@intersting.duckdns.org" className={styles.contactBtn}>
             <Mail size={16} />
             <span>Email Support</span>
           </a>
-          <a href="tel:+919876543210" className={styles.contactBtnSec}>
+          <a href="tel:+919994847167" className={styles.contactBtnSec}>
             <Phone size={16} />
             <span>Call Desk</span>
           </a>

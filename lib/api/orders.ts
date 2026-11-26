@@ -6,7 +6,9 @@
 import { wcFetch } from '@/lib/api/client';
 import type { OrderPayload, WooOrder } from '@/types';
 
-export async function createOrder(payload: OrderPayload): Promise<WooOrder> {
+export type CreatedOrderResult = WooOrder & { invoiceToken?: string };
+
+export async function createOrder(payload: OrderPayload): Promise<CreatedOrderResult> {
   // If running in browser, proxy through server API route to securely use server credentials
   if (typeof window !== 'undefined') {
     const res = await fetch('/api/orders', {
@@ -21,7 +23,11 @@ export async function createOrder(payload: OrderPayload): Promise<WooOrder> {
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to place order. Please try again.');
     }
-    return data.order as WooOrder;
+    const order = data.order as CreatedOrderResult;
+    if (data.invoiceToken) {
+      order.invoiceToken = data.invoiceToken;
+    }
+    return order;
   }
 
   // Server-side direct call

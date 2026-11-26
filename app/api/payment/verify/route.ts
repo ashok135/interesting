@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyRazorpaySignature } from '@/lib/payment/razorpay';
-import { getCurrentUser } from '@/lib/auth/session';
+import { getCurrentUser, createOrderAccessToken } from '@/lib/auth/session';
 import { confirmRazorpayOrder } from '@/lib/payment/confirmOrder';
 import { getPendingOrder } from '@/lib/payment/pendingOrders';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 import type { OrderPayload } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = checkRateLimit(req, { limit: 20, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many verification attempts. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSec) } }
+      );
+    }
+
     const sessionUser = await getCurrentUser(req);
     const body = await req.json();
 
@@ -56,27 +65,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (sessionUser?.id && Number(sessionUser.id) > 0) {
-      orderData.customer_id = Number(sessionUser.id);
-    }
+    // Security: Always derive customer_id strictly from authenticated session cookie
+    const verifiedOrderData: OrderPayload = {
+      ...orderData,
+      customer_id: sessionUser?.id && Number(sessionUser.id) > 0 ? Number(sessionUser.id) : undefined,
+    };
 
     // 2. Idempotent Order Confirmation (Prevents duplicates if Webhook arrived first)
     const result = await confirmRazorpayOrder({
       razorpay_order_id,
       razorpay_payment_id,
-      orderData,
+      orderData: verifiedOrderData,
       source: 'browser_verify',
     });
+
+    const invoiceToken = createOrderAccessToken(result.order.id, result.order.billing?.email);
 
     return NextResponse.json({
       success: true,
       order: result.order,
       alreadyProcessed: result.alreadyProcessed,
+      invoiceToken,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Payment verification error:', error);
+    const message = error instanceof Error ? error.message : 'Payment verification failed.';
     return NextResponse.json(
-      { error: error.message || 'Payment verification failed.' },
+      { error: message },
       { status: 500 }
     );
   }

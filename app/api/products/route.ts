@@ -8,8 +8,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category') || undefined;
     const search = searchParams.get('search') || undefined;
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const perPage = parseInt(searchParams.get('per_page') || '12', 10);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+    const perPage = Math.min(100, Math.max(1, parseInt(searchParams.get('per_page') || '12', 10) || 12));
     const orderby = (searchParams.get('orderby') as 'date' | 'popularity' | 'rating' | 'price') || 'date';
     const order = (searchParams.get('order') as 'asc' | 'desc') || undefined;
     const featured = searchParams.get('featured') === 'true' ? true : undefined;

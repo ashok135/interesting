@@ -34,20 +34,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const cleanMessage = message.trim().slice(0, 500);
+
     const formattedHistory = Array.isArray(history)
       ? history
           .slice(-4)
           .filter(
             (msg: { role?: string; content?: string }) =>
-              msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')
+              msg && typeof msg.content === 'string' && (msg.role === 'user' || msg.role === 'assistant')
           )
           .map((msg: { role: 'user' | 'assistant'; content: string }) => ({
             role: msg.role,
-            content: msg.content,
+            content: msg.content.slice(0, 500),
           }))
       : [];
 
-    const agenticResponse = await runAgenticRag(message.trim(), formattedHistory, order || null);
+    const agenticResponse = await runAgenticRag(cleanMessage, formattedHistory, order || null);
 
     return NextResponse.json(agenticResponse);
   } catch (error: unknown) {

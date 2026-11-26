@@ -10,7 +10,7 @@ import { useCartContext } from '@/store/CartContext';
 import { useToast } from '@/store/ToastContext';
 import { formatPrice } from '@/lib/utils/formatters';
 import { flyToCart } from '@/lib/utils/flyToCart';
-import type { RetrievedProduct } from '@/lib/rag/catalog';
+import type { RetrievedProduct } from '@/lib/rag/agentTools';
 import styles from './AiAssistant.module.css';
 
 interface ChatMessage {

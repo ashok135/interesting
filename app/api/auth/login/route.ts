@@ -20,21 +20,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please enter both email and password.' }, { status: 400 });
     }
 
-    const trimmedEmail = email.toLowerCase().trim();
+    const trimmedEmail = String(email).toLowerCase().trim();
     const customer = await findCustomerByEmail(trimmedEmail);
 
-    if (!customer) {
+    // Verify credentials even if customer lookup returned null, and return uniform 401 message to prevent email enumeration
+    const isValid = customer ? await verifyCustomerCredentials(trimmedEmail, String(password)) : false;
+    if (!customer || !isValid) {
       return NextResponse.json(
-        { error: 'No account found with this email. Please sign up first.' },
-        { status: 404 }
-      );
-    }
-
-    // Verify credentials directly against WordPress authentication
-    const isValid = await verifyCustomerCredentials(trimmedEmail, password);
-    if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid password. Please try again or use Google Sign-In.' },
+        { error: 'Invalid email or password. Please try again or use Google Sign-In.' },
         { status: 401 }
       );
     }

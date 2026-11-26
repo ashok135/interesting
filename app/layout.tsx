@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: '%s | Interesting',
   },
   description:
-    '15–30 Mins Express Delivery. Direct Orchard Harvest | 100% Zero Adulteration King Grade Cashews & Gourmet Dry Fruits.',
+    'Pan-India Express Delivery. Direct Orchard Harvest | 100% Zero Adulteration King Grade Cashews & Gourmet Dry Fruits.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

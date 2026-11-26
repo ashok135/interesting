@@ -105,7 +105,7 @@ intersting-app/
 │   │   ├── assistant/                # NVIDIA NIM + Qdrant RAG chat endpoint
 │   │   ├── auth/                     # Firebase Auth, Google OAuth & JWT sessions
 │   │   ├── coupons/                  # Live WooCommerce coupon validation
-│   │   ├── media/                    # On-the-fly image compression proxy
+│   │   ├── media/                    # Authenticated/validated WordPress media redirect proxy
 │   │   ├── orders/                   # Order creation & status queries
 │   │   ├── payment/                  # Razorpay order creation & signature verification
 │   │   └── webhooks/                 # Automated Webhook Listeners
@@ -157,7 +157,7 @@ RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
 RAZORPAY_WEBHOOK_SECRET=your_custom_webhook_secret_here
 
 # ─── Store UPI Configuration ───────────────────────────────────────────────────
-NEXT_PUBLIC_STORE_UPI_ID=9994847167@upi
+NEXT_PUBLIC_STORE_UPI_ID=your_upi_id@upi
 NEXT_PUBLIC_STORE_UPI_NAME=INTERSTING
 
 # ─── Qdrant Vector Database (Self-Hosted on GCP VM) ───────────────────────────

@@ -73,6 +73,7 @@ interface ConfirmedOrder {
   total: number;
   itemCount: number;
   paymentTitle: string;
+  invoiceToken?: string;
 }
 
 export interface SavedAddress {
@@ -591,7 +592,7 @@ export default function CheckoutPage() {
       phone: addr.phone || '',
     };
 
-    const storeUpiId = process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi';
+    const storeUpiId = process.env.NEXT_PUBLIC_STORE_UPI_ID || '';
     const orderItemCount = items.reduce((sum, i) => sum + i.quantity, 0);
     const orderGrandTotal = grandTotal;
     const orderPaymentTitle = payMethod === 'razorpay'
@@ -650,9 +651,14 @@ export default function CheckoutPage() {
           throw new Error(rzpOrder.error || 'Failed to initialize payment gateway order.');
         }
 
+        const razorpayKey = rzpOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        if (!razorpayKey) {
+          throw new Error('Payment gateway key is not configured.');
+        }
+
         // 3. Open Razorpay Checkout Modal (truck overlay stays visible underneath)
         const options = {
-          key: rzpOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_U1ADQmS0qOpccj',
+          key: razorpayKey,
           amount: rzpOrder.amount,
           currency: rzpOrder.currency || 'INR',
           name: 'Interesting Gourmet Pantry',
@@ -661,7 +667,7 @@ export default function CheckoutPage() {
           order_id: rzpOrder.orderId,
           prefill: {
             name: `${finalBilling.first_name} ${finalBilling.last_name}`.trim(),
-            email: finalBilling.email || 'guest@interestingstore.com',
+            email: finalBilling.email || '',
             contact: finalBilling.phone,
           },
           notes: {
@@ -704,6 +710,7 @@ export default function CheckoutPage() {
                 total: orderGrandTotal,
                 itemCount: orderItemCount,
                 paymentTitle: `Online Paid (Razorpay: ${response.razorpay_payment_id})`,
+                invoiceToken: verifyJson.invoiceToken,
               });
               setOrderId(verifyJson.order.id);
               setOrderFlowState('confirmed');
@@ -744,6 +751,12 @@ export default function CheckoutPage() {
     }
 
     if (payMethod === 'upi') {
+      if (!storeUpiId) {
+        setOrderError('Direct UPI transfer is temporarily unavailable. Please use Online Payment (Razorpay) or Cash on Delivery.');
+        setPlacing(false);
+        setOrderFlowState('idle');
+        return;
+      }
       const cleanRef = upiRef.trim();
       if (!cleanRef) {
         setOrderError('Please enter your 12-digit UPI Reference / UTR Number to confirm your payment.');
@@ -795,6 +808,7 @@ export default function CheckoutPage() {
         total: orderGrandTotal,
         itemCount: orderItemCount,
         paymentTitle: orderPaymentTitle,
+        invoiceToken: order.invoiceToken,
       });
       setOrderId(order.id);
       setOrderFlowState('confirmed');
@@ -904,7 +918,11 @@ export default function CheckoutPage() {
               <div className={styles.successActions}>
                 {oId && (
                   <a
-                    href={`/api/invoice/${oId}/download`}
+                    href={
+                      confirmedOrder?.invoiceToken
+                        ? `/api/invoice/${oId}/download?token=${encodeURIComponent(confirmedOrder.invoiceToken)}`
+                        : `/api/invoice/${oId}/download`
+                    }
                     download={`Invoice-INTERSTING-${oId}.pdf`}
                     className={styles.successInvoiceBtn}
                     title="Download official tax invoice (PDF)"
@@ -1687,26 +1705,28 @@ export default function CheckoutPage() {
                     <div className={styles.upiHeader}>
                       <span className={styles.upiTitle}>Scan QR or Transfer via UPI</span>
                       <span className={styles.upiIdBadge}>
-                        {process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi'}
-                        <button
-                          type="button"
-                          className={styles.upiCopyBtn}
-                          onClick={() => {
-                            navigator.clipboard.writeText(process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi');
-                            setCopiedUpi(true);
-                            setTimeout(() => setCopiedUpi(false), 2000);
-                          }}
-                          title="Copy UPI ID"
-                        >
-                          <Copy size={13} /> {copiedUpi ? 'Copied!' : 'Copy'}
-                        </button>
+                        {process.env.NEXT_PUBLIC_STORE_UPI_ID || 'UPI not configured'}
+                        {process.env.NEXT_PUBLIC_STORE_UPI_ID && (
+                          <button
+                            type="button"
+                            className={styles.upiCopyBtn}
+                            onClick={() => {
+                              navigator.clipboard.writeText(process.env.NEXT_PUBLIC_STORE_UPI_ID || '');
+                              setCopiedUpi(true);
+                              setTimeout(() => setCopiedUpi(false), 2000);
+                            }}
+                            title="Copy UPI ID"
+                          >
+                            <Copy size={13} /> {copiedUpi ? 'Copied!' : 'Copy'}
+                          </button>
+                        )}
                       </span>
                     </div>
 
                     <div className={styles.upiQrArea}>
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-                          `upi://pay?pa=${process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi'}&pn=${encodeURIComponent(
+                          `upi://pay?pa=${process.env.NEXT_PUBLIC_STORE_UPI_ID || ''}&pn=${encodeURIComponent(
                             process.env.NEXT_PUBLIC_STORE_UPI_NAME || 'INTERSTING'
                           )}&am=${grandTotal}&cu=INR&tn=Order_Payment`
                         )}`}
@@ -1719,7 +1739,7 @@ export default function CheckoutPage() {
                         <div><strong>Step 3:</strong> Paste the 12-digit <strong>UPI Reference / UTR Number</strong> below to confirm.</div>
 
                         <a
-                          href={`upi://pay?pa=${process.env.NEXT_PUBLIC_STORE_UPI_ID || '9994847167@upi'}&pn=${encodeURIComponent(
+                          href={`upi://pay?pa=${process.env.NEXT_PUBLIC_STORE_UPI_ID || ''}&pn=${encodeURIComponent(
                             process.env.NEXT_PUBLIC_STORE_UPI_NAME || 'INTERSTING'
                           )}&am=${grandTotal}&cu=INR&tn=Order_Payment`}
                           className={styles.upiIntentBtn}

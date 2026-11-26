@@ -169,28 +169,28 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Uint8Array>
     font: fontBold,
     color: textDark,
   });
-  page.drawText('Plot No. 14, 2nd Avenue, Anna Nagar', {
+  page.drawText('Tamil Nadu, India - 625512', {
     x: margin + 12,
     y: currentY - 46,
     size: 9,
     font: fontRegular,
     color: textMuted,
   });
-  page.drawText('Chennai, Tamil Nadu - 600040, India', {
+  page.drawText('Pan-India Direct Orchard Fulfillment', {
     x: margin + 12,
     y: currentY - 58,
     size: 9,
     font: fontRegular,
     color: textMuted,
   });
-  page.drawText('GSTIN: 33ABCDE1234F1Z5', {
+  page.drawText('GST-Inclusive Tax Invoice', {
     x: margin + 12,
     y: currentY - 74,
     size: 9,
     font: fontRegular,
     color: textDark,
   });
-  page.drawText('FSSAI Lic. No: 12424008000412', {
+  page.drawText('Direct Harvest • Zero Adulteration', {
     x: margin + 12,
     y: currentY - 86,
     size: 9,

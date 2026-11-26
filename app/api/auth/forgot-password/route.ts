@@ -1,32 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { findCustomerByEmail } from '@/lib/api/customers';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = checkRateLimit(req, { limit: 5, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many password reset requests. Please wait a minute.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSec) } }
+      );
+    }
+
     const { email } = await req.json();
 
-    if (!email || !email.includes('@')) {
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
 
-    const trimmedEmail = email.toLowerCase().trim();
-    const customer = await findCustomerByEmail(trimmedEmail);
-
-    const wcUrl = (process.env.NEXT_PUBLIC_WC_URL || 'https://intersting.duckdns.org').replace(/\/$/, '');
-    const wpResetUrl = `${wcUrl}/wp-login.php?action=lostpassword&user_login=${encodeURIComponent(trimmedEmail)}`;
-
-    if (!customer) {
-      // Don't leak whether an email exists for security, but return friendly confirmation
-      return NextResponse.json({
-        success: true,
-        message: 'If an account exists for this email, password reset instructions have been generated.',
-      });
-    }
-
+    // Always return a uniform response regardless of whether the account exists (prevents email enumeration)
     return NextResponse.json({
       success: true,
-      message: 'Password reset link ready. Click below to choose a new password.',
-      resetUrl: wpResetUrl,
+      message:
+        'If an account exists for this email, you can reset your password using your email link or contact customer concierge on WhatsApp (+91 99948 47167) for assisted recovery.',
     });
   } catch (error) {
     console.error('Forgot password error:', error);

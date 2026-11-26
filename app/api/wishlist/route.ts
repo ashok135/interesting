@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     const ids = idsParam
       .split(',')
       .map((id) => parseInt(id.trim(), 10))
-      .filter((id) => !isNaN(id) && id > 0);
+      .filter((id) => !isNaN(id) && id > 0)
+      .slice(0, 50);
 
     if (ids.length === 0) {
       return NextResponse.json({ products: [] });

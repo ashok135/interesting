@@ -1,18 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/session';
-import { updateCustomer } from '@/lib/api/customers';
+import { updateCustomer, verifyCustomerCredentials } from '@/lib/api/customers';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = checkRateLimit(req, { limit: 5, windowMs: 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many password update attempts. Please wait a minute.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSec) } }
+      );
+    }
+
     const user = await getCurrentUser(req);
-    if (!user) {
+    if (!user || !user.id || Number(user.id) <= 0) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
-    const { newPassword, confirmPassword } = body;
+    const { currentPassword, newPassword, confirmPassword } = body;
 
-    if (!newPassword || newPassword.length < 6) {
+    if (user.provider === 'email') {
+      if (!currentPassword || typeof currentPassword !== 'string') {
+        return NextResponse.json(
+          { error: 'Please enter your current password to confirm this change.' },
+          { status: 400 }
+        );
+      }
+      const verified = await verifyCustomerCredentials(user.email, currentPassword);
+      if (!verified) {
+        return NextResponse.json(
+          { error: 'Current password is incorrect.' },
+          { status: 401 }
+        );
+      }
+    }
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
       return NextResponse.json(
         { error: 'New password must be at least 6 characters long.' },
         { status: 400 }
@@ -26,8 +51,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Directly update customer password in WooCommerce
-    await updateCustomer(user.id, {
+    // Update customer password in WooCommerce
+    await updateCustomer(Number(user.id), {
       password: newPassword,
     });
 
@@ -37,7 +62,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('Update password error:', error);
-    const msg = error instanceof Error ? error.message : 'Failed to update password';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update password' }, { status: 500 });
   }
 }

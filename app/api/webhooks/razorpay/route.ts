@@ -42,24 +42,32 @@ export async function POST(req: NextRequest) {
       process.env.RAZORPAY_KEY_SECRET ||
       '';
 
-    if (webhookSecret && signature) {
-      const isValid = verifyRazorpayWebhookSignature({
-        rawBody,
-        signature,
-        secret: webhookSecret,
-      });
+    if (!webhookSecret) {
+      console.error('[Razorpay Webhook] Razorpay webhook secret is not configured.');
+      return NextResponse.json(
+        { error: 'Webhook secret not configured' },
+        { status: 500 }
+      );
+    }
 
-      if (!isValid) {
-        console.error('[Razorpay Webhook] Invalid signature detected. Request rejected.');
-        return NextResponse.json(
-          { error: 'Invalid webhook signature' },
-          { status: 400 }
-        );
-      }
-    } else if (process.env.NODE_ENV === 'production' && !signature) {
-      console.warn('[Razorpay Webhook] Production warning: Missing signature header.');
+    if (!signature) {
+      console.warn('[Razorpay Webhook] Missing x-razorpay-signature header.');
       return NextResponse.json(
         { error: 'Missing x-razorpay-signature header' },
+        { status: 401 }
+      );
+    }
+
+    const isValid = verifyRazorpayWebhookSignature({
+      rawBody,
+      signature,
+      secret: webhookSecret,
+    });
+
+    if (!isValid) {
+      console.error('[Razorpay Webhook] Invalid signature detected. Request rejected.');
+      return NextResponse.json(
+        { error: 'Invalid webhook signature' },
         { status: 401 }
       );
     }
@@ -128,7 +136,7 @@ export async function POST(req: NextRequest) {
           billing: {
             first_name: firstName,
             last_name: lastName,
-            email: payment.email || notes.customer_email || 'guest@interestingstore.com',
+            email: payment.email || notes.customer_email || 'guest@intersting.duckdns.org',
             phone: payment.contact || notes.customer_phone || '',
             address_1: notes.address_1 || 'Express Delivery Address',
             address_2: notes.address_2 || '',
@@ -140,7 +148,7 @@ export async function POST(req: NextRequest) {
           shipping: {
             first_name: firstName,
             last_name: lastName,
-            email: payment.email || notes.customer_email || 'guest@interestingstore.com',
+            email: payment.email || notes.customer_email || 'guest@intersting.duckdns.org',
             phone: payment.contact || notes.customer_phone || '',
             address_1: notes.address_1 || 'Express Delivery Address',
             address_2: notes.address_2 || '',
