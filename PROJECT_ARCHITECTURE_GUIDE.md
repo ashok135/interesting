@@ -13,7 +13,23 @@ Think of a normal shop vs. a modern restaurant setup:
 
 ---
 
+## Where Everything Is Hosted
+
+![INTERSTING Where Everything Is Hosted](docs/hosting-architecture.png)
+
+- **Storefront Website & Server Bridge:** Hosted on Vercel or a Node.js cloud server / VPS.
+- **WordPress + WooCommerce & Qdrant AI Memory:** Hosted on your server at `https://intersting.duckdns.org` (with Qdrant at `/qdrant`).
+- **Online Payments:** Handled by Razorpay Cloud (plus Direct Store UPI).
+- **Customer Sign-In:** Handled by Google Firebase Cloud (Google Sign-In & Phone OTP).
+- **Chappie AI Brain:** Powered by NVIDIA NIM Cloud.
+- **Order SMS Alerts:** Sent from your own Android phone SIM using the `httpSMS` app.
+- **GPS Address Autofill:** Powered by OpenStreetMap Nominatim.
+
+---
+
 ## 2. Overall Project Architecture (How Everything Connects)
+
+![INTERSTING Complete Project Architecture](docs/project-architecture.png)
 
 ```mermaid
 flowchart TD
@@ -38,6 +54,8 @@ flowchart TD
 ---
 
 ## 3. WooCommerce Architecture (How WordPress Controls Your Site)
+
+![INTERSTING WooCommerce Control Loop and Order Lifecycle](docs/woocommerce-architecture.png)
 
 Your storefront does **not** keep a separate copy of your catalog or order database. WordPress + WooCommerce is the **single boss** for your business data:
 
