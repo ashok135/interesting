@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     const formattedHistory = Array.isArray(history)
       ? history
-          .slice(-4)
+          .slice(-8)
           .filter(
             (msg: { role?: string; content?: string }) =>
               msg && typeof msg.content === 'string' && (msg.role === 'user' || msg.role === 'assistant')

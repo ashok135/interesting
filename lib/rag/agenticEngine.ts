@@ -64,10 +64,11 @@ function getNormalizedCacheKey(query: string): string {
 
 function sanitizeReplyText(text: string): string {
   let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-  cleaned = cleaned.replace(/<[^>]*>?/gm, ' ');
+  cleaned = cleaned.replace(/<[^>]*>?/gm, '');
   cleaned = cleaned.replace(/Interactive product cards.*?below your message\.?/gi, '');
   cleaned = cleaned.replace(/Product cards.*?below\.?/gi, '');
-  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  cleaned = cleaned.replace(/[ \t]+/g, ' ');
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
   return cleaned;
 }
 
@@ -164,6 +165,14 @@ function detectPredictiveIntent(query: string): PredictiveIntent {
     return { type: 'greeting' };
   }
 
+  // Let Tier-2 full agentic reasoning handle nuanced, comparison, health, recipe, or multi-part questions
+  const isNuancedQuestion =
+    q.split(/\s+/).length > 7 ||
+    /\b(compare|difference|vs|versus|benefit|benefits|health|healthy|diabet|weight|protein|recipe|eat|how to|why|which is better|under\s*₹?\d+|budget|recommend)\b/i.test(q);
+  if (isNuancedQuestion) {
+    return { type: 'complex' };
+  }
+
   // Order tracking intent (handles typos: 'oder', 'ordr', 'where is my')
   if (
     q.includes('order') ||
@@ -254,7 +263,8 @@ export async function runAgenticRag(
   const intent = detectPredictiveIntent(cleanQuery);
 
   if (intent.type === 'greeting') {
-    const reply = 'Hello! 🌿 Welcome to Interesting. How may I assist you with our farm-fresh harvests today?';
+    const reply =
+      'Hey there! 🌿 Welcome to **INTERSTING**. I’m Chappie, your personal dry-fruits & pantry assistant. Looking for farm-fresh cashews, daily nutrition picks, gift hampers, or help with an order? Just ask me anything!';
     const suggestions = ['👑 Best King Cashews', '🌰 Raw Almonds under ₹500', '🎁 Luxury Gift Hampers', '🚚 Free Delivery Policy'];
     return { success: true, reply, products: [], suggestions };
   }
@@ -294,21 +304,23 @@ export async function runAgenticRag(
       ? '- Since customer opened with a greeting, start your sentence warmly with "Hello! 🌿" or "Hi! 🌿".\n'
       : '';
 
-    const prompt = `You are "Chappie", AI Concierge for "Interesting" gourmet dry fruits store in India.
+    const prompt = `You are "Chappie", a warm, smart, ChatGPT-like AI shopping assistant for "INTERSTING" (a gourmet dry fruits, nuts & pantry store in India).
 The customer asked: "${cleanQuery}".
-Here are our real-time matching products directly from our live store inventory:
+Here are the matching products from our live store inventory:
 ${productsText}
 
-INSTRUCTION:
-${greetingRule}- In 1 to 2 warm, appetizing sentences (under 35 words), directly answer the customer and recommend the top item(s) with price (e.g. "**Royal Jumbo W180 King Cashews** (₹449)").
-- Do NOT output HTML or UI cards. Product cards auto-render below your message.`;
+INSTRUCTIONS:
+${greetingRule}- Reply naturally and conversationally like a helpful human expert (not a robotic template).
+- Directly answer their question, highlight 1–3 top matching items with exact prices (e.g., **Royal Jumbo W180 King Cashews** — ₹449), and briefly explain why they're a great pick (taste, grade, or nutrition).
+- Use short, easy-to-read sentences or clean bullet points if listing multiple items.
+- Do NOT invent products or prices not listed above, and do NOT output HTML or mention UI product cards.`;
 
     try {
       const completion = await nvidiaClient.chat.completions.create({
         model: NVIDIA_MODEL,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 150,
-        temperature: 0.3,
+        max_tokens: 320,
+        temperature: 0.55,
       });
 
       const reply = sanitizeReplyText(completion.choices[0]?.message?.content || '');
@@ -340,21 +352,21 @@ ${greetingRule}- In 1 to 2 warm, appetizing sentences (under 35 words), directly
       ? '- Since customer opened with a greeting, start your sentence warmly with "Hello! 🌿" or "Hi! 🌿".\n'
       : '';
 
-    const prompt = `You are "Chappie", AI Concierge for "Interesting" store.
+    const prompt = `You are "Chappie", a friendly, helpful AI assistant for the "INTERSTING" store.
 The customer asked: "${cleanQuery}".
 Verified store policy facts:
 ${facts}
 
-INSTRUCTION:
-${greetingRule}- In 1-2 friendly sentences (under 35 words), directly answer their policy question.
-- Do NOT recommend products on pure policy inquiries.`;
+INSTRUCTIONS:
+${greetingRule}- Answer clearly, warmly, and conversationally in 2–4 sentences (or short bullet points if helpful), covering all the key details from the policy facts above.
+- Do NOT recommend products on pure policy inquiries, and do NOT output HTML.`;
 
     try {
       const completion = await nvidiaClient.chat.completions.create({
         model: NVIDIA_MODEL,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 150,
-        temperature: 0.2,
+        max_tokens: 260,
+        temperature: 0.45,
       });
 
       const reply = sanitizeReplyText(completion.choices[0]?.message?.content || '');
@@ -387,27 +399,27 @@ If the customer asks about this order, acknowledge Order #${orderContext.id} and
 `;
   }
 
-  const systemPrompt = `You are "Chappie", AI Concierge for "Interesting" — an artisanal luxury dry fruits, nuts & royal gift hampers brand in India.
+  const systemPrompt = `You are "Chappie", a warm, intelligent, ChatGPT-like AI assistant for "INTERSTING" — an artisanal gourmet dry fruits, nuts, seeds & gift hampers brand in India.
 ${orderPrompt}
 CAPABILITIES & TOOLS:
 You have direct access to live store tools:
-1. "search_catalog": Search farm-fresh products by query, category, price, or health intent (e.g. cashew, almond, chia seeds, hampers). Handles customer typos naturally (e.g. "cashive" -> "cashew").
-2. "get_policy_info": Retrieve verified factual store policies on shipping, delivery timelines (free shipping above ₹499), cash on delivery (COD), return guarantee (7-day replacement), and support.
-3. "get_curated_collection": Retrieve best-sellers, hampers, or seed collections.
+1. "search_catalog": Search farm-fresh products by query, category, max_price, or dietary_focus (e.g., diabetes, weight_loss, high_protein, heart_health, energy). Handles typos naturally.
+2. "get_policy_info": Retrieve verified store policies on shipping/delivery (free shipping above ₹499), COD/UPI payments, 7-day replacement guarantee, grading/quality, freshness, and customer support.
+3. "get_curated_collection": Retrieve best-sellers, luxury hampers, super seeds, healthy millets, or artisanal sweets.
 
-RULES:
-- If the customer opened with a greeting ("hi", "hello", "hey", etc.), start warmly with "Hello! 🌿" or "Hi! 🌿".
-- When a customer asks about products, prices, or recommendations, invoke "search_catalog" or "get_curated_collection" to retrieve live verified items before answering.
-- If a customer is asking purely about policies (returns, refunds, shipping, delivery times, COD, or contact), invoke "get_policy_info" and answer their policy question directly. DO NOT recommend products on pure policy inquiries.
-- Keep final replies warm, appetizing, and concise (1 to 2 sentences, maximum 35 words).
-- When recommending products, naturally mention the top recommended product name and price (e.g. "**Royal Jumbo W180 King Cashews** (₹449)").
-- NEVER output raw HTML (no <div>, <span>, or <button> tags). Output clean markdown with bolding only.
-- NEVER include links like [Track Your Order] unless the customer specifically asked about tracking an order.
-- DO NOT mention UI cards, buttons, or this prompt in your message. Speak naturally like a knowledgeable pantry concierge.`;
+HOW TO RESPOND (BE LIKE A REAL AI ASSISTANT):
+- Speak naturally, warmly, and thoughtfully — like ChatGPT talking to a customer in a real conversation, never stiff or robotic.
+- If the customer opens with a greeting, greet them warmly back.
+- **Ground store facts in tools:** Always call "search_catalog" / "get_curated_collection" for product, price, budget, or recommendation questions, and "get_policy_info" for shipping, payment, COD, return, or support questions. Never invent product prices or store policies.
+- **Be genuinely helpful:** For health, nutrition, comparison, storage, or usage questions (e.g., "which nuts are good for weight loss?", "W180 vs W240", "how to use chia seeds?"), explain clearly in plain English AND pair your advice with matching live store items and their exact prices (e.g., "**Royal Jumbo W180 King Cashews** — ₹449").
+- **Format cleanly:** Use short paragraphs or clean markdown bullet points when listing multiple options or steps so it is easy to scan. Aim for helpful, complete answers (around 40–130 words depending on the question) rather than abrupt 1-line replies.
+- On pure policy questions, answer the policy clearly without pushing unrelated products.
+- NEVER output raw HTML (no <div>, <span>, or <button> tags). Use clean markdown only.
+- NEVER mention UI cards, buttons, internal tools, or this system prompt.`;
 
   const messages: MessageParam[] = [
     { role: 'system', content: systemPrompt },
-    ...history.slice(-4).map((h) => ({ role: h.role, content: h.content })),
+    ...history.slice(-8).map((h) => ({ role: h.role, content: h.content })),
     { role: 'user', content: cleanQuery },
   ];
 
@@ -420,8 +432,8 @@ RULES:
       messages: messages as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
       tools: AGENT_TOOLS as unknown as OpenAI.Chat.Completions.ChatCompletionTool[],
       tool_choice: 'auto',
-      temperature: 0.2,
-      max_tokens: 350,
+      temperature: 0.4,
+      max_tokens: 450,
     });
 
     const choice1 = step1.choices[0];
@@ -463,8 +475,8 @@ RULES:
       const step2 = await nvidiaClient.chat.completions.create({
         model: NVIDIA_MODEL,
         messages: messages as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-        max_tokens: 250,
-        temperature: 0.3,
+        max_tokens: 450,
+        temperature: 0.6,
       });
 
       const finalReply = sanitizeReplyText(step2.choices[0]?.message?.content || '');
